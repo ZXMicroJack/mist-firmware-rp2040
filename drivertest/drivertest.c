@@ -236,7 +236,8 @@ int main()
   printf("Running test\n");
   
   for(;;) {
-    int c = getchar_timeout_us(100000);
+//     int c = getchar_timeout_us(100000);
+    int c = getchar();
     if (forceexit) break;
     if (c == 'q') break;
 //     if (c == 'h') printf("Hello\n");

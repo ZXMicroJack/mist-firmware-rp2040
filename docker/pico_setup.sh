@@ -50,8 +50,7 @@ cd $OUTDIR
 # Clone sw repos
 GITHUB_PREFIX="https://github.com/raspberrypi/"
 GITHUB_SUFFIX=".git"
-SDK_BRANCH="1.4.0"
-OR_SDK_BRANCH="1.3.1"
+SDK_BRANCH="master"
 
 for REPO in sdk examples extras playground
 do
@@ -62,7 +61,8 @@ do
     else
         REPO_URL="${GITHUB_PREFIX}pico-${REPO}${GITHUB_SUFFIX}"
         echo "Cloning $REPO_URL"
-        git clone -b $SDK_BRANCH $REPO_URL || git clone -b sdk-$SDK_BRANCH $REPO_URL || git clone -b $OR_SDK_BRANCH $REPO_URL || git clone -b sdk-$OR_SDK_BRANCH $REPO_URL
+        git clone -b $SDK_BRANCH $REPO_URL
+
         # Any submodules
         cd $DEST
         git submodule update --init

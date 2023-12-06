@@ -206,6 +206,23 @@ void keypress(uint8_t ch) {
 }
 
 
+#define TEST_PS2
+// #define TEST_IPC
+#define TEST_SDCARD_SPI
+// #define TEST_FPGA
+// #define TEST_MATRIX
+// #define TEST_FLASH
+
+// KEY ACTION ALLOCATION
+// IPC      -=[]'#
+// FLASH    PBI
+// MATRIXK  KL
+// PS2      kheEdD
+// PS2      0123456789 - press key
+// FPGA     pfFcC
+// HELP     ?
+// SDCARD   vbnm,isS
+
 extern int forceexit;
 int main()
 {
@@ -222,9 +239,13 @@ int main()
   enable_xip();
 #endif
   
+#ifdef TEST_MATRIX
   kbd_Init();
+#endif
+#ifdef TEST_PS2
   ps2_Init();
   ps2_EnablePort(0, true);
+#endif
 //   ps2_SendChar(0, 0x7e);
 //   ps2_SendChar(0, 0xf0);
 //   ps2_SendChar(0, 0x7e);
@@ -243,14 +264,20 @@ int main()
 //     if (c == 'h') printf("Hello\n");
 //     kbd_Process();
 //     printf("Hello\n");
-#if 1
+
+
+#ifdef TEST_PS2
     if (c >= '0' && c <= '9') {
       ps2_SendChar(0, kbdlut[c - '0']);
       sleep_ms(100);
       ps2_SendChar(0, 0xf0);
       ps2_SendChar(0, kbdlut[c - '0']);
     }
+#endif
+
     switch(c) {
+      // SD CARD SPI
+#ifdef TEST_SDCARD_SPI
       case 'v': test_sector_read(spi); break;
       case 'b': test_sector_write1(spi); break;
       case 'n': test_sector_write2(spi); break;
@@ -259,8 +286,11 @@ int main()
       case 'i': printf("sd_init_card(spi) returns %d\n", sd_init_card(spi)); break;
       case 's': printf("init sdhw\n"); spi = sd_hw_init(); break;
       case 'S': printf("kill sdhw\n"); sd_hw_kill(spi); break;
+#endif
 
-      case 'p': 
+      // FPGA PROGRAM
+#ifdef TEST_FPGA
+      case 'p':
         memset(&fbrt, 0x00, sizeof fbrt);
         printf("fpga_program returns %d\n", fpga_configure(&fbrt, test_fpga_get_next_block, 0));
         break;
@@ -276,7 +306,9 @@ int main()
       case 'C':
         printf("fpga_claim(true); returns %d\n", fpga_claim(true));
         break;
+#endif
 
+      // HELP
       case '?':
         printf("\n");
         printf("SDCARD: r(v)0 w(b)1 w(n)2 w(m)3 w(,)4 (i)nit (s)etup (S)hutdown\n");
@@ -287,6 +319,8 @@ int main()
         printf("KBD: (K)bd init (L)kbd process\n");
         break;
 
+      // PS2
+#ifdef TEST_PS2
       case 'k': printf("ps2init\n"); ps2_Init(); break;
       case 'h': keypress(0x7e); break;
       case 'H': keypress(0x58); break;
@@ -294,8 +328,10 @@ int main()
       case 'E': printf("enable ps2 1\n"); ps2_EnablePort(1, true); break;
       case 'd': printf("disable ps2 0\n"); ps2_EnablePort(0, false); break;
       case 'D': printf("disable ps2 1\n"); ps2_EnablePort(1, false); break;
-      
-      
+#endif
+
+      // IPC
+#ifdef TEST_IPC
       case '-':
         printf("ipc_InitSlave();\n");
         ipc_InitSlave();
@@ -321,11 +357,14 @@ int main()
         ipc_SlaveTick();
         break;
       }
+#endif
       case '#':
         ps2_Debug();
         ipc_Debug();
         break;
-      
+
+      // FLASH
+#ifdef TEST_FLASH
       case 'P': {
         uint8_t data[4096];
         memset(data, 0xaa, sizeof data);
@@ -336,6 +375,8 @@ int main()
         break;
       }
 
+      // FLASH IPC
+#ifdef TEST_IPC
       case 'B':
       case 'I': {
         uint8_t data[4096];
@@ -361,14 +402,19 @@ int main()
         hexdump((uint8_t *)0x101FF000, 4096);
         break;
       }
+#endif
+#endif
+
+      // MATRIX KEYBOARD
+#ifdef TEST_MATRIX
       case 'K':
         kbd_Init();
         break;
       case 'L':
         kbd_Process();
         break;
-    }
 #endif
+    }
     
   }
   

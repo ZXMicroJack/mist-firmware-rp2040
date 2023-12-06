@@ -1,0 +1,35 @@
+;#define GPIO_RP2U_XLOAD       26 // AA4
+;#define GPIO_RP2U_XSCK        27 // AB5
+;#define GPIO_RP2U_XDATA       28 // AA6
+
+.program jamma
+reset:
+    pull;
+    
+bitloop:
+    wait 1 gpio 27;
+    out pins,1;
+    wait 0 gpio 27;
+    jmp pin bitloop;
+    jmp reset;
+    
+% c-sdk {
+
+static inline void jamma_program_init(PIO pio, uint sm, uint offset, uint data_pin) {
+  pio_sm_config sm_config = jamma_program_get_default_config(offset);
+  
+  sm_config_set_out_pins(&sm_config, data_pin, 1); // assuming data pin is clock pin + 1
+  sm_config_set_out_shift(&sm_config, true, false, 16);
+  sm_config_set_jmp_pin(&sm_config, 26); // load_n pin
+  
+  sm_config_set_fifo_join(&sm_config, PIO_FIFO_JOIN_TX);
+  //sm_config_set_clkdiv(&sm_config, 50);
+
+  pio_gpio_init(pio, data_pin);
+  pio_sm_set_consecutive_pindirs(pio, sm, data_pin, 1, true);
+
+  pio_sm_init(pio, sm, offset, &sm_config);
+  pio_sm_set_enabled(pio, sm, true);
+}
+
+%}

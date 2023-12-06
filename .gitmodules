@@ -1,0 +1,3 @@
+[submodule "mist-firmware"]
+	path = mist-firmware
+	url = git@github.com:ZXMicroJack/mist-firmware.git

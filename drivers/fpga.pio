@@ -1,0 +1,48 @@
+.program fpga
+.side_set 1 opt
+reset:
+    nop side 0;
+;    out pins,1 side 0;
+;    set x,6 side 1;
+sendbyte:
+    set x,7;
+    
+clockbyte:
+    out pins,1 side 0;
+    jmp x-- clockbyte side 1;
+    jmp sendbyte;
+% c-sdk {
+
+static inline void fpga_program_init(PIO pio, uint sm, uint offset, uint clock_pin) {
+  pio_sm_config sm_config = fpga_program_get_default_config(offset);
+  
+  sm_config_set_sideset_pins(&sm_config, clock_pin);
+  sm_config_set_out_pins(&sm_config, clock_pin + 1, 1); // assuming data pin is clock pin + 1
+  sm_config_set_out_shift(&sm_config, false, true, 32);
+  
+  sm_config_set_fifo_join(&sm_config, PIO_FIFO_JOIN_TX);
+  sm_config_set_clkdiv(&sm_config, 2) ;
+
+  pio_gpio_init(pio, clock_pin);
+  pio_gpio_init(pio, clock_pin + 1); // data pin
+  pio_sm_set_consecutive_pindirs(pio, sm, clock_pin, 2, true);
+
+  pio_sm_init(pio, sm, offset, &sm_config);
+  pio_sm_set_enabled(pio, sm, false);
+}
+
+static inline void fpga_program_enable(PIO pio, uint sm, uint clock_pin, bool enable) {
+  if (enable) {
+    pio_gpio_init(pio, clock_pin);
+    pio_gpio_init(pio, clock_pin + 1); // data pin
+    pio_sm_set_consecutive_pindirs(pio, sm, clock_pin, 2, true);
+    pio_sm_set_enabled(pio, sm, true);
+  } else {
+    pio_sm_set_enabled(pio, sm, false);
+    pio_gpio_init(pio, clock_pin);
+    pio_gpio_init(pio, clock_pin + 1); // data pin
+    pio_sm_set_consecutive_pindirs(pio, sm, clock_pin, 2, false);
+  }
+}
+
+%}

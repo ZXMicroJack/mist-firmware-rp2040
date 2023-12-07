@@ -7,6 +7,7 @@
 #include "hardware/structs/clocks.h"
 #include "hardware/flash.h"
 #include "hardware/resets.h"
+#include "hardware/spi.h"
 
 #include "pico/bootrom.h"
 #include "pico/stdlib.h"
@@ -205,15 +206,81 @@ void keypress(uint8_t ch) {
   ps2_SendChar(0, ch);
 }
 
+// 16  v8_miso \   uart0 tx, SPI0RX
+// 17  w9_mosi |-- sdcard high level / uart0 rx, SPI0CSN
+// 18  w7_sck  |   SPI0SCK
+// 19  v7_cs   /   SPI0TX
+
+#if 0
+void test_UserIOSPI() {
+  uint8_t data[6];
+// int spi_write_read_blocking (spi_inst_t *spi, const uint8_t *src, uint8_t *dst, size_t len)
+  uint8_t cmd[] = {0x1a, 0x00, 0x00, 0x00, 0xff, 0xff};
+
+  gpio_put(17, 0);
+
+  memset(data, 0xff, sizeof data);
+  spi_write_read_blocking(spi0, cmd, data, sizeof cmd);
+  printf("Returns: ");
+  for (int i=0; i<sizeof data; i++) {
+    printf("%02X ", data[i]);
+  }
+  printf("\n");
+  gpio_put(17, 1);
+}
+#endif
+
+void test_UserIOSPI(uint8_t datain) {
+  uint8_t data[6];
+// int spi_write_read_blocking (spi_inst_t *spi, const uint8_t *src, uint8_t *dst, size_t len)
+//   uint8_t cmd[] = {0x1a, 0x00, 0x00, 0x00, 0xff, 0xff};
+  uint8_t cmd[] = {0x02, 0xff};
+
+  gpio_put(17, 0);
+
+  cmd[1] = datain;
+
+  memset(data, 0xff, sizeof data);
+  spi_write_read_blocking(spi0, cmd, data, sizeof cmd);
+  printf("Returns: ");
+  for (int i=0; i<sizeof data; i++) {
+    printf("%02X ", data[i]);
+  }
+  printf("\n");
+  gpio_put(17, 1);
+}
+
+
+
+void test_UserIOInit() {
+  gpio_init(17);
+  gpio_put(17, 1);
+  gpio_set_dir(17, GPIO_OUT);
+  uint8_t spi_pins[] = {16, 18, 19};
+
+  for (int i=0; i<sizeof spi_pins; i++) {
+    gpio_init(spi_pins[i]);
+    gpio_set_function(spi_pins[i], GPIO_FUNC_SPI);
+  }
+  spi_init(spi0, 500000); // 500khz
+  spi_set_format(spi0, 8, SPI_CPOL_1, SPI_CPHA_1, SPI_MSB_FIRST);
+}
+
+void test_UserIOKill() {
+  spi_deinit(spi0);
+}
 
 #define TEST_PS2
 // #define TEST_IPC
-#define TEST_SDCARD_SPI
+// #define TEST_SDCARD_SPI
 // #define TEST_FPGA
 // #define TEST_MATRIX
 // #define TEST_FLASH
+#define TEST_USERIO
 
 // KEY ACTION ALLOCATION
+// aAgGHjJlMNoOqQrRTuUVwWxXyYzZ
+// aAgGHjJlMNoOqQrRTVwWxXYZ
 // IPC      -=[]'#
 // FLASH    PBI
 // MATRIXK  KL
@@ -222,6 +289,7 @@ void keypress(uint8_t ch) {
 // FPGA     pfFcC
 // HELP     ?
 // SDCARD   vbnm,isS
+// USERIO   uUV
 
 extern int forceexit;
 int main()
@@ -317,6 +385,7 @@ int main()
         printf("IPC: (-)initslave (=)initmaster ([)cmd1 (])cmd2 (')slavetick (#)debug\n");
         printf("FLASH: (P)rogram (I)pc based program (B)ad crc ipc program\n");
         printf("KBD: (K)bd init (L)kbd process\n");
+        printf("USERIO: (u)init (U)close (V)coreid\n");
         break;
 
       // PS2
@@ -412,6 +481,20 @@ int main()
         break;
       case 'L':
         kbd_Process();
+        break;
+#endif
+#ifdef TEST_USERIO
+      case 'u':
+        test_UserIOInit();
+        break;
+      case 'U':
+        test_UserIOKill();
+        break;
+      case 'z':
+        test_UserIOSPI(0xaa);
+        break;
+      case 'x':
+        test_UserIOSPI(0x55);
         break;
 #endif
     }

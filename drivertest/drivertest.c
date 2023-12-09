@@ -230,13 +230,19 @@ void test_UserIOSPI() {
 }
 #endif
 
+#define MIST_CSN    17
+#define MIST_SS2    20
+#define MIST_SS3    21
+#define MIST_SS4    24
+
+
 void test_UserIOSPI(uint8_t datain) {
   uint8_t data[6];
 // int spi_write_read_blocking (spi_inst_t *spi, const uint8_t *src, uint8_t *dst, size_t len)
 //   uint8_t cmd[] = {0x1a, 0x00, 0x00, 0x00, 0xff, 0xff};
   uint8_t cmd[] = {0x02, 0xff};
 
-  gpio_put(17, 0);
+  gpio_put(MIST_CSN, 0);
 
   cmd[1] = datain;
 
@@ -247,15 +253,15 @@ void test_UserIOSPI(uint8_t datain) {
     printf("%02X ", data[i]);
   }
   printf("\n");
-  gpio_put(17, 1);
+  gpio_put(MIST_CSN, 1);
 }
 
 
 
 void test_UserIOInit() {
-  gpio_init(17);
-  gpio_put(17, 1);
-  gpio_set_dir(17, GPIO_OUT);
+  gpio_init(MIST_CSN);
+  gpio_put(MIST_CSN, 1);
+  gpio_set_dir(MIST_CSN, GPIO_OUT);
   uint8_t spi_pins[] = {16, 18, 19};
 
   for (int i=0; i<sizeof spi_pins; i++) {

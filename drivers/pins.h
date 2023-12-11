@@ -75,6 +75,8 @@
 #define GPIO_FPGA_INITB    13
 #define GPIO_FPGA_M1M2    25
 #define GPIO_FPGA_RESET   10
+#define GPIO_FPGA_CLOCK 0
+#define GPIO_FPGA_DATA 1
 
 #ifdef IPCDEV
 #define GPIO_IPCM_I2C_CLK   4

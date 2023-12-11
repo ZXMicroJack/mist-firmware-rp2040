@@ -1,3 +1,0 @@
-#define HID_LED_NUM_LOCK	1
-#define HID_LED_SCROLL_LOCK	2
-#define HID_LED_CAPS_LOCK	4

@@ -1,0 +1,2 @@
+#define RAMFUNC
+#define FAST

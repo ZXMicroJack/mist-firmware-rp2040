@@ -19,7 +19,6 @@ cue_parser.o \
 data_io.o \
 fat_compat.o \
 fdd.o \
-firmware.o \
 font.o \
 fpga.o \
 hdd.o \
@@ -36,7 +35,6 @@ osd.o \
 pcecd.o \
 settings.o \
 state.o \
-storage_control.o \
 swap.o \
 tos.o \
 user_io.o \
@@ -46,12 +44,7 @@ diskio.o \
 ff.o \
 ffsystem.o \
 ffunicode.o \
-joystick.o \
-joymapping.o \
-usb.o \
-usbdebug.o \
-timer.o
-
+joymapping.o
 
 objs=$(hwobjs) $(mistobjs)
 
@@ -59,7 +52,7 @@ objs=$(hwobjs) $(mistobjs)
 # syscalls.o \
 
 
-copts=-I../mist-firmware -I. -I../mist-firmware/arch -D_WANT_IO_LONG_LONG -DVDATE=""
+copts=-I. -I../mist-firmware -I../mist-firmware/arch -I../mist-firmware/usb -D_WANT_IO_LONG_LONG -DVDATE="" -DRAMFUNC= -DATTRS_H -DFAST=
 
 %.o : ../mist-firmware/%.c
 	gcc $(copts) -c -o$@ $<

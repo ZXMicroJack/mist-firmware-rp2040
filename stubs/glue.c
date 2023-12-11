@@ -5,6 +5,8 @@
 
 #include "usb/usb.h"
 
+
+//TODO MJ where shall debug go?
 static char str[256];
 int iprintf(const char *fmt, ...) {
   int i;
@@ -23,14 +25,36 @@ void siprintf(char *str, const char *fmt, ...) {
   vsprintf(str, fmt, argp);
 }
 
+//TODO MJ non USB stuff here
+void MCUReset() {}
+
+void PollADC() {
+}
+
+void InitADC() {
+}
+
+int GetRTTC() { return 0; }
+
+void arch_irq_disable() {}
+
+static uint8_t mac[] = {1,2,3,4,5,6,7,8};
+uint8_t *get_mac() {
+  return mac;
+}
+
+//TODO MJ USB storage
+void storage_control_poll() {
+}
+
 // uint8_t mmc_inserted = 0;
+//TODO MJ No WiFi present at the moment - would need routing through fpga
 bool eth_present = 0;
 
-
+//TODO MJ PL2303 is a non CDC serial port over USB - maybe can use?
 int8_t pl2303_present(void) {
   return 0;
 }
-
 void pl2303_settings(uint32_t rate, uint8_t bits, uint8_t parity, uint8_t stop) {}
 void pl2303_tx(uint8_t *data, uint8_t len) {}
 void pl2303_tx_byte(uint8_t byte) {}
@@ -47,10 +71,17 @@ uint8_t get_pl2303s(void) {
   return 0;
 }
 
+// TODO MJ - USB stuff
+void usb_init() {}
+
+// return number of joysticks
+uint8_t joystick_count() { return 0; }
+
 void hid_set_kbd_led(unsigned char led, bool on) {
 }
-
 void SPIN() {}
+
+
 
 uint8_t pl2303_init(struct usb_device_entry *, struct usb_device_descriptor *) { return 0; }
 uint8_t pl2303_release(struct usb_device_entry *) { return 0; }
@@ -95,12 +126,6 @@ uint8_t usb_in_transfer( usb_device_t *dev, ep_t *ep, uint16_t *nbytesptr, uint8
   return 0;
 }
 
-void PollADC() {
-}
-
-void InitADC() {
-}
-
 void usb_poll() {
 }
 
@@ -116,22 +141,10 @@ unsigned char get_mice() {
   return 0;
 }
 
-void MCUReset() {}
-
 void usb_hw_init() {}
 
 // uint32_t timer_get_msec() { return 0; }
-
-int GetRTTC() { return 0; }
-
 void hid_joystick_button_remap_init() {}
-
-void arch_irq_disable() {}
-
-static uint8_t mac[] = {1,2,3,4,5,6,7,8};
-uint8_t *get_mac() {
-  return mac;
-}
 
 // void hid_joystick_button_remap_init(void) {
 // }
@@ -140,3 +153,21 @@ char hid_joystick_button_remap(char *s, char action, int tag) {
 }
 
 void dmb() {}
+
+// TODO MJ - firmware updating
+void WriteFirmware(char *name) {
+}
+
+const static char firmwareVersion[] = "v999.999 - TBD FAKE ";
+
+char *GetFirmwareVersion(char *name) {
+  return firmwareVersion;
+}
+
+unsigned char CheckFirmware(char *name) {
+  // returns 1 if all ok else 0, setting Error to one of ollowing states
+  // ERROR_NONE
+  // ERROR_FILE_NOT_FOUND
+  // ERROR_INVALID_DATA
+  return 0;
+}

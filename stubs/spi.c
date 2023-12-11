@@ -1,6 +1,8 @@
 #include "spi.h"
 #include "hardware.h"
 
+// TODO MJ interface to FPGA via SPI and all the nCS for different bits.
+
 void spi_init() {
 #if 0
    // Enable the peripheral clock in the PMC

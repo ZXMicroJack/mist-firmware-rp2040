@@ -29,6 +29,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 uint32_t systimer;
 
+//TODO MJ all hardware initialisation here
 void __init_hardware(void)
 {
 #if 0
@@ -114,6 +115,8 @@ void __init_hardware(void)
 #endif
 }
 
+
+//TODO MJ - can XMODEM be removed?  Serial to core is fine.
 // A buffer of 256 bytes makes index handling pretty trivial
 volatile static unsigned char tx_buf[256];
 volatile static unsigned char tx_rptr, tx_wptr;
@@ -241,6 +244,7 @@ unsigned long CheckButton(void)
 #endif
 }
 
+//TODO MJ timer seems to call a 1ms timer interrupt to the keyboard controller - why?
 void timer0_c_irq_handler(void) {
 #if 0
       	//* Acknowledge interrupt status
@@ -292,6 +296,7 @@ void Timer_Init(void) {
 #endif
 }
 
+//TODO MJ 1 ms precision timer to 4s
 // 12 bits accuracy at 1ms = 4096 ms 
 unsigned long GetTimer(unsigned long offset)
 {
@@ -302,6 +307,7 @@ unsigned long GetTimer(unsigned long offset)
     return (systimer); // valid bits [31:20]
 }
 
+//TODO MJ has time expired? - in ms
 unsigned long CheckTimer(unsigned long time)
 {
 #if 0
@@ -311,28 +317,29 @@ unsigned long CheckTimer(unsigned long time)
     return(time > (1UL << 31));
 }
 
+//TODO wait for
 void WaitTimer(unsigned long time)
 {
     time = GetTimer(time);
     while (!CheckTimer(time));
 }
 
-inline char mmc_inserted() {
+
+//TODO MJ assume MMC is inserted
+char mmc_inserted() {
   return 0;
-  //  return !(*AT91C_PIOA_PDSR & SD_CD);
 }
 
+#if 0 // TODO MJ only used for USB storage
+//TODO MJ assume MMC is not write protected - possibly assume it is for now.
 char mmc_write_protected() {
   return 0; //  return (*AT91C_PIOA_PDSR & SD_WP);
 }
 
-void InitRTTC() {
-  // reprogram the realtime timer to run at 1Khz
-//  AT91C_BASE_RTTC->RTTC_RTMR = 0x8000 / 1000;
-}
+#endif
 
+//TODO GetSPICLK just for display in debug - not really important - can be removed when main integrated.
 int GetSPICLK() {
-//  return (MCLK / ((AT91C_SPI_CSR[0] & AT91C_SPI_SCBR) >> 8) / 1000000);
   return 0;
 }
 
@@ -401,70 +408,44 @@ void PollADC() {
 }
 #endif
 
+// TODO MJ There are no switches or buttons on NeptUno
 // user, menu, DIP1, DIP2
 unsigned char Buttons() {
   return 0;
-	//  return (adc_state);
 }
 
 unsigned char MenuButton() {
   return 0;
-//  return (adc_state & 4);
 }
 
 unsigned char UserButton() {
   return 0;
-//  return (adc_state & 8);
 }
 
+// TODO MJ no DB9 input at present
 void InitDB9() {}
 
 // poll db9 joysticks
 char GetDB9(char index, unsigned char *joy_map) {
-#if 0
-      	static int joy0_state = JOY0;
-  static int joy1_state = JOY1;
-  if (!index) {
-    if((*AT91C_PIOA_PDSR & JOY0) != joy0_state) {
-      joy0_state = *AT91C_PIOA_PDSR & JOY0;
-      *joy_map = 0;
-      if(!(joy0_state & JOY0_UP))    *joy_map |= JOY_UP;
-      if(!(joy0_state & JOY0_DOWN))  *joy_map |= JOY_DOWN;
-      if(!(joy0_state & JOY0_LEFT))  *joy_map |= JOY_LEFT;
-      if(!(joy0_state & JOY0_RIGHT)) *joy_map |= JOY_RIGHT;
-      if(!(joy0_state & JOY0_BTN1))  *joy_map |= JOY_BTN1;
-      if(!(joy0_state & JOY0_BTN2))  *joy_map |= JOY_BTN2;
-      return 1;
-    } else
-      return 0;
-  } else {
-    if((*AT91C_PIOA_PDSR & JOY1) != joy1_state) {
-      joy1_state = *AT91C_PIOA_PDSR & JOY1;
-      *joy_map = 0;
-      if(!(joy1_state & JOY1_UP))    *joy_map |= JOY_UP;
-      if(!(joy1_state & JOY1_DOWN))  *joy_map |= JOY_DOWN;
-      if(!(joy1_state & JOY1_LEFT))  *joy_map |= JOY_LEFT;
-      if(!(joy1_state & JOY1_RIGHT)) *joy_map |= JOY_RIGHT;
-      if(!(joy1_state & JOY1_BTN1))  *joy_map |= JOY_BTN1;
-      if(!(joy1_state & JOY1_BTN2))  *joy_map |= JOY_BTN2;
-      return 1;
-    } else
-      return 0;
-  }
-#endif
+  // TODO - no DB9 joypad at present, but when implemented,
+  // *joy_map is set to a combination of the following bitmapped values
+  // JOY_UP, JOY_DOWN, JOY_LEFT, JOY_RIGHT, JOY_BTN1, JOY_BTN2
   return 0;
 }
 
+// TODO MJ implement RTC
 char GetRTC(unsigned char *d) {
-//  return usb_rtc_get_time(d);
+  // implemented as d[0-7] -
+  //   [y-100] [m] [d] [H] [M] [S] [Day1-7]
   return 0;
 }
 
+// TODO MJ implement RTC
 char SetRTC(unsigned char *d) {
-//  return usb_rtc_set_time(d);
   return 0;
 }
 
+// TODO MJ is UnlockFlash needed - we have better method of upgrading
 void RAMFUNC UnlockFlash() {
 #if 0
 	*AT91C_MC_FMR = 48 << 16 | FWS << 8; // MCLK cycles in 1us
@@ -480,6 +461,7 @@ void RAMFUNC UnlockFlash() {
 #endif
 }
 
+// TODO MJ is WriteFlash needed - we have better method of upgrading
 void RAMFUNC WriteFlash(int page) {
 #if 0
       	while (!(*AT91C_MC_FSR & AT91C_MC_FRDY));  // wait for ready

@@ -16,6 +16,7 @@
 */
 
 #include <string.h>
+#include <stdbool.h>
 
 #include "debug.h"
 #include "utils.h"
@@ -29,10 +30,14 @@
 void usb_dev_open(void) {}
 void usb_dev_reconnect(void) {}
 
+//TODO MJ - CDC serial port implementation - straight to core - can probably implement - in place of pl2303?
 uint8_t  usb_cdc_is_configured(void) { return 0; }
 uint16_t usb_cdc_write(const char *pData, uint16_t length) { return 0; }
 uint16_t usb_cdc_read(char *pData, uint16_t length) { return 0; }
 
+
+//TODO MJ - All from storage control - part of USB stack - rp2040 uses own TinyUSB stack for this.
+//TODO MJ - can probably stub out storage_control_poll and remove this
 uint8_t  usb_storage_is_configured(void) { return 0; }
 uint16_t usb_storage_write(const char *pData, uint16_t length) { return 0; }
 uint16_t usb_storage_read(char *pData, uint16_t length) { return 0; }

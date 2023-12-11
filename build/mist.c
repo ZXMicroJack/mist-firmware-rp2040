@@ -14,15 +14,15 @@
 
 #include "hardware/pio.h"
 
-#include "fpga.h"
-#include "flash.h"
-#include "pio_spi.h"
-#include "sdcard.h"
-#include "ps2.h"
-#include "ipc.h"
-#include "kbd.h"
+#include "drivers/fpga.h"
+#include "drivers/flash.h"
+#include "drivers/pio_spi.h"
+#include "drivers/sdcard.h"
+#include "drivers/ps2.h"
+#include "drivers/ipc.h"
+#include "drivers/kbd.h"
 #define DEBUG
-#include "debug.h"
+#include "drivers/debug.h"
 
 typedef struct {
   int block_nr;

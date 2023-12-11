@@ -28,7 +28,7 @@ uint8_t inited = 0;
 PIO fpga_pio = pio0;
 unsigned fpga_sm = 0;
 
-int fpga_init() {
+int fpga_initialise() {
   if (inited) return 0;
   
   gpio_init(GPIO_FPGA_M1M2);

@@ -369,7 +369,7 @@ int main()
         printf("fpga_program returns %d\n", fpga_configure(&fbrt, test_fpga_get_next_block, 0));
         break;
       case 'f':
-        printf("fpga_init(); returns %d\n", fpga_init());
+        printf("fpga_initialise(); returns %d\n", fpga_initialise());
         break;
       case 'F':
         printf("fpga_reset(); returns %d\n", fpga_reset());

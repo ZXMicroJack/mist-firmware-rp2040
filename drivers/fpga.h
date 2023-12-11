@@ -1,7 +1,7 @@
 #ifndef _FPGA_H
 #define _FPGA_H
 
-int fpga_init();
+int fpga_initialise();
 int fpga_claim(uint8_t claim);
 int fpga_reset();
 int fpga_configure(void *user_data, uint8_t (*next_block)(void *, uint8_t *), uint32_t assumelength);

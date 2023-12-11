@@ -1,22 +1,3 @@
- /*
-Copyright 2008, 2009 Jakub Bednarski
-
-This file is part of Minimig
-
-Minimig is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 3 of the License, or
-(at your option) any later version.
-
-Minimig is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
-
 #include <ctype.h>
 #include <stdio.h>
 #include "attrs.h"
@@ -443,29 +424,4 @@ char GetRTC(unsigned char *d) {
 // TODO MJ implement RTC
 char SetRTC(unsigned char *d) {
   return 0;
-}
-
-// TODO MJ is UnlockFlash needed - we have better method of upgrading
-void RAMFUNC UnlockFlash() {
-#if 0
-	*AT91C_MC_FMR = 48 << 16 | FWS << 8; // MCLK cycles in 1us
-  for (int i = 0; i < 16; i++)
-    if (*AT91C_MC_FSR & 1 << 16 + i)
-    { // page is locked
-      while (!(*AT91C_MC_FSR & AT91C_MC_FRDY));  // wait for ready
-      *AT91C_MC_FCR = 0x5A << 24 | i << 6 + 8 | AT91C_MC_FCMD_UNLOCK; // unlock page
-      while (!(*AT91C_MC_FSR & AT91C_MC_FRDY));  // wait for ready
-    }
-
-  *AT91C_MC_FMR = 72 << 16 | FWS << 8; // MCLK cycles in 1.5us
-#endif
-}
-
-// TODO MJ is WriteFlash needed - we have better method of upgrading
-void RAMFUNC WriteFlash(int page) {
-#if 0
-      	while (!(*AT91C_MC_FSR & AT91C_MC_FRDY));  // wait for ready
-  *AT91C_MC_FCR = 0x5A << 24 | page << 8 | AT91C_MC_FCMD_START_PROG; // key: 0x5A
-  while (!(*AT91C_MC_FSR & AT91C_MC_FRDY));  // wait for ready
-#endif
 }

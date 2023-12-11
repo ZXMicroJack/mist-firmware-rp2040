@@ -81,51 +81,6 @@ void hid_set_kbd_led(unsigned char led, bool on) {
 }
 void SPIN() {}
 
-
-
-uint8_t pl2303_init(struct usb_device_entry *, struct usb_device_descriptor *) { return 0; }
-uint8_t pl2303_release(struct usb_device_entry *) { return 0; }
-uint8_t pl2303_poll(struct usb_device_entry *) { return 0; }
-
-const usb_device_class_config_t usb_pl2303_class = {
-  pl2303_init, pl2303_release, pl2303_poll };
-
-const usb_device_class_config_t usb_hub_class = {
-  pl2303_init, pl2303_release, pl2303_poll };
-
-
-const usb_device_class_config_t usb_hid_class = {
-  pl2303_init, pl2303_release, pl2303_poll };
-const usb_device_class_config_t usb_xbox_class = {
-  pl2303_init, pl2303_release, pl2303_poll };
-const usb_device_class_config_t usb_asix_class = {
-  pl2303_init, pl2303_release, pl2303_poll };
-const usb_device_class_config_t usb_usbrtc_class = {
-  pl2303_init, pl2303_release, pl2303_poll };
-
-/* Control transfer. Sets address, endpoint, fills control packet */
-/* with necessary data, dispatches control packet, and initiates */
-/* bulk IN transfer, depending on request. Actual requests are defined */
-/* as inlines                   */
-/* return codes:                */
-/* 00       =   success         */
-/* 01-0f    =   non-zero HRSLT  */
-
-uint8_t usb_ctrl_req(usb_device_t *dev, uint8_t bmReqType,
-                    uint8_t bRequest, uint8_t wValLo, uint8_t wValHi,
-                    uint16_t wInd, uint16_t nbytes, uint8_t* dataptr) {
-  return 0;
-}
-
-/* IN transfer to arbitrary endpoint. Assumes PERADDR is set. Handles multiple packets */
-/* if necessary. Transfers 'nbytes' bytes. Keep sending INs and writes data to memory area */
-/* pointed by 'data' */
-/* rcode 0 if no errors. rcode 01-0f is relayed from dispatchPkt(). Rcode f0 means RCVDAVIRQ error, */
-/* fe USB xfer timeout */
-uint8_t usb_in_transfer( usb_device_t *dev, ep_t *ep, uint16_t *nbytesptr, uint8_t* data) {
-  return 0;
-}
-
 void usb_poll() {
 }
 
@@ -169,5 +124,10 @@ unsigned char CheckFirmware(char *name) {
   // ERROR_NONE
   // ERROR_FILE_NOT_FOUND
   // ERROR_INVALID_DATA
+  return 0;
+}
+
+unsigned char ConfigureFpga(const char*) {
+  // returns 1 if success / 0 on fail
   return 0;
 }

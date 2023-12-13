@@ -19,7 +19,7 @@
 #include "sdcard.h"
 
 #include "pins.h"
-#define DEBUG
+// #define DEBUG
 #include "debug.h"
 
 static int is_sdhc = 0;

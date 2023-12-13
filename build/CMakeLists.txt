@@ -11,6 +11,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DIPC_SLAVE -DIPC_MASTER -DPICO_XOSC_STARTUP_DELAY_MULTIPLIER=64")
 
 set(PICO_EXAMPLES_PATH ${PROJECT_SOURCE_DIR})
+set(CMAKE_BUILD_TYPE "Debug")
 
 # Initialize the SDK
 pico_sdk_init()
@@ -24,7 +25,7 @@ include_directories(. ../mist-firmware ../mist-firmware/usb ..)
 add_library(mistfirmware STATIC
   ../mist-firmware/arc_file.c
   ../mist-firmware/archie.c
-  ../mist-firmware/boot.c
+ ../mist-firmware/boot.c
   ../mist-firmware/cdc_control.c
   ../mist-firmware/config.c
   ../mist-firmware/cue_parser.c
@@ -61,11 +62,11 @@ add_library(mistfirmware STATIC
 #target_link_libraries(mistfirmware pico_stdlib hardware_spi hardware_flash pico_audio_i2s pico_multicore pico_stdlib)
 target_compile_options(mistfirmware PUBLIC
   "-DVDATE=\"\""
-  "-Dspi_init=mister_spi_init"
+  #"-Dspi_init=mister_spi_init"
 )
 
-# driver layer
-add_library(drivers STATIC
+# fpga program
+add_executable(mist
   ../drivers/fpga.c
   ../drivers/pio_spi.c
   ../drivers/ps2.c
@@ -76,17 +77,6 @@ add_library(drivers STATIC
   ../drivers/debug.c
   ../drivers/fifo.c
   ../drivers/kbd.c
-)
-pico_generate_pio_header(drivers ../drivers/fpga.pio)
-pico_generate_pio_header(drivers ../drivers/spi.pio)
-target_compile_options(drivers PUBLIC
-  "-DVDATE=\"\""
-  "-Dhexdump=driver_hexdump"
-)
-target_link_libraries(drivers pico_stdlib hardware_spi hardware_pio hardware_flash hardware_i2c)
-
-# fpga program
-add_executable(mist
   glue.c
   spi.c
   usbdev.c
@@ -96,13 +86,19 @@ add_executable(mist
   mmc.c
   )
 
-target_link_libraries(mist pico_stdlib mistfirmware drivers)
+target_link_libraries(mist pico_stdlib mistfirmware hardware_spi hardware_pio hardware_flash hardware_i2c)
 add_compile_options(-O2)
+pico_generate_pio_header(mist ../drivers/fpga.pio)
+pico_generate_pio_header(mist ../drivers/spi.pio)
 pico_enable_stdio_usb(mist 1)
 pico_enable_stdio_uart(mist 0)
 pico_add_extra_outputs(mist)
 example_auto_set_url(mist)
-#pico_set_binary_type(mist no_flash)
+pico_set_binary_type(mist no_flash)
+target_compile_options(mist PUBLIC
+  "-DVDATE=\"\""
+  "-Dhexdump=driver_hexdump"
+)
 
 
 #target_compile_options(mist PUBLIC

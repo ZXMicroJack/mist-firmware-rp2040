@@ -8,7 +8,7 @@
 #include "attrs.h"
 
 /* main init functions */
-void spi_init(void);
+void mist_spi_init(void);
 void spi_slow();
 void spi_fast();
 void spi_fast_mmc();
@@ -65,16 +65,7 @@ void spi_uio_cmd64(unsigned char cmd, unsigned long long parm);
 void spi_max_start();
 void spi_max_end();
 
-static inline unsigned char SPI(unsigned char outByte) {
-#if 0
-      	while (!(*AT91C_SPI_SR & AT91C_SPI_TDRE));
-  *AT91C_SPI_TDR = outByte;
-  while (!(*AT91C_SPI_SR & AT91C_SPI_RDRF));
-  return((unsigned char)*AT91C_SPI_RDR);
-#else
-  return 0xff;
-#endif
-}
+unsigned char SPI(unsigned char outByte);
 
 #define SPI_SDC_CLK_VALUE 2     // 24 MHz
 #define SPI_MMC_CLK_VALUE 3     // 16 MHz

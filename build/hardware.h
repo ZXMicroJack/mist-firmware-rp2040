@@ -7,7 +7,10 @@
 #define DISKLED_ON    {}
 #define DISKLED_OFF   {}
 
-#define STORE_VARS_POS      0x0020FF00
+#define STORE_VARS_SIZE   0x20
+#define STORE_VARS_POS    (0x20000000 + (256*1024) - STORE_VARS_SIZE)
+
+// #define STORE_VARS_POS      0x0020FF00
 #define USB_LOAD_VAR         *(int*)(STORE_VARS_POS+4)
 #define USB_LOAD_VALUE       12345678
 

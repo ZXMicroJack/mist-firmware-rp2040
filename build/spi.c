@@ -1,7 +1,10 @@
+#include <stdio.h>
+#include <string.h>
+
 #include "spi.h"
 #include "hardware.h"
 
-#undef spi_init
+// #undef spi_init
 #include "hardware/spi.h"
 #include "pico/bootrom.h"
 #include "pico/stdlib.h"
@@ -9,161 +12,122 @@
 
 // TODO MJ interface to FPGA via SPI and all the nCS for different bits.
 
-#define MIST_CSN    17
-#define MIST_SS2    20
-#define MIST_SS3    21
-#define MIST_SS4    24
+#define MIST_CSN    17 // user io
+#define MIST_SS2    20 // data io
+#define MIST_SS3    21 // osd
+#define MIST_SS4    24 // dmode?
+
+#define SPI_SLOW_BAUD   500000
+#define SPI_SDC_BAUD   24000000
+#define SPI_MMC_BAUD   16000000
+
+static unsigned char spi_speed;
+
+// void test_UserIOSPI(uint8_t datain) {
+//   uint8_t data[6];
+// // int spi_write_read_blocking (spi_inst_t *spi, const uint8_t *src, uint8_t *dst, size_t len)
+// //   uint8_t cmd[] = {0x1a, 0x00, 0x00, 0x00, 0xff, 0xff};
+//   uint8_t cmd[] = {0x02, 0xff};
+//
+//   gpio_put(MIST_CSN, 0);
+//
+//   cmd[1] = datain;
+//
+//   memset(data, 0xff, sizeof data);
+//   spi_write_read_blocking(spi0, cmd, data, sizeof cmd);
+//   printf("Returns: ");
+//   for (int i=0; i<sizeof data; i++) {
+//     printf("%02X ", data[i]);
+//   }
+//   printf("\n");
+//   gpio_put(MIST_CSN, 1);
+// }
 
 
-void test_UserIOSPI(uint8_t datain) {
-  uint8_t data[6];
-// int spi_write_read_blocking (spi_inst_t *spi, const uint8_t *src, uint8_t *dst, size_t len)
-//   uint8_t cmd[] = {0x1a, 0x00, 0x00, 0x00, 0xff, 0xff};
-  uint8_t cmd[] = {0x02, 0xff};
 
-  gpio_put(MIST_CSN, 0);
+// void test_UserIOKill() {
+//   spi_deinit(spi0);
+// }
 
-  cmd[1] = datain;
+#define spi spi0
 
-  memset(data, 0xff, sizeof data);
-  spi_write_read_blocking(spi0, cmd, data, sizeof cmd);
-  printf("Returns: ");
-  for (int i=0; i<sizeof data; i++) {
-    printf("%02X ", data[i]);
+void mist_spi_init() {
+  uint8_t csn_lut[] = {MIST_CSN, MIST_SS2, MIST_SS3, MIST_SS4};
+
+  for (int i=0; i<sizeof csn_lut; i++) {
+    gpio_init(csn_lut[i]);
+    gpio_put(csn_lut[i], 1);
+    gpio_set_dir(csn_lut[i], GPIO_OUT);
   }
-  printf("\n");
-  gpio_put(MIST_CSN, 1);
-}
 
-
-
-void test_UserIOInit() {
-  gpio_init(MIST_CSN);
-  gpio_put(MIST_CSN, 1);
-  gpio_set_dir(MIST_CSN, GPIO_OUT);
   uint8_t spi_pins[] = {16, 18, 19};
 
   for (int i=0; i<sizeof spi_pins; i++) {
     gpio_init(spi_pins[i]);
     gpio_set_function(spi_pins[i], GPIO_FUNC_SPI);
   }
-  spi_init(spi0, 500000); // 500khz
   spi_set_format(spi0, 8, SPI_CPOL_1, SPI_CPHA_1, SPI_MSB_FIRST);
-}
-
-void test_UserIOKill() {
-  spi_deinit(spi0);
-}
-
-
-void mist_spi_init() {
-#if 0
-   // Enable the peripheral clock in the PMC
-    AT91C_BASE_PMC->PMC_PCER = 1 << AT91C_ID_SPI;
-
-    // Enable SPI interface
-    *AT91C_SPI_CR = AT91C_SPI_SPIEN;
-
-    // SPI Mode Register
-    *AT91C_SPI_MR = AT91C_SPI_MSTR | AT91C_SPI_MODFDIS  | (0x01 << 16);
-
-    // SPI CS register
-    AT91C_SPI_CSR[0] = AT91C_SPI_CPOL | AT91C_SPI_CSAAT | (2 << 8) | (0x04 << 16) | (0x00 << 24); // USB
-    AT91C_SPI_CSR[1] = AT91C_SPI_CPOL | AT91C_SPI_CSAAT | (48 << 8) | (0x04 << 16) | (0x00 << 24); // MMC/CONF_DATA
-    AT91C_SPI_CSR[2] = AT91C_SPI_CPOL | AT91C_SPI_CSAAT | (2 << 8) | (0x04 << 16) | (0x00 << 24); // Data IO
-    AT91C_SPI_CSR[3] = AT91C_SPI_CPOL | AT91C_SPI_CSAAT | (2 << 8) | (0x04 << 16) | (0x00 << 24); // OSD
-
-    // Configure pins for SPI use
-    AT91C_BASE_PIOA->PIO_PDR = AT91C_PA14_SPCK | AT91C_PA13_MOSI | AT91C_PA12_MISO | AT91C_PA11_NPCS0 | AT91C_PA10_NPCS2 | AT91C_PA3_NPCS3;
-    AT91C_BASE_PIOA->PIO_BSR = AT91C_PA9_NPCS1 | AT91C_PA10_NPCS2 | AT91C_PA3_NPCS3;
-
-    // PA9 (CONF_DATA0) and PA31 (MMC) are both NPCS1. Give them to the SPI only when transfer is required.
-    // Set them to high level by default.
-    *AT91C_PIOA_SODR = FPGA0 | MMC_SEL;
-#endif
+  spi_init(spi0, SPI_SLOW_BAUD); // 500khz
+  spi_speed = SPI_SLOW_CLK_VALUE;
 }
 
 RAMFUNC void spi_wait4xfer_end() {
 }
 
-void EnableFpga()
-{
+
+void EnableFpga() {
+  gpio_put(MIST_SS2, 0);
 }
 
-void DisableFpga()
-{
-    spi_wait4xfer_end();
+void DisableFpga() {
+  spi_wait4xfer_end();
+  gpio_put(MIST_SS2, 1);
 }
 
-void EnableOsd()
-{
+void EnableOsd() {
+  gpio_put(MIST_SS3, 0);
 }
 
-void DisableOsd()
-{
-    spi_wait4xfer_end();
+void DisableOsd() {
+  spi_wait4xfer_end();
+  gpio_put(MIST_SS3, 1);
 }
 
 void EnableIO() {
+  gpio_put(MIST_CSN, 0);
 }
 
 void DisableIO() {
-    spi_wait4xfer_end();
+  spi_wait4xfer_end();
+  gpio_put(MIST_CSN, 1);
 }
 
 void EnableDMode() {
+  gpio_put(MIST_SS4, 0);
 }
 
 void DisableDMode() {
+  spi_wait4xfer_end();
+  gpio_put(MIST_SS4, 1);
 }
 
-RAMFUNC void EnableCard() {
-}
-
-RAMFUNC void DisableCard() {
-}
-
-void spi_max_start() {
-}
-
-void spi_max_end() {
-    spi_wait4xfer_end();
-}
+// void spi_max_start() {
+// }
+//
+// void spi_max_end() {
+//     spi_wait4xfer_end();
+// }
 
 void spi_block(unsigned short num) {
-#if 0
-      	unsigned short i;
-  unsigned long t;
-
-  for (i = 0; i < num; i++) {
-    while (!(*AT91C_SPI_SR & AT91C_SPI_TDRE)); // wait until transmiter buffer is empty
-    *AT91C_SPI_TDR = 0xFF; // write dummy spi data
+  uint8_t out, in;
+  out = 0xff;
+  while (num--) {
+    spi_write_read_blocking (spi, &out, &in, 1);
   }
-  while (!(*AT91C_SPI_SR & AT91C_SPI_TXEMPTY)); // wait for transfer end
-  t = *AT91C_SPI_RDR; // dummy read to empty receiver buffer for new data
-#endif
 }
 
 RAMFUNC void spi_read(char *addr, uint16_t len) {
-#if 0
-      	*AT91C_PIOA_SODR = AT91C_PA13_MOSI; // set GPIO output register
-  *AT91C_PIOA_OER = AT91C_PA13_MOSI;  // GPIO pin as output
-  *AT91C_PIOA_PER = AT91C_PA13_MOSI;  // enable GPIO function
-  
-  // use SPI PDC (DMA transfer)
-  *AT91C_SPI_TPR = (unsigned long)addr;
-  *AT91C_SPI_TCR = len;
-  *AT91C_SPI_TNCR = 0;
-  *AT91C_SPI_RPR = (unsigned long)addr;
-  *AT91C_SPI_RCR = len;
-  *AT91C_SPI_RNCR = 0;
-  *AT91C_SPI_PTCR = AT91C_PDC_RXTEN | AT91C_PDC_TXTEN; // start DMA transfer
-  // wait for tranfer end
-  while ((*AT91C_SPI_SR & (AT91C_SPI_ENDTX | AT91C_SPI_ENDRX)) != (AT91C_SPI_ENDTX | AT91C_SPI_ENDRX));
-  *AT91C_SPI_PTCR = AT91C_PDC_RXTDIS | AT91C_PDC_TXTDIS; // disable transmitter and receiver
-
-  *AT91C_PIOA_PDR = AT91C_PA13_MOSI; // disable GPIO function
-#endif
+  spi_read_blocking (spi, 0x00, addr, len);
 }
 
 RAMFUNC void spi_block_read(char *addr) {
@@ -171,46 +135,32 @@ RAMFUNC void spi_block_read(char *addr) {
 }
 
 void spi_write(const char *addr, uint16_t len) {
-#if 0
-      	// use SPI PDC (DMA transfer)
-  *AT91C_SPI_TPR = (unsigned long)addr;
-  *AT91C_SPI_TCR = len;
-  *AT91C_SPI_TNCR = 0;
-  *AT91C_SPI_RCR = 0;
-  *AT91C_SPI_PTCR = AT91C_PDC_TXTEN; // start DMA transfer
-  // wait for tranfer end
-  while (!(*AT91C_SPI_SR & AT91C_SPI_ENDTX));
-  *AT91C_SPI_PTCR = AT91C_PDC_TXTDIS; // disable transmitter
-#endif
+  spi_write_blocking (spi, addr, len);
+}
+
+unsigned char SPI(unsigned char outByte) {
+  uint8_t dst;
+  spi_write_read_blocking (spi, &outByte, &dst, 1);
+  return dst;
 }
 
 void spi_block_write(const char *addr) {
   spi_write(addr, 512);
 }
 
-static unsigned char spi_speed;
-
 void spi_slow() {
-#if 0
-      	AT91C_SPI_CSR[1] = AT91C_SPI_CPOL | AT91C_SPI_CSAAT | (4 << 16) | (SPI_SLOW_CLK_VALUE << 8) | (2 << 24); // init clock 100-400 kHz
+  spi_set_baudrate (spi, SPI_SLOW_BAUD);
   spi_speed = SPI_SLOW_CLK_VALUE;
-#endif
 }
 
 void spi_fast() {
-#if 0
-      	// set appropriate SPI speed for SD/SDHC card (max 25 Mhz)
-  AT91C_SPI_CSR[1] = AT91C_SPI_CPOL | AT91C_SPI_CSAAT | (4 << 16) | (SPI_SDC_CLK_VALUE << 8); // 24 MHz SPI clock
+  spi_set_baudrate (spi, SPI_SDC_BAUD);
   spi_speed = SPI_SDC_CLK_VALUE;
-#endif
 }
 
 void spi_fast_mmc() {
-#if 0
-      	// set appropriate SPI speed for MMC card (max 20Mhz)
-  AT91C_SPI_CSR[1] = AT91C_SPI_CPOL | AT91C_SPI_CSAAT | (4 << 16) | (SPI_MMC_CLK_VALUE << 8); // 16 MHz SPI clock
+  spi_set_baudrate (spi, SPI_MMC_BAUD);
   spi_speed = SPI_MMC_CLK_VALUE;
-#endif
 }
 
 unsigned char spi_get_speed() {

@@ -36,8 +36,6 @@ void PollADC() {
 void InitADC() {
 }
 
-int GetRTTC() { return 0; }
-
 void arch_irq_disable() {}
 
 static uint8_t mac[] = {1,2,3,4,5,6,7,8};
@@ -131,5 +129,5 @@ unsigned char CheckFirmware(char *name) {
 
 unsigned char ConfigureFpga(const char *bitfile) {
   // returns 1 if success / 0 on fail
-  return 0;
+  return 1;
 }

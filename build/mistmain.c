@@ -73,6 +73,7 @@ char s[FF_LFN_BUF + 1];
 
 unsigned long storage_size = 0;
 
+#if 0
 void FatalError(unsigned long error) {
   unsigned long i;
   
@@ -89,6 +90,7 @@ void FatalError(unsigned long error) {
     MCUReset();
   }
 }
+#endif
 
 void HandleFpga(void) {
   unsigned char  c1, c2;
@@ -137,7 +139,7 @@ int mist_init() {
     iprintf("\rARM Controller by Jakub Bednarski\r\r");
     iprintf("Version %s\r\r", version+5);
 
-    spi_init();
+    mist_spi_init();
 
     if(MMC_Init()) mmc_ok = 1;
     else           spi_fast();
@@ -186,12 +188,16 @@ int mist_init() {
     font_load();
 
     user_io_init();
+    printf("[%d]\n", __LINE__);
 
     // tos config also contains cdc redirect settings used by minimig
-    tos_config_load(-1);
+    //TODO MJ tos_config_load hangs
+//     tos_config_load(-1);
+    printf("[%d]\n", __LINE__);
 
     char mod = -1;
 
+    printf("[%d]\n", __LINE__);
     if((USB_LOAD_VAR != USB_LOAD_VALUE) && !user_io_dip_switch1()) {
         mod = arc_open("/CORE.ARC");
     } else {
@@ -202,6 +208,7 @@ int mist_init() {
             mod = arc_open(s);
         }
     }
+    printf("[%d]\n", __LINE__);
 
     if(mod < 0 || !strlen(arc_get_rbfname())) {
         fpga_init(NULL); // error opening default ARC, try with default RBF
@@ -212,7 +219,9 @@ int mist_init() {
         fpga_init(s);
     }
 
+    printf("[%d]\n", __LINE__);
     usb_dev_open();
+    printf("[%d]\n", __LINE__);
     return 0;
 }
 
@@ -222,6 +231,7 @@ int mist_loop() {
     user_io_poll();
     usb_poll();
 
+    printf("user_io_core_type = %02X\n", user_io_core_type());
     // MIST (atari) core supports the same UI as Minimig
     if((user_io_core_type() == CORE_TYPE_MIST) || (user_io_core_type() == CORE_TYPE_MIST2)) {
       if(!fat_medium_present())

@@ -281,25 +281,21 @@ void Timer_Init(void) {
 #endif
 }
 
+int GetRTTC() {
+  return time_us_64() / 1000;
+}
+
 //TODO MJ 1 ms precision timer to 4s
 // 12 bits accuracy at 1ms = 4096 ms 
 unsigned long GetTimer(unsigned long offset)
 {
-#if 0
-    	unsigned long systimer = (*AT91C_PITC_PIIR & AT91C_PITC_PICNT);
-    systimer += offset << 20;
-#endif
-    return (systimer); // valid bits [31:20]
+  return (time_us_64() / 1000) + offset;
 }
 
 //TODO MJ has time expired? - in ms
 unsigned long CheckTimer(unsigned long time)
 {
-#if 0
-    	unsigned long systimer = (*AT91C_PITC_PIIR & AT91C_PITC_PICNT);
-    time -= systimer;
-#endif
-    return(time > (1UL << 31));
+  return (time_us_64() / 1000) >= time;
 }
 
 //TODO wait for
@@ -312,13 +308,13 @@ void WaitTimer(unsigned long time)
 
 //TODO MJ assume MMC is inserted
 char mmc_inserted() {
-  return 0;
+  return 1;
 }
 
 #if 0 // TODO MJ only used for USB storage
 //TODO MJ assume MMC is not write protected - possibly assume it is for now.
 char mmc_write_protected() {
-  return 0; //  return (*AT91C_PIOA_PDSR & SD_WP);
+  return 1; //  return (*AT91C_PIOA_PDSR & SD_WP);
 }
 
 #endif
@@ -395,12 +391,13 @@ void PollADC() {
 
 // TODO MJ There are no switches or buttons on NeptUno
 // user, menu, DIP1, DIP2
+int menu = 0;
 unsigned char Buttons() {
-  return 0;
+  return menu ? 0x04 : 0;
 }
 
 unsigned char MenuButton() {
-  return 0;
+  return menu ? 0x05 : 0;
 }
 
 unsigned char UserButton() {

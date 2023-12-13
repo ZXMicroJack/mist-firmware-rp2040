@@ -26,6 +26,26 @@
 
 #include "mistmain.h"
 
+
+void FatalError(unsigned long error) {
+  unsigned long i;
+
+  iprintf("Fatal error: %lu\r", error);
+  sleep_ms(2000);
+
+//   while (1) {
+//     for (i = 0; i < error; i++) {
+//       DISKLED_ON;
+//       WaitTimer(250);
+//       DISKLED_OFF;
+//       WaitTimer(250);
+//     }
+//     WaitTimer(1000);
+//     MCUReset();
+//   }
+  reset_usb_boot(0, 0);
+}
+
 #if 0
 typedef struct {
   int block_nr;
@@ -329,6 +349,10 @@ int main() {
 //     int c = getchar();
 //     if (forceexit) break;
     if (c == 'q') break;
+    if (c == 'm') {
+      extern int menu;
+      menu = !menu;
+    }
     mist_loop();
   }
 

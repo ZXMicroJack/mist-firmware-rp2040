@@ -276,13 +276,13 @@ void test_UserIOKill() {
   spi_deinit(spi0);
 }
 
-#define TEST_PS2
+// #define TEST_PS2
 // #define TEST_IPC
-// #define TEST_SDCARD_SPI
-// #define TEST_FPGA
+#define TEST_SDCARD_SPI
+#define TEST_FPGA
 // #define TEST_MATRIX
 // #define TEST_FLASH
-#define TEST_USERIO
+// #define TEST_USERIO
 
 // KEY ACTION ALLOCATION
 // aAgGHjJlMNoOqQrRTuUVwWxXyYzZ
@@ -304,6 +304,8 @@ int main()
   test_block_read_t fbrt;
   sleep_ms(2000); // usb settle delay
   pio_spi_inst_t *spi = NULL;
+  uint8_t buf[16];
+  int i;
 
   // set up error led
   gpio_init(PICO_DEFAULT_LED_PIN);
@@ -360,6 +362,19 @@ int main()
       case 'i': printf("sd_init_card(spi) returns %d\n", sd_init_card(spi)); break;
       case 's': printf("init sdhw\n"); spi = sd_hw_init(); break;
       case 'S': printf("kill sdhw\n"); sd_hw_kill(spi); break;
+      case 'o':
+        memset(buf, 0, sizeof buf);
+        printf("cmd9 returns %02X\n", sd_cmd9(spi, buf)); // CSD
+        for (i=0; i<16; i++) printf("%02X ", buf[i]);
+        printf("\n");
+        break;
+
+      case 'O':
+        memset(buf, 0, sizeof buf);
+        printf("cmd10 returns %02X\n", sd_cmd10(spi, buf)); // CSD
+        for (i=0; i<16; i++) printf("%02X ", buf[i]);
+        printf("\n");
+        break;
 #endif
 
       // FPGA PROGRAM
@@ -385,7 +400,7 @@ int main()
       // HELP
       case '?':
         printf("\n");
-        printf("SDCARD: r(v)0 w(b)1 w(n)2 w(m)3 w(,)4 (i)nit (s)etup (S)hutdown\n");
+        printf("SDCARD: r(v)0 w(b)1 w(n)2 w(m)3 w(,)4 (i)nit (s)etup (S)hutdown \n");
         printf("FPGA: (p)rogram (f)pga init (F)pga reset (C)laim dis(c)laim\n");
         printf("PS2: (k)ps2init sendc(h)ar (e)n ps0 (E)n ps1 (d)isps0 (D)isps1\n");
         printf("IPC: (-)initslave (=)initmaster ([)cmd1 (])cmd2 (')slavetick (#)debug\n");

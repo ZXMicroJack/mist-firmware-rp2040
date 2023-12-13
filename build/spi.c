@@ -1,7 +1,60 @@
 #include "spi.h"
 #include "hardware.h"
 
+#undef spi_init
+#include "hardware/spi.h"
+#include "pico/bootrom.h"
+#include "pico/stdlib.h"
+#include "hardware/pio.h"
+
 // TODO MJ interface to FPGA via SPI and all the nCS for different bits.
+
+#define MIST_CSN    17
+#define MIST_SS2    20
+#define MIST_SS3    21
+#define MIST_SS4    24
+
+
+void test_UserIOSPI(uint8_t datain) {
+  uint8_t data[6];
+// int spi_write_read_blocking (spi_inst_t *spi, const uint8_t *src, uint8_t *dst, size_t len)
+//   uint8_t cmd[] = {0x1a, 0x00, 0x00, 0x00, 0xff, 0xff};
+  uint8_t cmd[] = {0x02, 0xff};
+
+  gpio_put(MIST_CSN, 0);
+
+  cmd[1] = datain;
+
+  memset(data, 0xff, sizeof data);
+  spi_write_read_blocking(spi0, cmd, data, sizeof cmd);
+  printf("Returns: ");
+  for (int i=0; i<sizeof data; i++) {
+    printf("%02X ", data[i]);
+  }
+  printf("\n");
+  gpio_put(MIST_CSN, 1);
+}
+
+
+
+void test_UserIOInit() {
+  gpio_init(MIST_CSN);
+  gpio_put(MIST_CSN, 1);
+  gpio_set_dir(MIST_CSN, GPIO_OUT);
+  uint8_t spi_pins[] = {16, 18, 19};
+
+  for (int i=0; i<sizeof spi_pins; i++) {
+    gpio_init(spi_pins[i]);
+    gpio_set_function(spi_pins[i], GPIO_FUNC_SPI);
+  }
+  spi_init(spi0, 500000); // 500khz
+  spi_set_format(spi0, 8, SPI_CPOL_1, SPI_CPHA_1, SPI_MSB_FIRST);
+}
+
+void test_UserIOKill() {
+  spi_deinit(spi0);
+}
+
 
 void mist_spi_init() {
 #if 0

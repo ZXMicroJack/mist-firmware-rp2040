@@ -24,6 +24,9 @@
 #define DEBUG
 #include "drivers/debug.h"
 
+#include "mistmain.h"
+
+#if 0
 typedef struct {
   int block_nr;
 } test_block_read_t;
@@ -131,20 +134,6 @@ void all_tests(pio_spi_inst_t *spi) {
 // 0x46 - w3
 
 const uint8_t kbdlut[] = {0x45, 0x16, 0x1e, 0x26, 0x25, 0x2e, 0x36, 0x3d, 0x3e, 0x46};
-
-#if PICO_NO_FLASH
-static void enable_xip(void) {
-  rom_connect_internal_flash_fn connect_internal_flash = (rom_connect_internal_flash_fn)rom_func_lookup_inline(ROM_FUNC_CONNECT_INTERNAL_FLASH);
-    rom_flash_exit_xip_fn flash_exit_xip = (rom_flash_exit_xip_fn)rom_func_lookup_inline(ROM_FUNC_FLASH_EXIT_XIP);
-    rom_flash_flush_cache_fn flash_flush_cache = (rom_flash_flush_cache_fn)rom_func_lookup_inline(ROM_FUNC_FLASH_FLUSH_CACHE);
-    rom_flash_enter_cmd_xip_fn flash_enter_cmd_xip = (rom_flash_enter_cmd_xip_fn)rom_func_lookup_inline(ROM_FUNC_FLASH_ENTER_CMD_XIP);
-
-    connect_internal_flash();    // Configure pins
-    flash_exit_xip();            // Init SSI, prepare flash for command mode
-    flash_flush_cache();         // Flush & enable XIP cache
-    flash_enter_cmd_xip();       // Configure SSI with read cmd
-}
-#endif
 
 uint8_t flash_data[4096];
 uint16_t flash_crc;
@@ -275,6 +264,7 @@ void test_UserIOInit() {
 void test_UserIOKill() {
   spi_deinit(spi0);
 }
+#endif
 
 #define TEST_PS2
 // #define TEST_IPC
@@ -297,6 +287,55 @@ void test_UserIOKill() {
 // SDCARD   vbnm,isS
 // USERIO   uUV
 
+#if PICO_NO_FLASH
+static void enable_xip(void) {
+  rom_connect_internal_flash_fn connect_internal_flash = (rom_connect_internal_flash_fn)rom_func_lookup_inline(ROM_FUNC_CONNECT_INTERNAL_FLASH);
+    rom_flash_exit_xip_fn flash_exit_xip = (rom_flash_exit_xip_fn)rom_func_lookup_inline(ROM_FUNC_FLASH_EXIT_XIP);
+    rom_flash_flush_cache_fn flash_flush_cache = (rom_flash_flush_cache_fn)rom_func_lookup_inline(ROM_FUNC_FLASH_FLUSH_CACHE);
+    rom_flash_enter_cmd_xip_fn flash_enter_cmd_xip = (rom_flash_enter_cmd_xip_fn)rom_func_lookup_inline(ROM_FUNC_FLASH_ENTER_CMD_XIP);
+
+    connect_internal_flash();    // Configure pins
+    flash_exit_xip();            // Init SSI, prepare flash for command mode
+    flash_flush_cache();         // Flush & enable XIP cache
+    flash_enter_cmd_xip();       // Configure SSI with read cmd
+}
+#endif
+
+
+int main() {
+  stdio_init_all();
+//   test_block_read_t fbrt;
+  sleep_ms(2000); // usb settle delay
+  pio_spi_inst_t *spi = NULL;
+
+  // set up error led
+  gpio_init(PICO_DEFAULT_LED_PIN);
+  gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
+
+#if PICO_NO_FLASH
+  enable_xip();
+#endif
+
+  printf("Drivertest Microjack\'23\n");
+  printf("Running test\n");
+  printf("Running test\n");
+  printf("Running test\n");
+  printf("Running test\n");
+  printf("Running test\n");
+
+  mist_init();
+  for(;;) {
+    int c = getchar_timeout_us(100000);
+//     int c = getchar();
+//     if (forceexit) break;
+    if (c == 'q') break;
+    mist_loop();
+  }
+
+  reset_usb_boot(0, 0);
+	return 0;
+}
+#if 0
 extern int forceexit;
 int main()
 {
@@ -331,8 +370,8 @@ int main()
   printf("Running test\n");
   
   for(;;) {
-//     int c = getchar_timeout_us(100000);
-    int c = getchar();
+    int c = getchar_timeout_us(100000);
+//     int c = getchar();
     if (forceexit) break;
     if (c == 'q') break;
 //     if (c == 'h') printf("Hello\n");
@@ -510,3 +549,4 @@ int main()
   reset_usb_boot(0, 0);
 	return 0;
 }
+#endif

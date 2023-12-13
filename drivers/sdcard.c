@@ -19,10 +19,15 @@
 #include "sdcard.h"
 
 #include "pins.h"
-// #define DEBUG
+#define DEBUG
 #include "debug.h"
 
 static int is_sdhc = 0;
+
+int sd_is_sdhc() {
+  return is_sdhc;
+}
+
 
 static void sd_set_highspeed(pio_spi_inst_t *spi, int on);
 
@@ -123,6 +128,42 @@ static uint8_t sd_cmd(pio_spi_inst_t *spi, uint8_t cmd[], int cmdlen, uint8_t bu
 
 #define DEFAULT_RETRIES   10
 
+
+static uint8_t sd_cxd(pio_spi_inst_t *spi, uint8_t cmd[], uint8_t buf[]) {
+  uint8_t buf1[1];
+  if (sd_cmd(spi, cmd, 6, buf1, sizeof buf1, 0x00, DEFAULT_RETRIES, 1) != 0x00) {
+    sd_select(spi, 1);
+    return 1;
+  }
+
+  int timeout = 20;
+  while (timeout--) {
+    uint8_t status = get_next_byte(spi);
+    debug(("status %02X\n", status));
+    if (status == 0xfe) {
+      break;
+    }
+  }
+
+  if (timeout <= 0) {
+    sd_select(spi, 1);
+    return 1;
+  }
+
+  get_bytes(spi, buf, 16);
+  return 0;
+}
+
+uint8_t sd_cmd9(pio_spi_inst_t *spi, uint8_t buf[]) { // csd
+  uint8_t cmd[] = {0x49, 0x00, 0x00, 0x00, 0x00, 0xaf};
+  return sd_cxd(spi, cmd, buf);
+}
+
+uint8_t sd_cmd10(pio_spi_inst_t *spi, uint8_t buf[]) {
+  uint8_t cmd[] = {0x4a, 0x00, 0x00, 0x00, 0x00, 0x1b};
+  return sd_cxd(spi, cmd, buf);
+}
+
 static uint8_t sd_cmd1(pio_spi_inst_t *spi) {
   uint8_t cmd[] = {0x50, 0x00, 0x00, 0x02, 0x00, 0xff};
   uint8_t buf[1];
@@ -178,11 +219,13 @@ static uint8_t sd_cmd59(pio_spi_inst_t *spi) {
   return sd_cmd(spi, cmd, sizeof cmd, buf, sizeof buf, 0x01, DEFAULT_RETRIES, 0);
 }
 
+#if 0
 static uint8_t sd_cmd9(pio_spi_inst_t *spi) {
   uint8_t cmd[] = {0x49, 0x00, 0x00, 0x00, 0x00, 0xff};
   uint8_t buf[8];
   return sd_cmd(spi, cmd, sizeof cmd, buf, sizeof buf, 0x01, DEFAULT_RETRIES, 0);
 }
+#endif
 
 uint8_t sd_writesector(pio_spi_inst_t *spi, uint32_t lba, uint8_t *data) {
   uint8_t cmd[] = {0xff, 0x58, 0x00, 0x00, 0x00, 0x00, 0xff};

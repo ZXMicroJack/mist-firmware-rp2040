@@ -92,19 +92,21 @@ add_executable(mist
   usbdev.c
   hardware.c
   mist.c
+  mistmain.c
+  mmc.c
   )
 
-target_link_libraries(mist pico_stdlib hardware_spi hardware_pio hardware_flash hardware_i2c mistfirmware drivers)
+target_link_libraries(mist pico_stdlib mistfirmware drivers)
 add_compile_options(-O2)
 pico_enable_stdio_usb(mist 1)
 pico_enable_stdio_uart(mist 0)
 pico_add_extra_outputs(mist)
 example_auto_set_url(mist)
-pico_set_binary_type(mist no_flash)
+#pico_set_binary_type(mist no_flash)
 
 
-target_compile_options(mist PUBLIC
-  "-DVDATE=\"\""
-  )
+#target_compile_options(mist PUBLIC
+  #"-DVDATE=\"\""
+  #)
 
 

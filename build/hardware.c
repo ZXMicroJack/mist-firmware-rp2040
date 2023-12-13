@@ -99,11 +99,13 @@ void __init_hardware(void)
 
 //TODO MJ - can XMODEM be removed?  Serial to core is fine.
 // A buffer of 256 bytes makes index handling pretty trivial
+#if 0
 volatile static unsigned char tx_buf[256];
 volatile static unsigned char tx_rptr, tx_wptr;
 
 volatile static unsigned char rx_buf[256];
 volatile static unsigned char rx_rptr, rx_wptr;
+#endif
 
 void Usart0IrqHandler(void) {
 #if 0
@@ -138,6 +140,7 @@ void Usart0IrqHandler(void) {
 
 // check usart rx buffer for data
 void USART_Poll(void) {
+#if 0
   if(Buttons() & 2)
     xmodem_poll();
 
@@ -157,6 +160,7 @@ void USART_Poll(void) {
       user_io_serial_tx(&chr, 1);
     }
   }
+#endif
 }
 
 void USART_Write(unsigned char c) {

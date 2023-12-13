@@ -40,7 +40,71 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "mmc.h"
 
+#include "drivers/pio_spi.h"
+#include "drivers/sdcard.h"
+
+static pio_spi_inst_t *spi = NULL;
+
+unsigned char MMC_Init(void) {
+  if (spi == NULL) spi = sd_hw_init();
+
+  if (sd_init_card(spi)) {
+    return CARDTYPE_NONE;
+  }
+
+  return sd_is_sdhc() ? CARDTYPE_SDHC : CARDTYPE_SD;
+
+}
+
+unsigned char MMC_Read(unsigned long lba, unsigned char *pReadBuffer) {
+  if (!sd_readsector(spi, lba, pReadBuffer)) {
+      return 1;
+  }
+  return 0;
+}
+
+unsigned char MMC_Write(unsigned long lba, const unsigned char *pWriteBuffer) {
+    return 0;
+}
+
+unsigned char MMC_ReadMultiple(unsigned long lba, unsigned char *pReadBuffer, unsigned long nBlockCount) {
+    while (nBlockCount--) {
+        if (sd_readsector(spi, lba, pReadBuffer)) {
+            return 0;
+        }
+        lba ++;
+        pReadBuffer += 512;
+    }
+    return 1;
+}
+
+unsigned char MMC_WriteMultiple(unsigned long lba, const unsigned char *pWriteBuffer, unsigned long nBlockCount) {
+}
+
+unsigned char MMC_GetCSD(unsigned char *b) {
+    return sd_cmd9(spi, b);
+}
+
+unsigned char MMC_GetCID(unsigned char *b) {
+    return sd_cmd10(spi, b);
+}
+
+// Returns the capacity in 512 byte blocks
+// unsigned long MMC_GetCapacity() {
+//   return 0;
+// }
+
+// frequently check if card has been removed
+unsigned char MMC_CheckCard() {
+  return 1; // cannot hot remove SD card on NeptUno / ZXTres
+}
+
+unsigned char MMC_IsSDHC() {
+  return sd_is_sdhc();
+}
+
 // variables
+#if 0
 static unsigned char crc;
 static unsigned long timeout;
 static unsigned char response;
@@ -75,8 +139,9 @@ static RAMFUNC char check_card() {
 }
 
 // init memory card
-unsigned char MMC_Init(void)
-{
+unsigned char MMC_Init(void) {
+
+#if 0
     unsigned char n;
     unsigned char ocr[4];
 
@@ -209,9 +274,11 @@ unsigned char MMC_Init(void)
     DisableCard();
     iprintf("No memory card detected!\r");
     return(CARDTYPE_NONE); 
+#endif
 }
 
 static unsigned char MMC_GetCXD(unsigned char cmd, unsigned char *ptr) {
+#if 0
   int i;
   EnableCard();
   
@@ -237,7 +304,8 @@ static unsigned char MMC_GetCXD(unsigned char cmd, unsigned char *ptr) {
     ptr[i]=SPI(0xFF);
   
   DisableCard();
-  
+#endif
+
   return(1);
 }
 
@@ -251,6 +319,7 @@ unsigned char MMC_GetCID(unsigned char *cid) {
   return MMC_GetCXD(CMD10, cid);
 }
 
+#endif
 // MMC get capacity
 unsigned long MMC_GetCapacity()
 {
@@ -283,6 +352,7 @@ unsigned long MMC_GetCapacity()
 	}
 }
 
+#if 0
 RAMFUNC static unsigned char MMC_WaitBusy(unsigned long timeout)
 {
     unsigned long timer = GetTimer(timeout);
@@ -548,6 +618,7 @@ static RAMFUNC unsigned char MMC_Command(unsigned char cmd, unsigned long arg)
 
 
 // stop multi block data transmission
+#if 0
 static unsigned char MMC_CMD12(void)
 {
     SPI(CMD12); // command
@@ -579,7 +650,7 @@ static unsigned char MMC_CMD12(void)
 */
     return response;
 }
-
+#endif
 
 // MMC CRC calc
 static RAMFUNC void MMC_CRC(unsigned char c)
@@ -600,3 +671,5 @@ static RAMFUNC void MMC_CRC(unsigned char c)
 unsigned char MMC_IsSDHC(void) {
   return(CardType == CARDTYPE_SDHC);
 }
+#endif
+

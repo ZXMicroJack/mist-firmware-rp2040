@@ -127,6 +127,7 @@ unsigned char CheckFirmware(char *name) {
   return 0;
 }
 
+//TODO MJ Insert code here for Altera programming.
 unsigned char ConfigureFpga(const char *bitfile) {
   // returns 1 if success / 0 on fail
   return 1;

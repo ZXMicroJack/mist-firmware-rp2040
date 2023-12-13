@@ -107,6 +107,7 @@ volatile static unsigned char rx_buf[256];
 volatile static unsigned char rx_rptr, rx_wptr;
 #endif
 
+//TODO MJ - re-integrate XMODEM and UART with core.
 void Usart0IrqHandler(void) {
 #if 0
       	// Read USART status
@@ -419,6 +420,13 @@ char GetDB9(char index, unsigned char *joy_map) {
 char GetRTC(unsigned char *d) {
   // implemented as d[0-7] -
   //   [y-100] [m] [d] [H] [M] [S] [Day1-7]
+  d[0] = 23;
+  d[1] = 12;
+  d[2] = 12;
+  d[3] = 23;
+  d[4] = 58;
+  d[5] = 34;
+  d[6] = 4;
   return 0;
 }
 

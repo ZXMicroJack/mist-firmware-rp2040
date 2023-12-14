@@ -62,6 +62,7 @@ add_library(mistfirmware STATIC
 #target_link_libraries(mistfirmware pico_stdlib hardware_spi hardware_flash pico_audio_i2s pico_multicore pico_stdlib)
 target_compile_options(mistfirmware PUBLIC
   "-DVDATE=\"\""
+  "-DMIST"
   #"-Dspi_init=mister_spi_init"
 )
 

@@ -85,6 +85,7 @@ add_executable(mist
   mistmain.c
   mmc.c
   keyboard.c
+  fpgaconfig.c
   )
 
 target_link_libraries(mist pico_stdlib mistfirmware hardware_spi hardware_pio hardware_flash hardware_i2c)

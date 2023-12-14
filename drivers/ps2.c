@@ -10,7 +10,7 @@
 #include "pins.h"
 #include "ps2.h"
 #include "fifo.h"
-#define DEBUG
+// #define DEBUG
 #include "debug.h"
 
 enum {
@@ -219,7 +219,7 @@ static void gpio_callback(uint gpio, uint32_t events) {
           ps2port[i].ps2_states --;
           if (!ps2port[i].ps2_states) {
             ps2port[i].ps2_state = PS2_IDLE;
-            printf("ps2rx %02X\n", ps2port[i].ps2_data & 0xff);
+            debug(("ps2rx %02X\n", ps2port[i].ps2_data & 0xff));
             fifo_Put(&ps2port[i].fifo_rx, ps2port[i].ps2_data & 0xff);
           }
         } else if (ps2port[i].ps2_state == PS2_TRANSMIT) {

@@ -9,6 +9,7 @@
 #include "ikbd.h"
 #include "usb.h"
 #include "drivers/ps2.h"
+#include "drivers/debug.h"
 
 // remap modifiers to each other if requested
 //  bit  0     1      2    3    4     5      6    7
@@ -331,11 +332,11 @@ void ps2_Poll() {
             if (keys[i] == (d & 0xff)) {
               keys[i] = 0;
               changed = 1;
-              break;
             }
           }
         } else {
           for (int i=0; i<6; i++) {
+            if (keys[i] == (d & 0xff)) break;
             if (keys[i] == 0) {
               keys[i] = d & 0xff;
               changed = 1;
@@ -350,8 +351,10 @@ void ps2_Poll() {
   }
 
   if (changed) {
-    printf("kbd: %08X ", modifier);
+    debug(("kbd: %08X ", modifier));
+#ifdef DEBUG
     for (int i = 0; i<6; i++) printf("%02X ", keys[i]);
+#endif
     user_io_kbd(modifier, keys, UIO_PRIORITY_KEYBOARD, 0, 0);
   }
 

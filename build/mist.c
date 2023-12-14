@@ -345,7 +345,7 @@ int main() {
 
   mist_init();
   for(;;) {
-    int c = getchar_timeout_us(100000);
+    int c = getchar_timeout_us(2);
 //     int c = getchar();
 //     if (forceexit) break;
     if (c == 'q') break;

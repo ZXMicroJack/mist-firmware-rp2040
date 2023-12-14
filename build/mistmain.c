@@ -233,7 +233,7 @@ int mist_loop() {
     user_io_poll();
     usb_poll();
 
-    printf("user_io_core_type = %02X\n", user_io_core_type());
+//     printf("user_io_core_type = %02X\n", user_io_core_type());
     // MIST (atari) core supports the same UI as Minimig
     if((user_io_core_type() == CORE_TYPE_MIST) || (user_io_core_type() == CORE_TYPE_MIST2)) {
       if(!fat_medium_present())

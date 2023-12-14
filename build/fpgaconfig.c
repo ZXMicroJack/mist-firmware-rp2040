@@ -42,6 +42,7 @@ static uint8_t read_next_block(void *ud, uint8_t *data) {
 
 //TODO MJ Insert code here for Altera programming.
 unsigned char ConfigureFpga(const char *bitfile) {
+#ifdef XILINX
   configFpga cf;
 
   if (f_open(&cf.file, bitfile ? bitfile : "CORE.RBF", FA_READ) != FR_OK) {
@@ -72,4 +73,7 @@ unsigned char ConfigureFpga(const char *bitfile) {
 
   // returns 1 if success / 0 on fail
   return !cf.error;
+#else
+  return 1; // no Altera to test at the moment.
+#endif
 }

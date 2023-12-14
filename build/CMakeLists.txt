@@ -101,6 +101,7 @@ target_compile_options(mist PUBLIC
   "-DVDATE=\"\""
   "-Dhexdump=driver_hexdump"
   "-DPS2HOST"
+  "-DXILINX"
 )
 
 

@@ -141,6 +141,12 @@ int mist_init() {
 
     mist_spi_init();
 
+#ifdef XILINX
+    fpga_initialise();
+    fpga_claim(true);
+    fpga_reset(0);
+#endif
+
     if(MMC_Init()) mmc_ok = 1;
     else           spi_fast();
 

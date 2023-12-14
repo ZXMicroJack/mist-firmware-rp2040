@@ -5,12 +5,7 @@
 
 #include "hardware/clocks.h"
 #include "hardware/structs/clocks.h"
-// #include "hardware/flash.h"
-// #include "hardware/resets.h"
-
-// #include "pico/bootrom.h"
 #include "pico/stdlib.h"
-// #include "pico/bootrom.h"
 
 #include "pins.h"
 #include "ps2.h"
@@ -43,11 +38,51 @@ typedef struct {
   uint8_t channel;
   fifo_t fifo;
   fifo_t fifo_rx;
-  
 } ps2_t;
 
 ps2_t ps2port[NR_PS2];
 
+/* calculate odd parity */
+static uint8_t parity(uint8_t d) {
+#if 0 /* keeping this here as a reminder that no-one is immune to stupidity */
+//   d ^= d << 4;
+//   d ^= d << 2;
+//   d ^= d << 1;
+#endif
+  d ^= d >> 4;
+  d ^= d >> 2;
+  d ^= d >> 1;
+  return (d & 1) ^ 1;
+}
+
+
+static void ps2_KickTx(ps2_t *ps2, uint8_t data) {
+#ifndef PS2HOST
+  if (ps2->channel == 0 && data == 0xff) {
+    ps2->ps2_states = PS2_RX_STATES;
+    ps2->ps2_state = PS2_PAUSE;
+  } else {
+    ps2->ps2_data = (data << 1) | (parity(data) << 9) | 0x400;
+    ps2->ps2_states = 0;
+    ps2->ps2_state = PS2_RECEIVE;
+  }
+
+  gpio_put(ps2->gpio_clk, 1);
+  gpio_put(ps2->gpio_data, 1);
+  gpio_set_dir(ps2->gpio_clk, GPIO_OUT);
+  gpio_set_dir(ps2->gpio_data, GPIO_OUT);
+#else
+  ps2->ps2_data = data | (parity(data) << 8) | 0x200;
+  ps2->ps2_states = 11;
+  ps2->ps2_state = PS2_TRANSMIT;
+
+  // signal sending
+  gpio_put(ps2->gpio_data, 0);
+  gpio_set_dir(ps2->gpio_data, GPIO_OUT);
+#endif
+}
+
+#ifndef PS2HOST
 static bool ps2_timer_callback(struct repeating_timer *t) {
   ps2_t *ps2 = (ps2_t *)t->user_data;
   if (ps2->ps2_state != PS2_TRANSMIT) {
@@ -73,36 +108,20 @@ static bool ps2_timer_callback(struct repeating_timer *t) {
   }
   return true;
 }
+#else
+static bool ps2_timer_callback(struct repeating_timer *t) {
+  ps2_t *ps2 = (ps2_t *)t->user_data;
+  int ch = fifo_Get(&ps2->fifo);
 
-/* calculate odd parity */
-static uint8_t parity(uint8_t d) {
-#if 0 /* keeping this here as a reminder that no-one is immune to stupidity */
-//   d ^= d << 4;
-//   d ^= d << 2;
-//   d ^= d << 1;
-#endif
-  d ^= d >> 4;
-  d ^= d >> 2;
-  d ^= d >> 1;
-  return (d & 1) ^ 1;
-}
-
-static void ps2_KickTx(ps2_t *ps2, uint8_t data) {
-  if (ps2->channel == 0 && data == 0xff) {
-    ps2->ps2_states = PS2_RX_STATES;
-    ps2->ps2_state = PS2_PAUSE;
-  } else {
-    ps2->ps2_data = (data << 1) | (parity(data) << 9) | 0x400;
-    ps2->ps2_states = 0;
-    ps2->ps2_state = PS2_RECEIVE;
+  if (ch >= 0) {
+    ps2_KickTx(ps2, ch);
   }
 
-  gpio_put(ps2->gpio_clk, 1);
-  gpio_put(ps2->gpio_data, 1);
-  gpio_set_dir(ps2->gpio_clk, GPIO_OUT);
-  gpio_set_dir(ps2->gpio_data, GPIO_OUT);
+  return false;
 }
+#endif
 
+#ifndef PS2HOST
 static bool ps2_timer_callback_rx(struct repeating_timer *t) {
   ps2_t *ps2 = (ps2_t *)t->user_data;
   
@@ -133,11 +152,13 @@ static bool ps2_timer_callback_rx(struct repeating_timer *t) {
   }
   return true;
 }
-
+#endif
 void ps2_SendChar(uint8_t ch, uint8_t data) {
   if (ps2port[ch].ps2_state == PS2_IDLE) {
     ps2_KickTx(&ps2port[ch], data);
+#ifndef PS2HOST
     add_repeating_timer_us(40, ps2_timer_callback_rx, &ps2port[ch], &ps2port[ch].ps2timer_rx);
+#endif
   } else {
     fifo_Put(&ps2port[ch].fifo, data);
   }
@@ -154,6 +175,7 @@ void ps2_SetGPIOListener(void (*cb)(uint gpio, uint32_t events)) {
   gpio_cb = cb;
 }
 
+#ifndef PS2HOST
 static void gpio_callback(uint gpio, uint32_t events) {
   if (gpio_cb) gpio_cb(gpio, events);
   
@@ -174,7 +196,7 @@ static void gpio_callback(uint gpio, uint32_t events) {
           ps2port[i].ps2_state = PS2_TRANSMIT;
           ps2port[i].ps2_states = 22;
           gpio_set_dir(ps2port[i].gpio_clk, GPIO_OUT);
-          add_repeating_timer_us(40, ps2_timer_callback, &ps2port[i], &ps2port[i].ps2timer);
+          add_repeating_timer_us(200, ps2_timer_callback, &ps2port[i], &ps2port[i].ps2timer);
         
         } else if (ps2port[i].ps2_state == PS2_SUPRESS) {
           ps2port[i].ps2_state = PS2_IDLE;
@@ -183,6 +205,56 @@ static void gpio_callback(uint gpio, uint32_t events) {
     }
   }
 }
+#else
+
+static void gpio_callback(uint gpio, uint32_t events) {
+  if (gpio_cb) gpio_cb(gpio, events);
+
+  if (events & 0x4) { // fall
+    for (int i=0; i<NR_PS2; i++) {
+      if (gpio == ps2port[i].gpio_clk) {
+        // handle falling clock
+        if (ps2port[i].ps2_state == PS2_RECEIVE) {
+          ps2port[i].ps2_data = (ps2port[i].ps2_data >> 1) | (gpio_get(ps2port[i].gpio_data) ? 0x200 : 0);
+          ps2port[i].ps2_states --;
+          if (!ps2port[i].ps2_states) {
+            ps2port[i].ps2_state = PS2_IDLE;
+            printf("ps2rx %02X\n", ps2port[i].ps2_data & 0xff);
+            fifo_Put(&ps2port[i].fifo_rx, ps2port[i].ps2_data & 0xff);
+          }
+        } else if (ps2port[i].ps2_state == PS2_TRANSMIT) {
+          gpio_put(ps2port[i].gpio_data, ps2port[i].ps2_data & 1);
+          ps2port[i].ps2_data >>= 1;
+          ps2port[i].ps2_states --;
+
+          if (!ps2port[i].ps2_states) {
+            gpio_put(ps2port[i].gpio_data, 1);
+            gpio_set_dir(ps2port[i].gpio_data, GPIO_IN);
+            ps2port[i].ps2_state = PS2_IDLE;
+            add_repeating_timer_us(40, ps2_timer_callback, &ps2port[i], &ps2port[i].ps2timer);
+          }
+        }
+      } else if (gpio == ps2port[i].gpio_data) {
+        // handle falling data
+        if (ps2port[i].ps2_state == PS2_IDLE) {
+          ps2port[i].ps2_states = 11;
+          ps2port[i].ps2_state = PS2_RECEIVE;
+          ps2port[i].ps2_data = 0;
+        }
+      }
+    }
+  }
+
+  if (events & 0x8) { // rise
+    for (int i=0; i<NR_PS2; i++) {
+      if (gpio == ps2port[i].gpio_clk) {
+        // handle rising clock
+      }
+    }
+  }
+
+}
+#endif
 
 void ps2_Init() {
   uint8_t lut[] = {

@@ -84,6 +84,7 @@ add_executable(mist
   mist.c
   mistmain.c
   mmc.c
+  keyboard.c
   )
 
 target_link_libraries(mist pico_stdlib mistfirmware hardware_spi hardware_pio hardware_flash hardware_i2c)
@@ -98,6 +99,7 @@ pico_set_binary_type(mist no_flash)
 target_compile_options(mist PUBLIC
   "-DVDATE=\"\""
   "-Dhexdump=driver_hexdump"
+  "-DPS2HOST"
 )
 
 

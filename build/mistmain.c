@@ -226,6 +226,8 @@ int mist_init() {
 }
 
 int mist_loop() {
+  ps2_Poll();
+
     cdc_control_poll();
     storage_control_poll();
     user_io_poll();

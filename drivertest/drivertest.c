@@ -206,6 +206,13 @@ void keypress(uint8_t ch) {
   ps2_SendChar(0, ch);
 }
 
+void keyledon(uint8_t ledstate) {
+//   ps2_SendChar(0, 0xff);
+  ps2_SendChar(0, 0xed);
+  sleep_ms(100);
+  ps2_SendChar(0, ledstate);
+}
+
 // 16  v8_miso \   uart0 tx, SPI0RX
 // 17  w9_mosi |-- sdcard high level / uart0 rx, SPI0CSN
 // 18  w7_sck  |   SPI0SCK
@@ -277,9 +284,10 @@ void test_UserIOKill() {
 }
 
 // #define TEST_PS2
+#define TEST_PS2_HOST
 // #define TEST_IPC
-#define TEST_SDCARD_SPI
-#define TEST_FPGA
+// #define TEST_SDCARD_SPI
+// #define TEST_FPGA
 // #define TEST_MATRIX
 // #define TEST_FLASH
 // #define TEST_USERIO
@@ -410,14 +418,22 @@ int main()
         break;
 
       // PS2
-#ifdef TEST_PS2
+#if defined(TEST_PS2) || defined(TEST_PS2_HOST)
       case 'k': printf("ps2init\n"); ps2_Init(); break;
-      case 'h': keypress(0x7e); break;
-      case 'H': keypress(0x58); break;
       case 'e': printf("enable ps2 0\n"); ps2_EnablePort(0, true); break;
       case 'E': printf("enable ps2 1\n"); ps2_EnablePort(1, true); break;
       case 'd': printf("disable ps2 0\n"); ps2_EnablePort(0, false); break;
       case 'D': printf("disable ps2 1\n"); ps2_EnablePort(1, false); break;
+#endif
+
+#ifdef TEST_PS2
+      case 'h': keypress(0x7e); break;
+      case 'H': keypress(0x58); break;
+#endif
+
+#ifdef TEST_PS2_HOST
+      case 'h': keyledon(0x00); break;
+      case 'H': keyledon(0x07); break;
 #endif
 
       // IPC

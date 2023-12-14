@@ -132,3 +132,18 @@ unsigned char ConfigureFpga(const char *bitfile) {
   // returns 1 if success / 0 on fail
   return 1;
 }
+
+
+//// keyboard handling....
+// PAUSE -> 6F
+// ps2rx E0
+// ps2rx 12
+// ps2rx E0
+// ps2rx 7C
+// ps2rx E0
+// ps2rx F0
+// ps2rx 7C
+// ps2rx E0
+// ps2rx F0
+// ps2rx 12
+

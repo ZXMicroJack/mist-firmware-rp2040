@@ -8,12 +8,10 @@
 #include "pins.h"
 #include "ps2.h"
 #include "jamma.h"
-#define DEBUG
+// #define DEBUG
 #include "debug.h"
 
-#define DB9
-
-#ifdef DB9
+#ifdef JAMMADB9
 #include "jammadb9.pio.h"
 #else
 #include "jamma.pio.h"
@@ -25,7 +23,7 @@ uint8_t joydata[2];
 PIO jamma_pio = pio0;
 unsigned jamma_sm = 2;
 
-#ifndef DB9
+#ifndef JAMMADB9
 static void gpio_callback(uint gpio, uint32_t events) {
   if (gpio == GPIO_RP2U_XLOAD) {
     while (!pio_sm_is_tx_fifo_full(jamma_pio, jamma_sm))
@@ -37,12 +35,16 @@ static uint32_t data;
 static void pio_callback() {
   pio_interrupt_clear (jamma_pio, 0);
   data = pio_sm_get_blocking(jamma_pio, jamma_sm);
+  joydata[0] = ~(data >> 24);
+  joydata[1] = ~(data >> 16);
 }
 #endif
 
 
-#ifdef DB9
+static uint8_t inited = 0;
+#ifdef JAMMADB9
 void jamma_Init() {
+  if (inited) return;
   gpio_init(GPIO_RP2U_XLOAD);
   gpio_set_dir(GPIO_RP2U_XLOAD, GPIO_OUT);
 
@@ -59,9 +61,11 @@ void jamma_Init() {
   irq_set_exclusive_handler (PIO0_IRQ_0, pio_callback);
   pio_set_irq0_source_enabled(jamma_pio, jamma_sm, true);
   irq_set_enabled (PIO0_IRQ_0, true);
+  inited = 1;
 }
 #else
 void jamma_Init() {
+  if (inited) return;
   gpio_init(GPIO_RP2U_XLOAD);
   gpio_set_dir(GPIO_RP2U_XLOAD, GPIO_IN);
 
@@ -80,6 +84,7 @@ void jamma_Init() {
   gpio_set_irq_enabled(GPIO_RP2U_XLOAD, GPIO_IRQ_EDGE_FALL, true);
   pio_sm_put_blocking(jamma_pio, jamma_sm, reload_data);
   pio_interrupt_clear (jamma_pio, 0);
+  inited = 1;
 }
 #endif
 
@@ -89,5 +94,5 @@ void jamma_SetData(uint8_t inst, uint32_t data) {
 }
 
 uint32_t jamma_GetData(uint8_t inst) {
-  return data;
+  return joydata[inst];
 }

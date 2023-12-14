@@ -310,6 +310,7 @@ int ps2_GetChar(uint8_t ch) {
   return fifo_Get(&ps2port[ch].fifo_rx);
 }
 
+#define DEBUG
 #ifdef DEBUG
 void ps2_Debug() {
   debug(("ps2port[0].ps2_states = %d .ps2_state = %d\n", ps2port[0].ps2_states, ps2port[0].ps2_state));

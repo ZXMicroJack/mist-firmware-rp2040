@@ -6,6 +6,12 @@ set_property -dict {PACKAGE_PIN W5 IOSTANDARD LVTTL} [get_ports mist_ss2]
 set_property -dict {PACKAGE_PIN W6 IOSTANDARD LVTTL} [get_ports mist_ss3]
 set_property -dict {PACKAGE_PIN Y9 IOSTANDARD LVTTL} [get_ports mist_ss4]
 
+
+;#define GPIO_RP2U_XLOAD       26 // AA4
+;#define GPIO_RP2U_XSCK        27 // AB5
+;#define GPIO_RP2U_XDATA       28 // AA6
+
+
 #set_property ALLOW_COMBINATORIAL_LOOPS TRUE [get_nets pong_inst/user_io/SPI_MISO_i_13_0]
 set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets mist_sck_IBUF]
 

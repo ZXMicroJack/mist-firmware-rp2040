@@ -295,7 +295,7 @@ void test_UserIOKill() {
 
 // KEY ACTION ALLOCATION
 // aAgGHjJlMNoOqQrRTuUVwWxXyYzZ
-// aAgGHjJlMNqQrRTVwWxXYZ
+// aAgGHJlMNqQrRTVwWxXYZ
 // IPC      -=[]'#
 // FLASH    PBI
 // MATRIXK  KL
@@ -514,8 +514,7 @@ int main()
 #endif
 
 #ifdef TEST_JAMMA
-      case 'j': jamma_Init(); printf("jamma init\n"); break;
-      case 'J': printf("joypad 0 %X 1 %X\n", jamma_GetData(0), jamma_GetData(1)); break;
+      case 'j': jamma_Init(); printf("joypad 0 %X 1 %X\n", jamma_GetData(0), jamma_GetData(1)); break;
 #endif
 
       // MATRIX KEYBOARD

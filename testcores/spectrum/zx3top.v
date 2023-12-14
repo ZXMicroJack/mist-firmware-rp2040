@@ -32,7 +32,16 @@ module zx3top(
   output wire[1:0] sdram_ba,
   output wire[12:0] sdram_addr,
   inout wire[15:0] sdram_dq,
-  output wire testled
+  output wire testled,
+
+  // forward JAMMA DB9 data
+  output wire joy_clk,
+  input wire xjoy_clk,
+  output wire joy_load_n,
+  input wire xjoy_load_n,
+  input wire joy_data,
+  output wire xjoy_data
+
 
   //,
   //input wire ear,
@@ -132,6 +141,27 @@ spectrum_mist spectrum_mist_inst(
    .SDRAM_CLK(sdram_clk), //	:  out 		std_logic;
    .SDRAM_CKE(sdram_cke) //	:  out 		std_logic;
 );
+
+// JAMMA interface
+assign joy_clk = xjoy_clk;
+assign joy_load_n = xjoy_load_n;
+assign xjoy_data = joy_data;
+
+  //output wire joy_clk,
+  //input wire xjoy_clk,
+  //output wire joy_load_n,
+  //input wire xjoy_load_n,
+  //input wire joy_data,
+  //output wire xjoy_data
+
+//joydecoder joydecoder_inst (
+  //.clk(clk50mhz),
+  //.joy_data(joy_data),
+  //.joy_latch_megadrive(1'b1),
+  //.joy_clk(joy_clk),
+  //.joy_load_n(joy_load_n)
+  //);
+
 
 //entity spectrum_mist is
 //generic (

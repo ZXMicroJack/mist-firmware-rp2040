@@ -24,15 +24,15 @@
 13  init_b  - sj3
 14  p4_mclk \  mouse
 15  n5_mdat /
-16  v8_miso \   uart0 tx
-17  w9_mosi |-- sdcard high level / uart0 rx
-18  w7_sck  |
-19  v7_cs   /
-20  w5
-21  w6
+16  v8_miso \   uart0 tx, SPI0RX
+17  w9_mosi |-- sdcard high level / uart0 rx, SPI0CSN
+18  w7_sck  |   SPI0SCK
+19  v7_cs   /   SPI0TX
+20  w5 - MIST_SS2
+21  w6 - MIST_SS3
 22  w4 - when core is running, it detects as low, and when in reset detects as high
 23  y6 - signal high when error state to boot /BOOT.BIT
-24  y9
+24  y9 - MIST_SS4
 25  r19_pal
 26  aa4_xload
 27  ab5_xsck

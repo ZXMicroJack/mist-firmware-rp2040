@@ -208,9 +208,9 @@ void keypress(uint8_t ch) {
 
 void keyledon(uint8_t ledstate) {
 //   ps2_SendChar(0, 0xff);
-  ps2_SendChar(0, 0xed);
-  sleep_ms(100);
-  ps2_SendChar(0, ledstate);
+//   ps2_SendChar(0, 0xed);
+//   sleep_ms(100);
+//   ps2_SendChar(0, ledstate);
 }
 
 // 16  v8_miso \   uart0 tx, SPI0RX
@@ -291,10 +291,11 @@ void test_UserIOKill() {
 // #define TEST_MATRIX
 // #define TEST_FLASH
 // #define TEST_USERIO
+#define TEST_JAMMA
 
 // KEY ACTION ALLOCATION
 // aAgGHjJlMNoOqQrRTuUVwWxXyYzZ
-// aAgGHjJlMNoOqQrRTVwWxXYZ
+// aAgGHjJlMNqQrRTVwWxXYZ
 // IPC      -=[]'#
 // FLASH    PBI
 // MATRIXK  KL
@@ -415,6 +416,7 @@ int main()
         printf("FLASH: (P)rogram (I)pc based program (B)ad crc ipc program\n");
         printf("KBD: (K)bd init (L)kbd process\n");
         printf("USERIO: (u)init (U)close (V)coreid\n");
+        printf("JAMMA: (j)init (J)getdata\n");
         break;
 
       // PS2
@@ -509,6 +511,11 @@ int main()
         break;
       }
 #endif
+#endif
+
+#ifdef TEST_JAMMA
+      case 'j': jamma_Init(); printf("jamma init\n"); break;
+      case 'J': printf("joypad 0 %X 1 %X\n", jamma_GetData(0), jamma_GetData(1)); break;
 #endif
 
       // MATRIX KEYBOARD

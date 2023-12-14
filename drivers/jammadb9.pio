@@ -1,0 +1,41 @@
+;#define GPIO_RP2U_XLOAD       26 // AA4
+;#define GPIO_RP2U_XSCK        27 // AB5
+;#define GPIO_RP2U_XDATA       28 // AA6
+
+.program jammadb9
+;.side_set 2
+reset:
+    set pins,2
+    set pins,1
+
+    set x,15
+bitloop:
+    set pins,3;
+    set pins,1;
+    in pins,1;
+    jmp x-- bitloop;
+    push;
+    irq wait 0;
+    jmp reset
+
+% c-sdk {
+
+static inline void jammadb9_program_init(PIO pio, uint sm, uint offset, uint load_pin, uint data_pin) {
+  pio_sm_config sm_config = jammadb9_program_get_default_config(offset);
+
+  sm_config_set_set_pins(&sm_config, load_pin, 2);
+  sm_config_set_in_pins(&sm_config, data_pin);
+
+  sm_config_set_fifo_join(&sm_config, PIO_FIFO_JOIN_RX);
+
+  pio_gpio_init(pio, load_pin);
+  pio_gpio_init(pio, load_pin+1);
+  pio_sm_set_consecutive_pindirs(pio, sm, load_pin, 2, true);
+  pio_gpio_init(pio, data_pin);
+  pio_sm_set_consecutive_pindirs(pio, sm, data_pin, 1, false);
+
+  pio_sm_init(pio, sm, offset, &sm_config);
+  pio_sm_set_enabled(pio, sm, true);
+}
+
+%}

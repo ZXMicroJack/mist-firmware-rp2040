@@ -6,6 +6,8 @@
 #include "xmodem.h"
 #include "ikbd.h"
 #include "usb.h"
+
+#include "drivers/jamma.h"
 // #include "usbrtc.h"
 
 uint32_t systimer;
@@ -307,19 +309,6 @@ void WaitTimer(unsigned long time)
 }
 
 
-//TODO MJ assume MMC is inserted
-char mmc_inserted() {
-  return 1;
-}
-
-#if 0 // TODO MJ only used for USB storage
-//TODO MJ assume MMC is not write protected - possibly assume it is for now.
-char mmc_write_protected() {
-  return 1; //  return (*AT91C_PIOA_PDSR & SD_WP);
-}
-
-#endif
-
 //TODO GetSPICLK just for display in debug - not really important - can be removed when main integrated.
 int GetSPICLK() {
   return 0;
@@ -406,14 +395,27 @@ unsigned char UserButton() {
 }
 
 // TODO MJ no DB9 input at present
-void InitDB9() {}
+void InitDB9() {
+}
 
 // poll db9 joysticks
+const static uint8_t joylut[] = {0, JOY_UP, JOY_DOWN, JOY_LEFT, JOY_RIGHT, JOY_BTN1, JOY_BTN2, 0};
 char GetDB9(char index, unsigned char *joy_map) {
   // TODO - no DB9 joypad at present, but when implemented,
   // *joy_map is set to a combination of the following bitmapped values
   // JOY_UP, JOY_DOWN, JOY_LEFT, JOY_RIGHT, JOY_BTN1, JOY_BTN2
-  return 0;
+
+  uint32_t d = jamma_GetData(index);
+  uint8_t mask = 0x80;
+  uint8_t ndx = 0;
+  char j = 0;
+
+  while (mask) {
+    if (d & mask) j |= joylut[ndx];
+    ndx++;
+    mask >>= 1;
+  }
+  return 1;
 }
 
 // TODO MJ implement RTC

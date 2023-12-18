@@ -197,8 +197,7 @@ int mist_init() {
     printf("[%d]\n", __LINE__);
 
     // tos config also contains cdc redirect settings used by minimig
-    //TODO MJ tos_config_load hangs
-//     tos_config_load(-1);
+    tos_config_load(-1);
     printf("[%d]\n", __LINE__);
 
     char mod = -1;
@@ -228,6 +227,7 @@ int mist_init() {
     printf("[%d]\n", __LINE__);
     usb_dev_open();
     printf("[%d]\n", __LINE__);
+  jamma_Init();
     return 0;
 }
 

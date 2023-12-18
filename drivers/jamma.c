@@ -44,6 +44,7 @@ static void pio_callback() {
 static uint8_t inited = 0;
 #ifdef JAMMADB9
 void jamma_Init() {
+  debug(("jamma_Init: USB mode\n"));
   if (inited) return;
   gpio_init(GPIO_RP2U_XLOAD);
   gpio_set_dir(GPIO_RP2U_XLOAD, GPIO_OUT);
@@ -65,6 +66,7 @@ void jamma_Init() {
 }
 #else
 void jamma_Init() {
+  debug(("jamma_Init: DB9 mode\n"));
   if (inited) return;
   gpio_init(GPIO_RP2U_XLOAD);
   gpio_set_dir(GPIO_RP2U_XLOAD, GPIO_IN);
@@ -94,5 +96,6 @@ void jamma_SetData(uint8_t inst, uint32_t data) {
 }
 
 uint32_t jamma_GetData(uint8_t inst) {
+  debug(("jamma_GetData: %d returns %02X\n", inst, joydata[inst]));
   return joydata[inst];
 }

@@ -78,6 +78,7 @@ add_executable(mist
   ../drivers/debug.c
   ../drivers/fifo.c
   ../drivers/kbd.c
+  ../drivers/jamma.c
   glue.c
   spi.c
   usbdev.c
@@ -93,6 +94,8 @@ target_link_libraries(mist pico_stdlib mistfirmware hardware_spi hardware_pio ha
 add_compile_options(-O2)
 pico_generate_pio_header(mist ../drivers/fpga.pio)
 pico_generate_pio_header(mist ../drivers/spi.pio)
+pico_generate_pio_header(mist ../drivers/jamma.pio)
+pico_generate_pio_header(mist ../drivers/jammadb9.pio)
 pico_enable_stdio_usb(mist 1)
 pico_enable_stdio_uart(mist 0)
 pico_add_extra_outputs(mist)
@@ -103,6 +106,7 @@ target_compile_options(mist PUBLIC
   "-Dhexdump=driver_hexdump"
   "-DPS2HOST"
   "-DXILINX"
+  "-DJAMMADB9"
 )
 
 

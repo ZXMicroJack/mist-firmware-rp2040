@@ -24,6 +24,30 @@
 #define DEBUG
 #include "debug.h"
 
+// #define TEST_PS2
+// #define TEST_PS2_HOST
+// #define TEST_IPC
+#define TEST_SDCARD_SPI
+// #define TEST_FPGA
+// #define TEST_MATRIX
+// #define TEST_FLASH
+// #define TEST_USERIO
+#define TEST_JAMMA
+
+// KEY ACTION ALLOCATION
+// aAgGHjJlMNoOqQrRTuUVwWxXyYzZ
+// aAgGHJlMNqQrRTVwWxXYZ
+// IPC      -=[]'#
+// FLASH    PBI
+// MATRIXK  KL
+// PS2      kheEdD
+// PS2      0123456789 - press key
+// FPGA     pfFcC
+// HELP     ?
+// SDCARD   vbnm,isS
+// USERIO   uUV
+
+
 typedef struct {
   int block_nr;
 } test_block_read_t;
@@ -65,7 +89,7 @@ void test_sector_read(pio_spi_inst_t *spi) {
 void test_sector_write1(pio_spi_inst_t *spi) {
   uint8_t sect[512];
   printf("------ READ TEST WRITE SECTOR ------\n");
-  sd_readsector(spi, 0, sect);
+  sd_readsector(spi, TEST_WRITE_BLOCK, sect);
   hexdump(sect, 512);
 }
 
@@ -283,28 +307,6 @@ void test_UserIOKill() {
   spi_deinit(spi0);
 }
 
-// #define TEST_PS2
-#define TEST_PS2_HOST
-// #define TEST_IPC
-// #define TEST_SDCARD_SPI
-// #define TEST_FPGA
-// #define TEST_MATRIX
-// #define TEST_FLASH
-// #define TEST_USERIO
-#define TEST_JAMMA
-
-// KEY ACTION ALLOCATION
-// aAgGHjJlMNoOqQrRTuUVwWxXyYzZ
-// aAgGHJlMNqQrRTVwWxXYZ
-// IPC      -=[]'#
-// FLASH    PBI
-// MATRIXK  KL
-// PS2      kheEdD
-// PS2      0123456789 - press key
-// FPGA     pfFcC
-// HELP     ?
-// SDCARD   vbnm,isS
-// USERIO   uUV
 
 extern int forceexit;
 int main()

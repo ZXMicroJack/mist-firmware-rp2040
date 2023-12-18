@@ -3,29 +3,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "errors.h"
 #include "usb/usb.h"
 
-
-//TODO MJ where shall debug go?
-static char str[256];
-int iprintf(const char *fmt, ...) {
-  int i;
-  va_list argp;
-  va_start(argp, fmt);
-  vsprintf(str, fmt, argp);
-
-  printf("Output: %s\n", str);
-  return 0;
-}
-
-#if 0
-void siprintf(char *str, const char *fmt, ...) {
-  int i;
-  va_list argp;
-  va_start(argp, fmt);
-  vsprintf(str, fmt, argp);
-}
-#endif
 
 //TODO MJ non USB stuff here
 void MCUReset() {}
@@ -36,9 +16,7 @@ void PollADC() {
 void InitADC() {
 }
 
-void arch_irq_disable() {}
-
-static uint8_t mac[] = {1,2,3,4,5,6,7,8};
+static uint8_t mac[] = {1,2,3,4,5,6};
 uint8_t *get_mac() {
   return mac;
 }
@@ -47,7 +25,6 @@ uint8_t *get_mac() {
 void storage_control_poll() {
 }
 
-// uint8_t mmc_inserted = 0;
 //TODO MJ No WiFi present at the moment - would need routing through fpga
 bool eth_present = 0;
 
@@ -79,8 +56,6 @@ uint8_t joystick_count() { return 0; }
 
 void hid_set_kbd_led(unsigned char led, bool on) {
 }
-void SPIN() {}
-
 void usb_poll() {
 }
 
@@ -98,33 +73,30 @@ unsigned char get_mice() {
 
 void usb_hw_init() {}
 
-// uint32_t timer_get_msec() { return 0; }
 void hid_joystick_button_remap_init() {}
 
-// void hid_joystick_button_remap_init(void) {
-// }
 char hid_joystick_button_remap(char *s, char action, int tag) {
   return 0;
 }
 
-void dmb() {}
-
 // TODO MJ - firmware updating
 void WriteFirmware(char *name) {
+  printf("WriteFirmware: name:%s\n", name);
 }
 
-const static char firmwareVersion[] = "v999.999 - TBD FAKE ";
+const static char firmwareVersion[] = "v999.999abcd";
 
 char *GetFirmwareVersion(char *name) {
   return firmwareVersion;
 }
 
 unsigned char CheckFirmware(char *name) {
+  printf("CheckFirmware: name:%s\n", name);
   // returns 1 if all ok else 0, setting Error to one of ollowing states
   // ERROR_NONE
   // ERROR_FILE_NOT_FOUND
   // ERROR_INVALID_DATA
-  return 0;
+  return 1;
 }
 
 

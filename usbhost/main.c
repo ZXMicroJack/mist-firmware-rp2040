@@ -104,8 +104,8 @@ int main(void)
   uprintf("TinyUSB Host CDC MSC HID Example\r\n");
   
   tusb_init();
-  ps2_Init();
-  joypad_init();
+//   ps2_Init();
+//   joypad_init();
 
   while (1)
   {

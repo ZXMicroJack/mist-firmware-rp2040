@@ -42,6 +42,16 @@
 #if CFG_TUH_HID
 // static uint8_t const keycode2ascii[128][2] =  { HID_KEYCODE_TO_ASCII };
 
+void dumphex(char *s, uint8_t *data, int len) {
+    uprintf("%s: ", s);
+    for (int i=0; i<len; i++) {
+      uprintf("0x%02X,", data[i]);
+    }
+    uprintf("\n");
+}
+
+
+#if 0
 uint8_t const led2ps2[] = { 0, 4, 1, 5, 2, 6, 3, 7 };
 uint8_t const mod2ps2[] = { 0x14, 0x12, 0x11, 0x1f, 0x14, 0x59, 0x11, 0x27 };
 uint8_t const hid2ps2[] = {
@@ -88,7 +98,7 @@ uint8_t kbd_addr = 0;
 uint8_t kbd_inst = 0;
 uint8_t leds = 0;
 
-
+#endif
 // Each HID instance can has multiple reports
 static struct hid_info
 {
@@ -96,6 +106,7 @@ static struct hid_info
   tuh_hid_report_info_t report_info[MAX_REPORT];
   
   uint16_t vid, pid;
+#if 0
   bool joypad;
   uint32_t (*joypad_decode)(struct hid_info *info, uint8_t *rpt, uint32_t len);
   uint8_t joypad_x, joypad_y, joypad_butts;
@@ -106,17 +117,21 @@ static struct hid_info
   bool joypad_firstreport;
 #endif
   uint32_t last_joydata;
-  
+#endif
+
 }hid_info[MAX_USB];
 
 #define printf uprintf
 
   
+#if 0
 void process_kbd(uint8_t data);
 void process_ms(uint8_t data);
+#endif
 
 void hid_app_task(void)
 {
+#if 0
   int ch;
   while ((ch = ps2_GetChar(0)) >= 0) {
     process_kbd(ch);
@@ -124,12 +139,15 @@ void hid_app_task(void)
   while ((ch = ps2_GetChar(1)) >= 0) {
     process_ms(ch);
   }
+#endif
 }
 
 //--------------------------------------------------------------------+
 // Parse reports
 //--------------------------------------------------------------------+
+#if 0
 #include "parserpt.c"
+#endif
 
 //--------------------------------------------------------------------+
 // TinyUSB Callbacks
@@ -141,12 +159,15 @@ void hid_app_task(void)
 // Note: if report descriptor length > CFG_TUH_ENUMERATION_BUFSIZE, it will be skipped
 // therefore report_desc = NULL, desc_len = 0
 
+#if 0 //TODO MJ will need
 void kbd_set_leds(uint8_t data) {
   if(data > 7) data = 0;
   leds = led2ps2[data];
   tuh_hid_set_report(kbd_addr, kbd_inst, 0, HID_REPORT_TYPE_OUTPUT, &leds, sizeof(leds));
 }
+#endif
 
+#if 0
 int64_t blink_callback(alarm_id_t id, void *user_data) {
   if(kbd_addr) {
     if(blinking) {
@@ -410,14 +431,6 @@ typedef struct {
 
 train_data_t td;
 
-void dumphex(char *s, uint8_t *data, int len) {
-    uprintf("%s: ", s);
-    for (int i=0; i<len; i++) {
-      uprintf("%02X ", data[i]);
-    }
-    uprintf("\n");
-}
-
 static bool training_timer_callback(struct repeating_timer *t) {
   train_data_t *ptd = (train_data_t *)t->user_data;
   ptd->timeout ++;
@@ -436,6 +449,7 @@ static bool training_timer_callback(struct repeating_timer *t) {
 
 
 */
+#endif
 
 
 void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_report, uint16_t desc_len)
@@ -443,22 +457,28 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
 #ifdef DEBUG
   printf("HID device address = %d, instance = %d is mounted\r\n", dev_addr, instance);
 #endif
+  uprintf("tuh_hid_mount_cb(dev_addr:%d inst:%d)\n", dev_addr, instance);
+  dumphex("report", desc_report, desc_len);
+  tuh_vid_pid_get(dev_addr, &hid_info[dev_addr].vid, &hid_info[dev_addr].pid);
+  uprintf("\tvid %04X pid %04X\n", hid_info[dev_addr].vid, hid_info[dev_addr].pid);
+
 
   // Interface protocol (hid_interface_protocol_enum_t)
   const char* protocol_str[] = { "None", "Keyboard", "Mouse" };
   uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
-  hid_info[dev_addr].joypad = false;
+//   hid_info[dev_addr].joypad = false;
 
 #ifdef DEBUG
   printf("HID Interface Protocol = %s\r\n", protocol_str[itf_protocol]);
 #endif
   if ( itf_protocol == HID_ITF_PROTOCOL_KEYBOARD ) {
-    ps2_EnablePort(0, true);
-    kbd_addr = dev_addr;
-    kbd_inst = instance;
+//     ps2_EnablePort(0, true);
+//     kbd_addr = dev_addr;
+//     kbd_inst = instance;
   } else if ( itf_protocol == HID_ITF_PROTOCOL_MOUSE ) {
-    ps2_EnablePort(1, true);
+//     ps2_EnablePort(1, true);
   } else if ( itf_protocol == HID_ITF_PROTOCOL_NONE ) {
+#if 0
     hid_info[dev_addr].report_count = tuh_hid_parse_report_descriptor(hid_info[dev_addr].report_info, MAX_REPORT, desc_report, desc_len);
 #ifdef DEBUG
     printf("HID has %u reports \r\n", hid_info[dev_addr].report_count);
@@ -488,6 +508,8 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
     }
     uprintf("\n");
 #endif
+#endif
+
   }
 
   // request to receive report
@@ -504,21 +526,24 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
 // Invoked when device with hid interface is un-mounted
 void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance)
 {
+  uprintf("tuh_hid_umount_cb(dev_addr:%d inst:%d)\n", dev_addr, instance);
 #ifdef DEBUG
   printf("HID device address = %d, instance = %d is unmounted\r\n", dev_addr, instance);
 #endif
   uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
   if ( itf_protocol == HID_ITF_PROTOCOL_KEYBOARD ) {
-    ps2_EnablePort(0, false);
+//     ps2_EnablePort(0, false);
   } else if ( itf_protocol == HID_ITF_PROTOCOL_MOUSE ) {
-    ps2_EnablePort(1, false);
-  } else if (hid_info[dev_addr].joypad) {
-    joypad_Add(hid_info[dev_addr].joypad_inst, dev_addr, 0, 0, NULL, 0);
+//     ps2_EnablePort(1, false);
+//   } else if (hid_info[dev_addr].joypad) {
+//     joypad_Add(hid_info[dev_addr].joypad_inst, dev_addr, 0, 0, NULL, 0);
   }
 }
 
 void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len) {
-  
+  uprintf("tuh_hid_report_received_cb(dev_addr:%d inst:%d)\n", dev_addr, instance);
+  dumphex("report", report, len);
+#if 0
   switch(tuh_hid_interface_protocol(dev_addr, instance)) {
     case HID_ITF_PROTOCOL_KEYBOARD:
       
@@ -711,6 +736,8 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
     }
       
   }
+#endif
+  tuh_hid_receive_report(dev_addr, instance);
 }
 
 #endif

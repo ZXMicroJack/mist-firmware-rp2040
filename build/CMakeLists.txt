@@ -58,13 +58,45 @@ add_library(mistfirmware STATIC
   ../mist-firmware/FatFs/ffsystem.c
   ../mist-firmware/FatFs/ffunicode.c
   ../mist-firmware/usb/joymapping.c
+  # Add these for USB
+  #../mist-firmware/usb/hidparser.c
+  #../mist-firmware/usb/hid.c
+  #../mist-firmware/usb/joystick.c
+  #../mist-firmware/usb/timer.c
+  #../mist-firmware/usb/xboxusb.c
+  #../mist-firmware/usb/usbdebug.c
+  #../mist-firmware/usb/pl2303.c
              )
 #target_link_libraries(mistfirmware pico_stdlib hardware_spi hardware_flash pico_audio_i2s pico_multicore pico_stdlib)
 target_compile_options(mistfirmware PUBLIC
   "-DVDATE=\"\""
   "-DMIST"
+  # comment for USB here
+  #"-DUSB"
   #"-Dspi_init=mister_spi_init"
 )
+
+# mist library
+#add_library(mistfirmwareusb STATIC
+  ## Add these for USB
+  #../mist-firmware/usb/hidparser.c
+  #../mist-firmware/usb/hid.c
+  #../mist-firmware/usb/joystick.c
+  #../mist-firmware/usb/timer.c
+  #../mist-firmware/usb/xboxusb.c
+  #../mist-firmware/usb/usbdebug.c
+  #../mist-firmware/usb/pl2303.c
+             #)
+#target_link_libraries(mistfirmware pico_stdlib hardware_spi hardware_flash pico_audio_i2s pico_multicore pico_stdlib)
+target_compile_options(mistfirmware PUBLIC
+  "-DVDATE=\"\""
+  "-DMIST"
+  # comment for USB here
+  #"-DUSB"
+  #"-Dspi_init=mister_spi_init"
+)
+
+
 
 # fpga program
 add_executable(mist

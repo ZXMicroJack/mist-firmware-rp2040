@@ -26,7 +26,7 @@ include(example_auto_set_url.cmake)
 add_executable(host_cdc_msc_hid)
 
 target_sources(host_cdc_msc_hid PUBLIC
-        ${CMAKE_CURRENT_LIST_DIR}/hid_app.c
+        ${CMAKE_CURRENT_LIST_DIR}/hid_app_mist.c
         ${CMAKE_CURRENT_LIST_DIR}/main.c
         ${CMAKE_CURRENT_LIST_DIR}/msc_app.c
         ${CMAKE_CURRENT_LIST_DIR}/joypad.c

@@ -28,6 +28,7 @@ void storage_control_poll() {
 //TODO MJ No WiFi present at the moment - would need routing through fpga
 bool eth_present = 0;
 
+#ifndef USB
 //TODO MJ PL2303 is a non CDC serial port over USB - maybe can use?
 int8_t pl2303_present(void) {
   return 0;
@@ -48,15 +49,10 @@ uint8_t get_pl2303s(void) {
   return 0;
 }
 
-// TODO MJ - USB stuff
-void usb_init() {}
-
 // return number of joysticks
 uint8_t joystick_count() { return 0; }
 
 void hid_set_kbd_led(unsigned char led, bool on) {
-}
-void usb_poll() {
 }
 
 int8_t hid_keyboard_present(void) {
@@ -71,13 +67,20 @@ unsigned char get_mice() {
   return 0;
 }
 
-void usb_hw_init() {}
-
 void hid_joystick_button_remap_init() {}
 
 char hid_joystick_button_remap(char *s, char action, int tag) {
   return 0;
 }
+#endif
+
+// TODO MJ - USB stuff
+void usb_init() {}
+
+void usb_poll() {
+}
+
+void usb_hw_init() {}
 
 // TODO MJ - firmware updating
 void WriteFirmware(char *name) {

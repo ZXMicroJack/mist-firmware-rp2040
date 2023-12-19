@@ -284,6 +284,9 @@ void Timer_Init(void) {
 #endif
 }
 
+void InitRTTC() {
+}
+
 int GetRTTC() {
   return time_us_64() / 1000;
 }

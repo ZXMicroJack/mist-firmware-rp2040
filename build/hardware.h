@@ -28,7 +28,10 @@
 #define USB_BOOT_VALUE       0x8007F007
 #define USB_BOOT_VAR         (*(int*)0x0020FF18)
 
-#define SECTOR_BUFFER_SIZE   4096
+
+// TODO MJ - increase back to 4096 when USB done.
+// #define SECTOR_BUFFER_SIZE   4096
+#define SECTOR_BUFFER_SIZE   1024
 
 // TODO MJ - no sense switches for these two
 char mmc_inserted(void);

@@ -452,6 +452,26 @@ static bool training_timer_callback(struct repeating_timer *t) {
 #endif
 
 
+
+#if 0
+// Sync (blocking) version of tuh_descriptor_get_string()
+// return transfer result
+uint8_t tuh_descriptor_get_string_sync(uint8_t daddr, uint8_t index, uint16_t language_id, void* buffer, uint16_t len);
+
+// Sync (blocking) version of tuh_descriptor_get_manufacturer_string()
+// return transfer result
+uint8_t tuh_descriptor_get_manufacturer_string_sync(uint8_t daddr, uint16_t language_id, void* buffer, uint16_t len);
+
+// Sync (blocking) version of tuh_descriptor_get_product_string()
+// return transfer result
+uint8_t tuh_descriptor_get_product_string_sync(uint8_t daddr, uint16_t language_id, void* buffer, uint16_t len);
+
+// Sync (blocking) version of tuh_descriptor_get_serial_string()
+// return transfer result
+uint8_t tuh_descriptor_get_serial_string_sync(uint8_t daddr, uint16_t language_id, void* buffer, uint16_t len);
+#endif
+
+
 void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_report, uint16_t desc_len)
 {
 #ifdef DEBUG
@@ -462,6 +482,36 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
   tuh_vid_pid_get(dev_addr, &hid_info[dev_addr].vid, &hid_info[dev_addr].pid);
   uprintf("\tvid %04X pid %04X\n", hid_info[dev_addr].vid, hid_info[dev_addr].pid);
 
+
+  uint8_t dd[128];
+  memset(dd, 0xff, sizeof dd);
+  tuh_descriptor_get_device_sync(dev_addr, dd, sizeof dd);
+  dumphex("dd", dd, sizeof dd);
+
+//   XFER_RESULT_SUCCESS
+
+  memset(dd, 0xff, sizeof dd);
+  tuh_descriptor_get_configuration_sync(dev_addr, instance, dd, sizeof dd);
+  dumphex("cfg", dd, sizeof dd);
+
+  for (int i=0; i<5; i++) {
+    memset(dd, 0xff, sizeof dd);
+    tuh_descriptor_get_string_sync(dev_addr, i, 0x0409, dd, sizeof dd);
+    printf("%d: ", i);
+    dumphex("str", dd, sizeof dd);
+  }
+
+  memset(dd, 0xff, sizeof dd);
+  tuh_descriptor_get_manufacturer_string_sync(dev_addr, 0x0409, dd, sizeof dd);
+  dumphex("mfr", dd, sizeof dd);
+
+  memset(dd, 0xff, sizeof dd);
+  tuh_descriptor_get_product_string_sync(dev_addr, 0x0409, dd, sizeof dd);
+  dumphex("prod", dd, sizeof dd);
+
+  memset(dd, 0xff, sizeof dd);
+  tuh_descriptor_get_serial_string_sync(dev_addr, 0x0409, dd, sizeof dd);
+  dumphex("serial", dd, sizeof dd);
 
   // Interface protocol (hid_interface_protocol_enum_t)
   const char* protocol_str[] = { "None", "Keyboard", "Mouse" };

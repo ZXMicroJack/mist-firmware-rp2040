@@ -77,16 +77,17 @@ target_compile_options(mistfirmware PUBLIC
 )
 
 # mist library
-#add_library(mistfirmwareusb STATIC
-  ## Add these for USB
-  #../mist-firmware/usb/hidparser.c
-  #../mist-firmware/usb/hid.c
-  #../mist-firmware/usb/joystick.c
-  #../mist-firmware/usb/timer.c
-  #../mist-firmware/usb/xboxusb.c
-  #../mist-firmware/usb/usbdebug.c
-  #../mist-firmware/usb/pl2303.c
-             #)
+add_library(mistfirmwareusb STATIC
+  # Add these for USB
+  ../mist-firmware/usb/hidparser.c
+  ../mist-firmware/usb/hid.c
+  ../mist-firmware/usb/joystick.c
+  ../mist-firmware/usb/timer.c
+  ../mist-firmware/usb/xboxusb.c
+  ../mist-firmware/usb/usbdebug.c
+  ../mist-firmware/usb/pl2303.c
+             )
+
 #target_link_libraries(mistfirmware pico_stdlib hardware_spi hardware_flash pico_audio_i2s pico_multicore pico_stdlib)
 target_compile_options(mistfirmware PUBLIC
   "-DVDATE=\"\""
@@ -96,10 +97,16 @@ target_compile_options(mistfirmware PUBLIC
   #"-Dspi_init=mister_spi_init"
 )
 
-
+target_compile_options(mistfirmwareusb PUBLIC
+  "-DVDATE=\"\""
+  "-DMIST"
+  # comment for USB here
+  #"-DUSB"
+  #"-Dspi_init=mister_spi_init"
+)
 
 # fpga program
-add_executable(mist
+add_executable(mistram
   ../drivers/fpga.c
   ../drivers/pio_spi.c
   ../drivers/ps2.c
@@ -122,24 +129,70 @@ add_executable(mist
   fpgaconfig.c
   )
 
-target_link_libraries(mist pico_stdlib mistfirmware hardware_spi hardware_pio hardware_flash hardware_i2c)
+target_link_libraries(mistram pico_stdlib mistfirmware hardware_spi hardware_pio hardware_flash hardware_i2c)
 add_compile_options(-O2)
-pico_generate_pio_header(mist ../drivers/fpga.pio)
-pico_generate_pio_header(mist ../drivers/spi.pio)
-pico_generate_pio_header(mist ../drivers/jamma.pio)
-pico_generate_pio_header(mist ../drivers/jammadb9.pio)
-pico_enable_stdio_usb(mist 1)
-pico_enable_stdio_uart(mist 0)
-pico_add_extra_outputs(mist)
-example_auto_set_url(mist)
-pico_set_binary_type(mist no_flash)
-target_compile_options(mist PUBLIC
+pico_generate_pio_header(mistram ../drivers/fpga.pio)
+pico_generate_pio_header(mistram ../drivers/spi.pio)
+pico_generate_pio_header(mistram ../drivers/jamma.pio)
+pico_generate_pio_header(mistram ../drivers/jammadb9.pio)
+pico_enable_stdio_usb(mistram 1)
+pico_enable_stdio_uart(mistram 0)
+pico_add_extra_outputs(mistram)
+example_auto_set_url(mistram)
+pico_set_binary_type(mistram no_flash)
+target_compile_options(mistram PUBLIC
   "-DVDATE=\"\""
   "-Dhexdump=driver_hexdump"
   "-DPS2HOST"
   "-DXILINX"
   "-DJAMMADB9"
 )
+
+
+# fpga program
+add_executable(mistusb
+  ../drivers/fpga.c
+  ../drivers/pio_spi.c
+  ../drivers/ps2.c
+  ../drivers/sdcard.c
+  ../drivers/bitfile.c
+  ../drivers/ipc.c
+  ../drivers/flash.c
+  ../drivers/debug.c
+  ../drivers/fifo.c
+  ../drivers/kbd.c
+  ../drivers/jamma.c
+  glue.c
+  spi.c
+  usbdev.c
+  hardware.c
+  mist.c
+  mistmain.c
+  mmc.c
+  keyboard.c
+  fpgaconfig.c
+  )
+
+target_link_libraries(mistusb pico_stdlib mistfirmware mistfirmwareusb hardware_spi hardware_pio hardware_flash hardware_i2c)
+add_compile_options(-O2)
+pico_generate_pio_header(mistusb ../drivers/fpga.pio)
+pico_generate_pio_header(mistusb ../drivers/spi.pio)
+pico_generate_pio_header(mistusb ../drivers/jamma.pio)
+pico_generate_pio_header(mistusb ../drivers/jammadb9.pio)
+pico_enable_stdio_usb(mistusb 1)
+pico_enable_stdio_uart(mistusb 0)
+pico_add_extra_outputs(mistusb)
+example_auto_set_url(mistusb)
+pico_set_binary_type(mistusb no_flash)
+target_compile_options(mistusb PUBLIC
+  "-DVDATE=\"\""
+  "-Dhexdump=driver_hexdump"
+  "-DPS2HOST"
+  "-DXILINX"
+  "-DJAMMADB9"
+  "-DUSB"
+)
+
 
 
 #target_compile_options(mist PUBLIC

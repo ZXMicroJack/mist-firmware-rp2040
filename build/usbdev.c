@@ -50,22 +50,23 @@ uint16_t usb_storage_write(const char *pData, uint16_t length) { return 0; }
 uint16_t usb_storage_read(char *pData, uint16_t length) { return 0; }
 
 #ifdef USB
-// usb_data_t *usb_get_handle(uint16_t vid, uint16_t pid) {
-//   usb_data_t *this = malloc(sizeof(usb_data_t));
-//   memset(this, 0, sizeof(usb_data_t));
+
+// // usb_data_t *usb_get_handle(uint16_t vid, uint16_t pid) {
+// //   usb_data_t *this = malloc(sizeof(usb_data_t));
+// //   memset(this, 0, sizeof(usb_data_t));
+// //
+// //   this->vid = vid;
+// //   this->pid = pid;
+// // }
 //
-//   this->vid = vid;
-//   this->pid = pid;
-// }
+// // static uint8_t usb_hid_init(usb_device_t *dev, usb_device_descriptor_t *dev_desc) {
+// // static uint8_t usb_hid_release(usb_device_t *dev)
+// // static uint8_t usb_hid_poll(usb_device_t *dev)
+//
+// extern const usb_device_class_config_t usb_hid_class;
+// extern const usb_device_class_config_t usb_hid_class;
 
-// static uint8_t usb_hid_init(usb_device_t *dev, usb_device_descriptor_t *dev_desc) {
-// static uint8_t usb_hid_release(usb_device_t *dev)
-// static uint8_t usb_hid_poll(usb_device_t *dev)
-
-extern const usb_device_class_config_t usb_hid_class;
-extern const usb_device_class_config_t usb_hid_class;
-
-#define MAX_USB   1
+#define MAX_USB   4
 
 usb_device_t device[MAX_USB];
 
@@ -91,6 +92,7 @@ void usb_attached(uint8_t dev, uint8_t idx, uint16_t vid, uint16_t pid, uint8_t 
   report[dev].desc_len = desclen;
   report[dev].report_size = 0;
   r = usb_hid_class.init(&device[dev], &dd);
+  //TODO MJ maybe do more at this point?
 }
 
 void usb_detached(uint8_t dev) {
@@ -110,13 +112,6 @@ void usb_handle_data(uint8_t dev, uint8_t *desc, uint16_t desclen) {
   memcpy(report[dev].last_report, desc, desclen);
   usb_hid_class.poll(&device[dev]);
 }
-
-
-
-// const usb_device_class_config_t usb_hid_class = {
-//   usb_hid_init, usb_hid_release, usb_hid_poll };
-
-
 
 // PL2303
 // ------
@@ -138,19 +133,13 @@ void usb_handle_data(uint8_t dev, uint8_t *desc, uint16_t desclen) {
 
 
 void mist_usb_init() {
-//   uint8_t r;
-//   usb_device_descriptor_t dd;
-//   usb_device_t dev;
-//   r = usb_hid_class.init(&dev, &dd);
-//   r = usb_xbox_class.init(&dev, &dd);
-//   r = usb_pl2303_class.init(&dev, &dd);
 }
 
 void mist_usb_loop() {
 }
-#define lowest(a,b) ((a) < (b) ? (a) : (b))
 
 // TODO MJ implement usb_ctrl_req
+// NOTE: Faked to return report descriptor.
 uint8_t usb_ctrl_req( usb_device_t *dev, uint8_t bmReqType,
                       uint8_t bRequest, uint8_t wValLo, uint8_t wValHi,
                       uint16_t wInd, uint16_t nbytes, uint8_t* dataptr) {
@@ -168,6 +157,7 @@ uint8_t usb_ctrl_req( usb_device_t *dev, uint8_t bmReqType,
 // void usb_poll() {}
 
 // TODO MJ implement usb_ctrl_req
+// NOTE: Faked purely to pass on the last report.
 uint8_t usb_in_transfer( usb_device_t *dev, ep_t *ep, uint16_t *nbytesptr, uint8_t* data) {
   debug(("usb_in_transfer: dev %08x, ep %08x, ptr %08X data %08X\n", dev, ep, nbytesptr, data));
   uint8_t n = dev - device;
@@ -187,22 +177,23 @@ uint8_t usb_out_transfer( usb_device_t *dev, ep_t *ep, uint16_t nbytes, const ui
   return 0;
 }
 
-// TODO MJ implement usb_ctrl_req
 usb_device_t *usb_get_devices() {
   debug(("usb_get_devices\n"));
-  return NULL;
+  return device;
 }
 
-// TODO MJ implement usb_ctrl_req - return value needed
 uint8_t usb_get_conf_descr( usb_device_t *dev, uint16_t nbytes, uint8_t conf, usb_configuration_descriptor_t* dataptr ) {
   debug(("usb_get_conf_descr: dev %08x, nbytes %04X conf %02X data %08X\n", dev, nbytes, conf, dataptr));
   tuh_descriptor_get_configuration_sync(dev - device, conf, dataptr, nbytes);
   return 0;
 }
 
-// TODO MJ implement usb_ctrl_req
 uint8_t usb_set_conf( usb_device_t *dev, uint8_t conf_value ) {
   debug(("usb_set_conf: dev %08x conf %02X\n", dev, conf_value));
+#ifndef USBFAKE
+  uint8_t dev_addr = dev - device;
+  tuh_configuration_set(dev_addr, conf_value, NULL, NULL);
+#endif
   return 0;
 }
 #endif

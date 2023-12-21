@@ -104,6 +104,7 @@ unsigned char CheckFirmware(char *name) {
 
 
 //// keyboard handling....
+//TODO MJ Add detection of this in the PS2 keyboard
 // PAUSE -> 6F
 // ps2rx E0
 // ps2rx 12

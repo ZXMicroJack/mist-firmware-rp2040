@@ -27,6 +27,11 @@
 #include "mistmain.h"
 #include "usbdev.h"
 
+#if defined(USB) && !defined (USBFAKE)
+#include "bsp/board.h"
+#include "tusb.h"
+#endif
+
 
 void FatalError(unsigned long error) {
   unsigned long i;
@@ -90,15 +95,17 @@ static void enable_xip(void) {
 
 
 
-#ifdef USB
+#ifdef USBFAKE
 
-
-#define JOY3_DN   0
-#define JOY2_DN   0
-#define JOY1_DN   0
+#define JOY3_DN   3
+#define JOY2_DN   2
+#define JOY1_DN   1
 #define KBD_DN   0
 
 #define FAKE_KBD
+#define FAKE_JOY1
+#define FAKE_JOY2
+#define FAKE_JOY3
 
 #ifdef FAKE_KBD
 const static uint8_t kbd_rd[] = {0x05,0x01,0x09,0x06,0xA1,0x01,0x05,0x07,0x19,0xE0,0x29,0xE7,0x15,0x00,0x25,0x01,0x75,0x01,0x95,0x08,0x81,0x02,0x95,0x01,0x75,0x08,0x81,0x01,0x95,0x05,0x75,0x01,0x05,0x08,0x19,0x01,0x29,0x05,0x91,0x02,0x95,0x03,0x75,0x01,0x91,0x01,0x95,0x06,0x75,0x08,0x15,0x00,0x26,0xFF,0x00,0x05,0x07,0x19,0x00,0x2A,0xFF,0x00,0x81,0x00,0xC0};
@@ -394,6 +401,11 @@ int main() {
   printf("Running test\n");
   printf("Running test\n");
 
+#if defined(USB) && !defined (USBFAKE)
+  board_init();
+  tusb_init();
+#endif
+
   mist_init();
 #ifdef USB
   mist_usb_init();
@@ -401,6 +413,11 @@ int main() {
 
   char lastch = 0;
   for(;;) {
+#if defined(USB) && !defined (USBFAKE)
+    tuh_task();
+    hid_app_task();
+#endif
+
     int c = getchar_timeout_us(2);
 //     int c = getchar();
 //     if (forceexit) break;
@@ -409,7 +426,7 @@ int main() {
       extern int menu;
       menu = !menu;
     }
-#ifdef USB
+#ifdef USBFAKE
 #ifdef FAKE_KBD
     if (c == 'k') {
       printf("mode = keyboard\n");

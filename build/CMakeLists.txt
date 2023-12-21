@@ -150,7 +150,7 @@ target_compile_options(mistram PUBLIC
 
 
 # fpga program
-add_executable(mistusb
+add_executable(mistusbfake
   ../drivers/fpga.c
   ../drivers/pio_spi.c
   ../drivers/ps2.c
@@ -173,17 +173,63 @@ add_executable(mistusb
   fpgaconfig.c
   )
 
-target_link_libraries(mistusb pico_stdlib mistfirmware mistfirmwareusb hardware_spi hardware_pio hardware_flash hardware_i2c)
+target_link_libraries(mistusbfake pico_stdlib mistfirmware mistfirmwareusb hardware_spi hardware_pio hardware_flash hardware_i2c)
+add_compile_options(-O2)
+pico_generate_pio_header(mistusbfake ../drivers/fpga.pio)
+pico_generate_pio_header(mistusbfake ../drivers/spi.pio)
+pico_generate_pio_header(mistusbfake ../drivers/jamma.pio)
+pico_generate_pio_header(mistusbfake ../drivers/jammadb9.pio)
+pico_enable_stdio_usb(mistusbfake 1)
+pico_enable_stdio_uart(mistusbfake 0)
+pico_add_extra_outputs(mistusbfake)
+example_auto_set_url(mistusbfake)
+pico_set_binary_type(mistusbfake no_flash)
+target_compile_options(mistusbfake PUBLIC
+  "-DVDATE=\"\""
+  "-Dhexdump=driver_hexdump"
+  "-DPS2HOST"
+  "-DXILINX"
+  "-DJAMMADB9"
+  "-DUSB"
+  "-DUSBFAKE"
+)
+
+add_executable(mistusb
+  ../drivers/fpga.c
+  ../drivers/pio_spi.c
+  ../drivers/ps2.c
+  ../drivers/sdcard.c
+  ../drivers/bitfile.c
+  ../drivers/ipc.c
+  ../drivers/flash.c
+  ../drivers/debug.c
+  ../drivers/fifo.c
+  ../drivers/kbd.c
+  ../drivers/jamma.c
+  glue.c
+  spi.c
+  usbdev.c
+  hardware.c
+  mist.c
+  mistmain.c
+  mmc.c
+  keyboard.c
+  fpgaconfig.c
+  ../usbhost/hid_app_mist.c
+  )
+
+target_link_libraries(mistusb pico_stdlib mistfirmware mistfirmwareusb hardware_spi hardware_pio hardware_flash hardware_i2c tinyusb_host tinyusb_board)
+target_include_directories(mistusb PUBLIC ../usbhost)
 add_compile_options(-O2)
 pico_generate_pio_header(mistusb ../drivers/fpga.pio)
 pico_generate_pio_header(mistusb ../drivers/spi.pio)
 pico_generate_pio_header(mistusb ../drivers/jamma.pio)
 pico_generate_pio_header(mistusb ../drivers/jammadb9.pio)
-pico_enable_stdio_usb(mistusb 1)
+pico_enable_stdio_usb(mistusb 0)
 pico_enable_stdio_uart(mistusb 0)
 pico_add_extra_outputs(mistusb)
 example_auto_set_url(mistusb)
-pico_set_binary_type(mistusb no_flash)
+#pico_set_binary_type(mistusb no_flash)
 target_compile_options(mistusb PUBLIC
   "-DVDATE=\"\""
   "-Dhexdump=driver_hexdump"
@@ -191,7 +237,9 @@ target_compile_options(mistusb PUBLIC
   "-DXILINX"
   "-DJAMMADB9"
   "-DUSB"
+  "-DMIST_USB"
 )
+
 
 
 

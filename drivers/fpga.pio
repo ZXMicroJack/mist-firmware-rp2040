@@ -18,10 +18,17 @@ static inline void fpga_program_init(PIO pio, uint sm, uint offset, uint clock_p
   
   sm_config_set_sideset_pins(&sm_config, clock_pin);
   sm_config_set_out_pins(&sm_config, clock_pin + 1, 1); // assuming data pin is clock pin + 1
+#ifdef ALTERA_FPGA
+  sm_config_set_out_shift(&sm_config, true, true, 32);
+#else
   sm_config_set_out_shift(&sm_config, false, true, 32);
-  
+#endif
   sm_config_set_fifo_join(&sm_config, PIO_FIFO_JOIN_TX);
+#ifdef ALTERA_FPGA
+  sm_config_set_clkdiv(&sm_config, 50) ;
+#else
   sm_config_set_clkdiv(&sm_config, 2) ;
+#endif
 
   pio_gpio_init(pio, clock_pin);
   pio_gpio_init(pio, clock_pin + 1); // data pin

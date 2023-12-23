@@ -27,12 +27,12 @@
 // #define TEST_PS2
 // #define TEST_PS2_HOST
 // #define TEST_IPC
-#define TEST_SDCARD_SPI
-// #define TEST_FPGA
+// #define TEST_SDCARD_SPI
+#define TEST_FPGA
 // #define TEST_MATRIX
 // #define TEST_FLASH
 // #define TEST_USERIO
-#define TEST_JAMMA
+// #define TEST_JAMMA
 
 // KEY ACTION ALLOCATION
 // aAgGHjJlMNoOqQrRTuUVwWxXyYzZ
@@ -50,7 +50,14 @@
 
 typedef struct {
   int block_nr;
+  int dumps;
 } test_block_read_t;
+
+// #define FPGA_IMAGE_POS  0x100a0000
+// #define FPGA_IMAGE_SIZE 786789
+#define FPGA_IMAGE_POS 0x100b8a00
+#define FPGA_IMAGE_SIZE 1340672
+
 
 bool test_fpga_get_next_block(void *user_data, uint8_t *data) {
   int j;
@@ -58,14 +65,17 @@ bool test_fpga_get_next_block(void *user_data, uint8_t *data) {
   int o = 0;
   test_block_read_t *b = (test_block_read_t *)user_data;
   
-  if ((b->block_nr * 512) > 786789) {
+  if ((b->block_nr * 512) > FPGA_IMAGE_SIZE) {
     return false;
   }
 
-  uint8_t *bits = (uint8_t *)(0x100a0000 + b->block_nr * 512);
+  uint8_t *bits = (uint8_t *)(FPGA_IMAGE_POS + b->block_nr * 512);
   
 //   printf("bits = %p\n", bits);
-//   hexdump(bits, 512);
+  if (b->dumps < 10) {
+    hexdump(bits, 512);
+    b->dumps++;
+  }
 
   
   memcpy(data, bits, 512);
@@ -392,7 +402,12 @@ int main()
 #ifdef TEST_FPGA
       case 'p':
         memset(&fbrt, 0x00, sizeof fbrt);
+#ifdef ALTERA_FPGA
+//         fpga_reset();
+        printf("fpga_program returns %d\n", fpga_configure(&fbrt, test_fpga_get_next_block, FPGA_IMAGE_SIZE));
+#else
         printf("fpga_program returns %d\n", fpga_configure(&fbrt, test_fpga_get_next_block, 0));
+#endif
         break;
       case 'f':
         printf("fpga_initialise(); returns %d\n", fpga_initialise());

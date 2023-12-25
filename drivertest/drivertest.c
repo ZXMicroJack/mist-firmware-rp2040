@@ -100,10 +100,10 @@ bool test_fpga_get_next_block(void *user_data, uint8_t *data) {
   uint8_t *bits = (uint8_t *)(FPGA_IMAGE_POS + b->block_nr * 512);
   
 //   printf("bits = %p\n", bits);
-  if (b->dumps < 10) {
-    hexdump(bits, 512);
-    b->dumps++;
-  }
+//   if (b->dumps < 10) {
+//     hexdump(bits, 512);
+//     b->dumps++;
+//   }
 
   
   memcpy(data, bits, 512);
@@ -432,7 +432,7 @@ int main()
         memset(&fbrt, 0x00, sizeof fbrt);
 #ifdef ALTERA_FPGA
         initCRC();
-        printf("crc32: %08X\n", crc32(0xffffffff, (uint8_t *)FPGA_IMAGE_POS, FPGA_IMAGE_SIZE));
+//         printf("crc32: %08X\n", crc32(0xffffffff, (uint8_t *)FPGA_IMAGE_POS, FPGA_IMAGE_SIZE));
 //         fpga_reset();
         printf("fpga_program returns %d\n", fpga_configure(&fbrt, test_fpga_get_next_block, FPGA_IMAGE_SIZE));
 #else

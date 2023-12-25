@@ -16,29 +16,11 @@
 #include "pins.h"
 #include "fpga.h"
 #include "bitfile.h"
-#define DEBUG
+// #define DEBUG
 #include "debug.h"
 
 #include "fpga.pio.h"
 
-/*
-
-ALTERA_FPGA
-
-// Altera pins
-#define GPIO_FPGA_DCLK    0
-#define GPIO_FPGA_DATA0   1
-#if 0
-#define GPIO_FPGA_NCONFIG 10
-#define GPIO_FPGA_CONF_DONE 25
-#define GPIO_FPGA_NSTATUS 13
-#else
-//TODO remove - its just for dev
-#define GPIO_FPGA_NCONFIG 8
-#define GPIO_FPGA_CONF_DONE 7
-#define GPIO_FPGA_NSTATUS 6
-#endif
-*/
 
 #define RESET_TIMEOUT 100000
 
@@ -81,40 +63,16 @@ int fpga_claim(uint8_t claim) {
   return 0;
 }
 
-
-#if 0
-// Altera pins
-#define GPIO_FPGA_DCLK    0
-#define GPIO_FPGA_DATA0   1
-#if 0
-#define GPIO_FPGA_NCONFIG 10
-#define GPIO_FPGA_CONF_DONE 25
-#define GPIO_FPGA_NSTATUS 13
-#else
-//TODO remove - its just for dev
-#define GPIO_FPGA_NCONFIG 8
-#define GPIO_FPGA_CONF_DONE 7
-#define GPIO_FPGA_NSTATUS 6
-#endif
-#endif
-
 int fpga_reset() {
 #ifdef ALTERA_FPGA
   uint64_t timeout;
 
   gpio_init(GPIO_FPGA_DATA0);
   gpio_init(GPIO_FPGA_DCLK);
-  gpio_pull_up(GPIO_FPGA_DATA0);
-  gpio_pull_up(GPIO_FPGA_DCLK);
 
   gpio_init(GPIO_FPGA_CONF_DONE);
   gpio_init(GPIO_FPGA_NSTATUS);
   gpio_init(GPIO_FPGA_NCONFIG);
-
-  gpio_put(GPIO_FPGA_DCLK, 0);
-  gpio_put(GPIO_FPGA_DATA0, 0);
-  gpio_set_dir(GPIO_FPGA_DCLK, GPIO_OUT);
-  gpio_set_dir(GPIO_FPGA_DATA0, GPIO_OUT);
 
   gpio_put(GPIO_FPGA_NCONFIG, 1);
   gpio_set_dir(GPIO_FPGA_NCONFIG, GPIO_OUT);
@@ -142,7 +100,6 @@ int fpga_reset() {
     gpio_init(GPIO_FPGA_NCONFIG);
     return 2;
   }
-//   gpio_init(GPIO_FPGA_NCONFIG);
   debug(("fpga_status: done %u nstatus %u\n", gpio_get(GPIO_FPGA_CONF_DONE), gpio_get(GPIO_FPGA_NSTATUS)));
 #else
   uint64_t timeout;
@@ -150,11 +107,6 @@ int fpga_reset() {
   gpio_init(GPIO_FPGA_INITB);
   gpio_init(GPIO_FPGA_RESET);
   gpio_set_dir(GPIO_FPGA_RESET, GPIO_OUT);
-
-//   gpio_init(GPIO_FPGA_INITB);
-//   gpio_init(GPIO_FPGA_RESET);
-//   gpio_put(GPIO_FPGA_RESET, 1);
-//   gpio_set_dir(GPIO_FPGA_RESET, GPIO_OUT);
 
   gpio_put(GPIO_FPGA_RESET, 0);
   timeout = time_us_64() + RESET_TIMEOUT;
@@ -255,8 +207,6 @@ int fpga_configure(void *user_data, uint8_t (*next_block)(void *, uint8_t *), ui
   debug(("fpga_status: done %u nstatus %u\n", gpio_get(GPIO_FPGA_CONF_DONE), gpio_get(GPIO_FPGA_NSTATUS)));
   fpga_program_enable(fpga_pio, fpga_sm, 0, true);
 
-//   fpga_reset();
-
   do {
     thislen = len > 512 ? 512 : len;
     crc = crc32(crc, bits, thislen);
@@ -281,7 +231,7 @@ int fpga_configure(void *user_data, uint8_t (*next_block)(void *, uint8_t *), ui
       pio_sm_put_blocking(fpga_pio, fpga_sm, data);
     }
     len -= thislen;
-    debug(("fpga_status: done %u nstatus %u\n", gpio_get(GPIO_FPGA_CONF_DONE), gpio_get(GPIO_FPGA_NSTATUS)));
+//     debug(("fpga_status: done %u nstatus %u\n", gpio_get(GPIO_FPGA_CONF_DONE), gpio_get(GPIO_FPGA_NSTATUS)));
 
     debug(("fpga_configure: remaining %u / %u %u %u %08X %08X\n",
            len,
@@ -293,34 +243,20 @@ int fpga_configure(void *user_data, uint8_t (*next_block)(void *, uint8_t *), ui
 #endif
            crc, crc32(0xffffffff, bits, thislen)));
 #ifdef ALTERA_FPGA
-    debug(("fpga_status: done %u nstatus %u\n", gpio_get(GPIO_FPGA_CONF_DONE), gpio_get(GPIO_FPGA_NSTATUS)));
+//     debug(("fpga_status: done %u nstatus %u\n", gpio_get(GPIO_FPGA_CONF_DONE), gpio_get(GPIO_FPGA_NSTATUS)));
   } while (len > 0 && next_block(user_data, bits) && !gpio_get(GPIO_FPGA_CONF_DONE) && gpio_get(GPIO_FPGA_NSTATUS));
 #else
   } while (len > 0 && next_block(user_data, bits) && gpio_get(GPIO_FPGA_INITB));
 #endif
 
-#ifdef ALTERA_FPGA
-//   pio_sm_put_blocking(fpga_pio, fpga_sm, 0);
-//   pio_sm_put_blocking(fpga_pio, fpga_sm, 0);
-//   pio_sm_put_blocking(fpga_pio, fpga_sm, 0);
-//   pio_sm_put_blocking(fpga_pio, fpga_sm, 0);
-//   pio_sm_put_blocking(fpga_pio, fpga_sm, 0);
-
-
-  int n = 500;
-  while (n-- && !gpio_get(GPIO_FPGA_CONF_DONE) && gpio_get(GPIO_FPGA_NSTATUS)) {
-    while (!pio_sm_is_rx_fifo_empty(fpga_pio, fpga_sm));
-    pio_sm_put_blocking(fpga_pio, fpga_sm, 0);
-    debug(("fpga_status: done %u nstatus %u\n", gpio_get(GPIO_FPGA_CONF_DONE), gpio_get(GPIO_FPGA_NSTATUS)));
-  }
-#endif
-
-
-
-
   // wait until fifo is empty
+  for (int i=0; i<32 && !gpio_get(GPIO_FPGA_CONF_DONE); i++) {
+    pio_sm_put_blocking(fpga_pio, fpga_sm, 0xffffffff);
+//     printf("i = %d\n", i);
+  }
   while (!pio_sm_is_rx_fifo_empty(fpga_pio, fpga_sm))
     tight_loop_contents();
+
 
   pio_sm_set_enabled(fpga_pio, fpga_sm, false);
   fpga_program_enable(fpga_pio, fpga_sm, 0, false);

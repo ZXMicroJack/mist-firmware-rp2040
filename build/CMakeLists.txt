@@ -21,6 +21,36 @@ include(example_auto_set_url.cmake)
 # Build project
 include_directories(. ../mist-firmware ../mist-firmware/usb ..)
 
+set(driver_src
+  ../drivers/fpga.c
+  ../drivers/pio_spi.c
+  ../drivers/ps2.c
+  ../drivers/sdcard.c
+  ../drivers/bitfile.c
+  ../drivers/ipc.c
+  ../drivers/flash.c
+  ../drivers/debug.c
+  ../drivers/fifo.c
+  ../drivers/kbd.c
+  ../drivers/jamma.c
+)
+
+set(main_src
+  glue.c
+  spi.c
+  usbdev.c
+  hardware.c
+  mist.c
+  mistmain.c
+  mmc.c
+  keyboard.c
+  fpgaconfig.c
+)
+
+set(usb_src
+  ../usbhost/hid_app_mist.c
+)
+
 # mist library
 add_library(mistfirmware STATIC
   ../mist-firmware/arc_file.c
@@ -38,7 +68,6 @@ add_library(mistfirmware STATIC
   ../mist-firmware/idxfile.c
   ../mist-firmware/ikbd.c
   ../mist-firmware/ini_parser.c
-  #../mist-firmware/main.c
   ../mist-firmware/menu-8bit.c
   ../mist-firmware/menu.c
   ../mist-firmware/menu-minimig.c
@@ -58,14 +87,6 @@ add_library(mistfirmware STATIC
   ../mist-firmware/FatFs/ffsystem.c
   ../mist-firmware/FatFs/ffunicode.c
   ../mist-firmware/usb/joymapping.c
-  # Add these for USB
-  #../mist-firmware/usb/hidparser.c
-  #../mist-firmware/usb/hid.c
-  #../mist-firmware/usb/joystick.c
-  #../mist-firmware/usb/timer.c
-  #../mist-firmware/usb/xboxusb.c
-  #../mist-firmware/usb/usbdebug.c
-  #../mist-firmware/usb/pl2303.c
              )
 #target_link_libraries(mistfirmware pico_stdlib hardware_spi hardware_flash pico_audio_i2s pico_multicore pico_stdlib)
 target_compile_options(mistfirmware PUBLIC
@@ -76,9 +97,8 @@ target_compile_options(mistfirmware PUBLIC
   #"-Dspi_init=mister_spi_init"
 )
 
-# mist library
+# mist USB library
 add_library(mistfirmwareusb STATIC
-  # Add these for USB
   ../mist-firmware/usb/hidparser.c
   ../mist-firmware/usb/hid.c
   ../mist-firmware/usb/joystick.c
@@ -88,45 +108,16 @@ add_library(mistfirmwareusb STATIC
   ../mist-firmware/usb/pl2303.c
              )
 
-#target_link_libraries(mistfirmware pico_stdlib hardware_spi hardware_flash pico_audio_i2s pico_multicore pico_stdlib)
-target_compile_options(mistfirmware PUBLIC
-  "-DVDATE=\"\""
-  "-DMIST"
-  # comment for USB here
-  #"-DUSB"
-  #"-Dspi_init=mister_spi_init"
-)
-
 target_compile_options(mistfirmwareusb PUBLIC
   "-DVDATE=\"\""
   "-DMIST"
-  # comment for USB here
-  #"-DUSB"
-  #"-Dspi_init=mister_spi_init"
 )
 
-# fpga program
+####################################################################################
+# Main build RAM test build for functionality Xilinx ZXTres
 add_executable(mistram
-  ../drivers/fpga.c
-  ../drivers/pio_spi.c
-  ../drivers/ps2.c
-  ../drivers/sdcard.c
-  ../drivers/bitfile.c
-  ../drivers/ipc.c
-  ../drivers/flash.c
-  ../drivers/debug.c
-  ../drivers/fifo.c
-  ../drivers/kbd.c
-  ../drivers/jamma.c
-  glue.c
-  spi.c
-  usbdev.c
-  hardware.c
-  mist.c
-  mistmain.c
-  mmc.c
-  keyboard.c
-  fpgaconfig.c
+  ${driver_src}
+  ${main_src}
   )
 
 target_link_libraries(mistram pico_stdlib mistfirmware hardware_spi hardware_pio hardware_flash hardware_i2c)
@@ -149,28 +140,11 @@ target_compile_options(mistram PUBLIC
 )
 
 
-# fpga program
+####################################################################################
+# RAM build - for testing USB interface to USB host module.
 add_executable(mistusbfake
-  ../drivers/fpga.c
-  ../drivers/pio_spi.c
-  ../drivers/ps2.c
-  ../drivers/sdcard.c
-  ../drivers/bitfile.c
-  ../drivers/ipc.c
-  ../drivers/flash.c
-  ../drivers/debug.c
-  ../drivers/fifo.c
-  ../drivers/kbd.c
-  ../drivers/jamma.c
-  glue.c
-  spi.c
-  usbdev.c
-  hardware.c
-  mist.c
-  mistmain.c
-  mmc.c
-  keyboard.c
-  fpgaconfig.c
+  ${driver_src}
+  ${main_src}
   )
 
 target_link_libraries(mistusbfake pico_stdlib mistfirmware mistfirmwareusb hardware_spi hardware_pio hardware_flash hardware_i2c)
@@ -195,28 +169,43 @@ target_compile_options(mistusbfake PUBLIC
 #  "-DALTERA_FPGA"
 )
 
+####################################################################################
+# FLASH build - release binary for Xilinx ZXTres board -with single CPU middleboard.
+add_executable(mistusbxilinx
+  ${driver_src}
+  ${main_src}
+  ${usb_src}
+  )
+
+target_link_libraries(mistusbxilinx pico_stdlib mistfirmware mistfirmwareusb hardware_spi hardware_pio hardware_flash hardware_i2c tinyusb_host tinyusb_board)
+target_include_directories(mistusbxilinx PUBLIC ../usbhost)
+add_compile_options(-O2)
+pico_generate_pio_header(mistusbxilinx ../drivers/fpga.pio)
+pico_generate_pio_header(mistusbxilinx ../drivers/spi.pio)
+pico_generate_pio_header(mistusbxilinx ../drivers/jamma.pio)
+pico_generate_pio_header(mistusbxilinx ../drivers/jammadb9.pio)
+pico_enable_stdio_usb(mistusbxilinx 0)
+pico_enable_stdio_uart(mistusbxilinx 0)
+pico_add_extra_outputs(mistusbxilinx)
+example_auto_set_url(mistusbxilinx)
+#pico_set_binary_type(mistusb no_flash)
+target_compile_options(mistusbxilinx PUBLIC
+  "-DVDATE=\"\""
+  "-Dhexdump=driver_hexdump"
+  "-DPS2HOST"
+  "-DXILINX"
+  "-DJAMMADB9"
+  "-DUSB"
+  "-DMIST_USB"
+#  "-DALTERA_FPGA"
+)
+
+####################################################################################
+# FLASH build - release binary for Altera NeptUno board -with single CPU middleboard.
 add_executable(mistusb
-  ../drivers/fpga.c
-  ../drivers/pio_spi.c
-  ../drivers/ps2.c
-  ../drivers/sdcard.c
-  ../drivers/bitfile.c
-  ../drivers/ipc.c
-  ../drivers/flash.c
-  ../drivers/debug.c
-  ../drivers/fifo.c
-  ../drivers/kbd.c
-  ../drivers/jamma.c
-  glue.c
-  spi.c
-  usbdev.c
-  hardware.c
-  mist.c
-  mistmain.c
-  mmc.c
-  keyboard.c
-  fpgaconfig.c
-  ../usbhost/hid_app_mist.c
+  ${driver_src}
+  ${main_src}
+  ${usb_src}
   )
 
 target_link_libraries(mistusb pico_stdlib mistfirmware mistfirmwareusb hardware_spi hardware_pio hardware_flash hardware_i2c tinyusb_host tinyusb_board)
@@ -239,11 +228,6 @@ target_compile_options(mistusb PUBLIC
   "-DJAMMADB9"
   "-DUSB"
   "-DMIST_USB"
-#  "-DALTERA_FPGA"
+  "-DALTERA_FPGA"
 )
-
-#target_compile_options(mist PUBLIC
-  #"-DVDATE=\"\""
-  #)
-
 

@@ -192,6 +192,7 @@ target_compile_options(mistusbfake PUBLIC
   "-DJAMMADB9"
   "-DUSB"
   "-DUSBFAKE"
+#  "-DALTERA_FPGA"
 )
 
 add_executable(mistusb
@@ -238,10 +239,8 @@ target_compile_options(mistusb PUBLIC
   "-DJAMMADB9"
   "-DUSB"
   "-DMIST_USB"
+#  "-DALTERA_FPGA"
 )
-
-
-
 
 #target_compile_options(mist PUBLIC
   #"-DVDATE=\"\""

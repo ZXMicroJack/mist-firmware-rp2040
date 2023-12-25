@@ -82,15 +82,15 @@
 // Altera pins
 #define GPIO_FPGA_DCLK    0
 #define GPIO_FPGA_DATA0   1
-#if 0
-#define GPIO_FPGA_NCONFIG 10
-#define GPIO_FPGA_CONF_DONE 25
-#define GPIO_FPGA_NSTATUS 13
-#else
+#ifdef ALTERA_FPGA_DEV
 //TODO remove - its just for dev
 #define GPIO_FPGA_NCONFIG 8
 #define GPIO_FPGA_CONF_DONE 7
 #define GPIO_FPGA_NSTATUS 6
+#else
+#define GPIO_FPGA_NCONFIG 10
+#define GPIO_FPGA_CONF_DONE 25
+#define GPIO_FPGA_NSTATUS 13
 #endif
 
 #ifdef IPCDEV

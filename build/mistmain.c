@@ -125,6 +125,43 @@ int GetUSBStorageDevices()
 }
 #endif
 
+// #define MMC_AS_USB
+
+#ifdef USBFAKE
+
+#ifdef MMC_AS_USB
+uint8_t storage_devices = 1;
+
+unsigned char usb_host_storage_read(unsigned long lba, unsigned char *pReadBuffer, uint16_t len) {
+  printf("usb_host_storage_read: lba %ld len %d\n", lba, len);
+  return MMC_ReadMultiple(lba, pReadBuffer, len);
+}
+
+unsigned char usb_host_storage_write(unsigned long lba, const unsigned char *pWriteBuffer, uint16_t len) {
+  printf("usb_host_storage_write: lba %ld len %d\n", lba, len);
+  return MMC_WriteMultiple(lba, pWriteBuffer, len);
+}
+
+unsigned int usb_host_storage_capacity() {
+  printf("usb_host_storage_capacity\n");
+  return MMC_GetCapacity();
+}
+#else
+uint8_t storage_devices = 0;
+unsigned char usb_host_storage_read(unsigned long lba, unsigned char *pReadBuffer, uint16_t len) {
+  return 0;
+}
+
+unsigned char usb_host_storage_write(unsigned long lba, const unsigned char *pWriteBuffer, uint16_t len) {
+  return 0;
+}
+
+unsigned int usb_host_storage_capacity() {
+  return 0;
+}
+#endif
+#endif
+
 int mist_init() {
     uint8_t mmc_ok = 0;
 
@@ -149,6 +186,10 @@ int mist_init() {
 
     if(MMC_Init()) mmc_ok = 1;
     else           spi_fast();
+
+#ifdef MMC_AS_USB
+    mmc_ok = 0;
+#endif
 
     iprintf("spiclk: %u MHz\r", GetSPICLK());
 
@@ -194,15 +235,15 @@ int mist_init() {
     font_load();
 
     user_io_init();
-    printf("[%d]\n", __LINE__);
+//     printf("[%d]\n", __LINE__);
 
     // tos config also contains cdc redirect settings used by minimig
     tos_config_load(-1);
-    printf("[%d]\n", __LINE__);
+//     printf("[%d]\n", __LINE__);
 
     char mod = -1;
 
-    printf("[%d]\n", __LINE__);
+//     printf("[%d]\n", __LINE__);
     if((USB_LOAD_VAR != USB_LOAD_VALUE) && !user_io_dip_switch1()) {
         mod = arc_open("/CORE.ARC");
     } else {
@@ -213,7 +254,7 @@ int mist_init() {
             mod = arc_open(s);
         }
     }
-    printf("[%d]\n", __LINE__);
+//     printf("[%d]\n", __LINE__);
 
     if(mod < 0 || !strlen(arc_get_rbfname())) {
         fpga_init(NULL); // error opening default ARC, try with default RBF
@@ -224,9 +265,9 @@ int mist_init() {
         fpga_init(s);
     }
 
-    printf("[%d]\n", __LINE__);
+//     printf("[%d]\n", __LINE__);
     usb_dev_open();
-    printf("[%d]\n", __LINE__);
+//     printf("[%d]\n", __LINE__);
   jamma_Init();
     return 0;
 }

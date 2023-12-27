@@ -28,7 +28,7 @@ void storage_control_poll() {
 //TODO MJ No WiFi present at the moment - would need routing through fpga
 bool eth_present = 0;
 
-#ifndef USB
+// #if defined(USBFAKE) || !defined(USB)
 //TODO MJ PL2303 is a non CDC serial port over USB - maybe can use?
 int8_t pl2303_present(void) {
   return 0;
@@ -48,7 +48,9 @@ int8_t pl2303_is_blocked(void) {
 uint8_t get_pl2303s(void) {
   return 0;
 }
+// #endif
 
+#ifndef USB
 // return number of joysticks
 uint8_t joystick_count() { return 0; }
 

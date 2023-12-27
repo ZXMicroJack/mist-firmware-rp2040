@@ -27,12 +27,13 @@ set(driver_src
   ../drivers/ps2.c
   ../drivers/sdcard.c
   ../drivers/bitfile.c
-  ../drivers/ipc.c
-  ../drivers/flash.c
+  #../drivers/ipc.c
+  #../drivers/flash.c
   ../drivers/debug.c
   ../drivers/fifo.c
   ../drivers/kbd.c
   ../drivers/jamma.c
+  ../drivers/crc16.c
 )
 
 set(main_src
@@ -49,13 +50,13 @@ set(main_src
 
 set(usb_src
   ../usbhost/hid_app_mist.c
+  ../usbhost/msc_app.c
 )
 
-# mist library
-add_library(mistfirmware STATIC
+set(mistfirmware_src
   ../mist-firmware/arc_file.c
   ../mist-firmware/archie.c
- ../mist-firmware/boot.c
+  ../mist-firmware/boot.c
   ../mist-firmware/cdc_control.c
   ../mist-firmware/config.c
   ../mist-firmware/cue_parser.c
@@ -87,30 +88,32 @@ add_library(mistfirmware STATIC
   ../mist-firmware/FatFs/ffsystem.c
   ../mist-firmware/FatFs/ffunicode.c
   ../mist-firmware/usb/joymapping.c
-             )
-#target_link_libraries(mistfirmware pico_stdlib hardware_spi hardware_flash pico_audio_i2s pico_multicore pico_stdlib)
-target_compile_options(mistfirmware PUBLIC
-  "-DVDATE=\"\""
-  "-DMIST"
-  # comment for USB here
-  #"-DUSB"
-  #"-Dspi_init=mister_spi_init"
 )
 
-# mist USB library
-add_library(mistfirmwareusb STATIC
-  ../mist-firmware/usb/hidparser.c
+set(mistfirmwareusb_src
+ ../mist-firmware/usb/hidparser.c
   ../mist-firmware/usb/hid.c
   ../mist-firmware/usb/joystick.c
   ../mist-firmware/usb/timer.c
-  ../mist-firmware/usb/xboxusb.c
+  #../mist-firmware/usb/xboxusb.c
   ../mist-firmware/usb/usbdebug.c
-  ../mist-firmware/usb/pl2303.c
-             )
+  #../mist-firmware/usb/pl2303.c
+)
 
+# mist library
+add_library(mistfirmware STATIC ${mistfirmware_src})
+target_compile_options(mistfirmware PUBLIC
+  "-DVDATE=\"\""
+  "-DMIST"
+)
+
+# mist USB library
+add_library(mistfirmwareusb STATIC ${mistfirmware_src} ${mistfirmwareusb_src})
 target_compile_options(mistfirmwareusb PUBLIC
   "-DVDATE=\"\""
   "-DMIST"
+  "-DUSB_STORAGE"
+  "-DEXCL_XBOX_JPAD"
 )
 
 ####################################################################################
@@ -120,7 +123,7 @@ add_executable(mistram
   ${main_src}
   )
 
-target_link_libraries(mistram pico_stdlib mistfirmware hardware_spi hardware_pio hardware_flash hardware_i2c)
+target_link_libraries(mistram pico_stdlib mistfirmware hardware_spi hardware_pio)
 add_compile_options(-O2)
 pico_generate_pio_header(mistram ../drivers/fpga.pio)
 pico_generate_pio_header(mistram ../drivers/spi.pio)
@@ -137,6 +140,7 @@ target_compile_options(mistram PUBLIC
   "-DPS2HOST"
   "-DXILINX"
   "-DJAMMADB9"
+  "-DTEST_BUILD"
 )
 
 
@@ -147,7 +151,7 @@ add_executable(mistusbfake
   ${main_src}
   )
 
-target_link_libraries(mistusbfake pico_stdlib mistfirmware mistfirmwareusb hardware_spi hardware_pio hardware_flash hardware_i2c)
+target_link_libraries(mistusbfake pico_stdlib mistfirmwareusb hardware_spi hardware_pio)
 add_compile_options(-O2)
 pico_generate_pio_header(mistusbfake ../drivers/fpga.pio)
 pico_generate_pio_header(mistusbfake ../drivers/spi.pio)
@@ -166,6 +170,7 @@ target_compile_options(mistusbfake PUBLIC
   "-DJAMMADB9"
   "-DUSB"
   "-DUSBFAKE"
+  "-DTEST_BUILD"
 #  "-DALTERA_FPGA"
 )
 
@@ -177,7 +182,7 @@ add_executable(mistusbxilinx
   ${usb_src}
   )
 
-target_link_libraries(mistusbxilinx pico_stdlib mistfirmware mistfirmwareusb hardware_spi hardware_pio hardware_flash hardware_i2c tinyusb_host tinyusb_board)
+target_link_libraries(mistusbxilinx pico_stdlib mistfirmwareusb hardware_spi hardware_pio hardware_flash hardware_i2c tinyusb_host tinyusb_board)
 target_include_directories(mistusbxilinx PUBLIC ../usbhost)
 add_compile_options(-O2)
 pico_generate_pio_header(mistusbxilinx ../drivers/fpga.pio)
@@ -197,6 +202,8 @@ target_compile_options(mistusbxilinx PUBLIC
   "-DJAMMADB9"
   "-DUSB"
   "-DMIST_USB"
+  "-DUSB_STORAGE"
+  "-DUSB_DEBUG_OFF"
 #  "-DALTERA_FPGA"
 )
 
@@ -208,7 +215,7 @@ add_executable(mistusb
   ${usb_src}
   )
 
-target_link_libraries(mistusb pico_stdlib mistfirmware mistfirmwareusb hardware_spi hardware_pio hardware_flash hardware_i2c tinyusb_host tinyusb_board)
+target_link_libraries(mistusb pico_stdlib mistfirmwareusb hardware_spi hardware_pio hardware_flash hardware_i2c tinyusb_host tinyusb_board)
 target_include_directories(mistusb PUBLIC ../usbhost)
 add_compile_options(-O2)
 pico_generate_pio_header(mistusb ../drivers/fpga.pio)
@@ -229,5 +236,7 @@ target_compile_options(mistusb PUBLIC
   "-DUSB"
   "-DMIST_USB"
   "-DALTERA_FPGA"
+  "-DUSB_STORAGE"
+  "-DUSB_DEBUG_OFF"
 )
 

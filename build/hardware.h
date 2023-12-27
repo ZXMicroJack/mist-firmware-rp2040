@@ -31,8 +31,11 @@
 
 
 // TODO MJ - increase back to 4096 when USB done.
-// #define SECTOR_BUFFER_SIZE   4096
+#ifdef TEST_BUILD
 #define SECTOR_BUFFER_SIZE   1024
+#else
+#define SECTOR_BUFFER_SIZE   4096
+#endif
 
 // TODO MJ - no sense switches for these two
 char mmc_inserted(void);

@@ -107,6 +107,10 @@ int main(void)
 //   ps2_Init();
 //   joypad_init();
 
+// unsigned char usb_host_storage_write(unsigned long lba, const unsigned char *pWriteBuffer, uint16_t len) {
+// unsigned char usb_host_storage_read(unsigned long lba, unsigned char *pReadBuffer, uint16_t len) {
+// unsigned int usb_host_storage_capacity() {
+
   while (1)
   {
     // tinyusb host task
@@ -115,19 +119,23 @@ int main(void)
     
     switch(uget()) {
       case 'r': {
-        uprintf("read: returns %d\r\n", read_sector(0, sector, 0));
+//         uprintf("read: returns %d\r\n", read_sector(0, sector, 0));
+        uprintf("read: returns %d\r\n", usb_host_storage_read(0, sector, 1));
         break;
       }
       case 'R': {
-        uprintf("read2: returns %d\r\n", read_sector(0, sector2, 0));
+//         uprintf("read2: returns %d\r\n", read_sector(0, sector2, 0));
+        uprintf("read2: returns %d\r\n", usb_host_storage_read(0, sector2, 1));
         break;
       }
       case 'w': {
-        uprintf("write: returns %d\r\n", write_sector(0, sector, 0));
+//         uprintf("write: returns %d\r\n", write_sector(0, sector, 0));
+        uprintf("write: returns %d\r\n", usb_host_storage_write(0, sector, 1));
         break;
       }
       case 'W': {
-        uprintf("write2: returns %d\r\n", write_sector(0, sector2, 0));
+//         uprintf("write2: returns %d\r\n", write_sector(0, sector2, 0));
+        uprintf("write2: returns %d\r\n", usb_host_storage_write(0, sector2, 1));
         break;
       }
       case 'd': {
@@ -136,14 +144,16 @@ int main(void)
           if ((i&15) == 0) uprintf("\r\n");
           uprintf("%02X ", sector[i]);
         }
+        uprintf("\r\ncapacity = %d\n", usb_host_storage_capacity());
         break;
       }
       case 'D': {
         int i;
         for (i=0; i<512; i++) {
-          if ((i&15) == 0) printf("\r\n");
+          if ((i&15) == 0) uprintf("\r\n");
           uprintf("%02X ", sector2[i]);
         }
+        uprintf("\r\ncapacity = %d\n", usb_host_storage_capacity());
         break;
       }
       case 'b': {

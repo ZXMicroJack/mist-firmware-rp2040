@@ -25,7 +25,7 @@
 #include "drivers/debug.h"
 
 #include "mistmain.h"
-#include "usbdev.h"
+// #include "usbdev.h"
 
 #if defined(USB) && !defined (USBFAKE)
 #include "bsp/board.h"
@@ -36,7 +36,7 @@
 void FatalError(unsigned long error) {
   unsigned long i;
 
-  iprintf("Fatal error: %lu\r", error);
+  printf("Fatal error: %lu\r", error);
   sleep_ms(2000);
 
 //   while (1) {
@@ -395,11 +395,6 @@ int main() {
 #endif
 
   printf("Drivertest Microjack\'23\n");
-  printf("Running test\n");
-  printf("Running test\n");
-  printf("Running test\n");
-  printf("Running test\n");
-  printf("Running test\n");
 
 #if defined(USB) && !defined (USBFAKE)
   board_init();

@@ -45,9 +45,13 @@ uint16_t usb_cdc_read(char *pData, uint16_t length) { return 0; }
 
 //TODO MJ - All from storage control - part of USB stack - rp2040 uses own TinyUSB stack for this.
 //TODO MJ - can probably stub out storage_control_poll and remove this
-uint8_t  usb_storage_is_configured(void) { return 0; }
-uint16_t usb_storage_write(const char *pData, uint16_t length) { return 0; }
-uint16_t usb_storage_read(char *pData, uint16_t length) { return 0; }
+// uint8_t  usb_storage_is_configured(void) { return 0; }
+// uint16_t usb_storage_write(const char *pData, uint16_t length) { return 0; }
+// uint16_t usb_storage_read(char *pData, uint16_t length) { return 0; }
+
+// #ifdef USBFAKE
+// uint8_t storage_devices = 0;
+// #endif
 
 #ifdef USB
 
@@ -66,7 +70,11 @@ uint16_t usb_storage_read(char *pData, uint16_t length) { return 0; }
 // extern const usb_device_class_config_t usb_hid_class;
 // extern const usb_device_class_config_t usb_hid_class;
 
+#ifdef TEST_BUILD
+#define MAX_USB   1
+#else
 #define MAX_USB   4
+#endif
 
 usb_device_t device[MAX_USB];
 
@@ -138,6 +146,7 @@ void mist_usb_init() {
 void mist_usb_loop() {
 }
 
+#if 1
 // TODO MJ implement usb_ctrl_req
 // NOTE: Faked to return report descriptor.
 uint8_t usb_ctrl_req( usb_device_t *dev, uint8_t bmReqType,
@@ -196,4 +205,5 @@ uint8_t usb_set_conf( usb_device_t *dev, uint8_t conf_value ) {
 #endif
   return 0;
 }
+#endif
 #endif

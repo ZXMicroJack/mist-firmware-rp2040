@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#ifdef DEVKIT_DEBUG
+#include <stdarg.h>
+#endif
+
 #include <pico/time.h>
 
 #include "hardware/clocks.h"
@@ -380,6 +384,41 @@ void joy3_usbaction(char c) {
 // }
 #endif
 
+#if defined(USB) && !defined(USBFAKE)
+void usb_poll() {
+    tuh_task();
+    hid_app_task();
+}
+#else
+void usb_poll() {
+}
+#endif
+
+#ifdef DEVKIT_DEBUG
+static char str[256];
+int uprintf(const char *fmt, ...) {
+  int i;
+  va_list argp;
+  va_start(argp, fmt);
+  vsprintf(str, fmt, argp);
+
+  i=0;
+  while (str[i]) {
+    if (str[i] == '\n') uart_putc(uart1, '\r');
+    uart_putc(uart1, str[i]);
+    i++;
+  }
+  return i;
+}
+
+void usetup() {
+  uart_init (uart1, 115200);
+  gpio_set_function(8, GPIO_FUNC_UART);
+  gpio_set_function(9, GPIO_FUNC_UART);
+}
+#endif
+
+
 int main() {
   stdio_init_all();
 //   test_block_read_t fbrt;
@@ -389,6 +428,10 @@ int main() {
   // set up error led
   gpio_init(PICO_DEFAULT_LED_PIN);
   gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
+
+#ifdef DEVKIT_DEBUG
+  usetup();
+#endif
 
 #if PICO_NO_FLASH
   enable_xip();

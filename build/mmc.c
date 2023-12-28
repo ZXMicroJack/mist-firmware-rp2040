@@ -46,6 +46,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 static pio_spi_inst_t *spi = NULL;
 
 unsigned char MMC_Init(void) {
+#ifdef DEVKIT_DEBUG
+  return CARDTYPE_NONE;
+#else
   if (spi == NULL) spi = sd_hw_init();
 
   if (sd_init_card(spi)) {
@@ -53,24 +56,29 @@ unsigned char MMC_Init(void) {
   }
 
   return sd_is_sdhc() ? CARDTYPE_SDHC : CARDTYPE_SD;
-
+#endif
 }
 
 unsigned char MMC_Read(unsigned long lba, unsigned char *pReadBuffer) {
+#ifndef DEVKIT_DEBUG
   if (!sd_readsector(spi, lba, pReadBuffer)) {
       return 1;
   }
+#endif
   return 0;
 }
 
 unsigned char MMC_Write(unsigned long lba, const unsigned char *pWriteBuffer) {
+#ifndef DEVKIT_DEBUG
   if (!sd_writesector(spi, lba, pWriteBuffer)) {
       return 1;
   }
+#endif
   return 0;
 }
 
 unsigned char MMC_ReadMultiple(unsigned long lba, unsigned char *pReadBuffer, unsigned long nBlockCount) {
+#ifndef DEVKIT_DEBUG
     while (nBlockCount--) {
         if (sd_readsector(spi, lba, pReadBuffer)) {
             return 0;
@@ -79,9 +87,13 @@ unsigned char MMC_ReadMultiple(unsigned long lba, unsigned char *pReadBuffer, un
         pReadBuffer += 512;
     }
     return 1;
+#else
+    return 0;
+#endif
 }
 
 unsigned char MMC_WriteMultiple(unsigned long lba, const unsigned char *pWriteBuffer, unsigned long nBlockCount) {
+#ifndef DEVKIT_DEBUG
     while (nBlockCount--) {
         if (sd_writesector(spi, lba, pWriteBuffer)) {
             return 0;
@@ -90,14 +102,25 @@ unsigned char MMC_WriteMultiple(unsigned long lba, const unsigned char *pWriteBu
         pWriteBuffer += 512;
     }
     return 1;
+#else
+    return 0;
+#endif
 }
 
 unsigned char MMC_GetCSD(unsigned char *b) {
+#ifndef DEVKIT_DEBUG
     return sd_cmd9(spi, b);
+#else
+    return 0;
+#endif
 }
 
 unsigned char MMC_GetCID(unsigned char *b) {
+#ifndef DEVKIT_DEBUG
     return sd_cmd10(spi, b);
+#else
+    return 0;
+#endif
 }
 
 // frequently check if card has been removed
@@ -106,12 +129,16 @@ unsigned char MMC_CheckCard() {
 }
 
 unsigned char MMC_IsSDHC() {
+#ifndef DEVKIT_DEBUG
   return sd_is_sdhc();
+#else
+    return 0;
+#endif
 }
 
 // MMC get capacity
-unsigned long MMC_GetCapacity()
-{
+unsigned long MMC_GetCapacity() {
+#ifndef DEVKIT_DEBUG
 	unsigned long result=0;
 	unsigned char CSDData[16];
  
@@ -139,6 +166,9 @@ unsigned long MMC_GetCapacity()
 	  result*=blocksize;	// Scale by the number of 512-byte chunks per block.
 	  return(result);
 	}
+#else
+    return 0;
+#endif
 }
 
 //TODO MJ assume MMC is inserted

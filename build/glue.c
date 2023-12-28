@@ -79,9 +79,6 @@ char hid_joystick_button_remap(char *s, char action, int tag) {
 // TODO MJ - USB stuff
 void usb_init() {}
 
-void usb_poll() {
-}
-
 void usb_hw_init() {}
 
 // TODO MJ - firmware updating

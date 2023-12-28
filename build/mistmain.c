@@ -115,16 +115,21 @@ extern void inserttestfloppy();
 #ifdef USB_STORAGE
 int GetUSBStorageDevices()
 {
-  uint32_t to = GetTimer(2000);
+  uint32_t to = GetTimer(4000);
 
   // poll usb 2 seconds or until a mass storage device becomes ready
-  while(!storage_devices && !CheckTimer(to))
+  while(!storage_devices && !CheckTimer(to)) {
     usb_poll();
+    if (storage_devices) {
+      usb_poll();
+    }
+  }
 
   return storage_devices;
 }
 #endif
 
+// Test use of USB disk instead of MMC - when MMC is not inserted.
 // #define MMC_AS_USB
 
 #ifdef USBFAKE
@@ -278,7 +283,6 @@ int mist_loop() {
     cdc_control_poll();
     storage_control_poll();
     user_io_poll();
-    usb_poll();
 
 //     printf("user_io_core_type = %02X\n", user_io_core_type());
     // MIST (atari) core supports the same UI as Minimig

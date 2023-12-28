@@ -27,7 +27,8 @@
 
 // TODO MJ should never be invoked - because we have no buttons
 #define USB_BOOT_VALUE       0x8007F007
-#define USB_BOOT_VAR         (*(int*)0x0020FF18)
+// #define USB_BOOT_VAR         (*(int*)0x0020FF18)
+#define USB_BOOT_VAR         (*(int*)(STORE_VARS_POS+0x18))
 
 
 // TODO MJ - increase back to 4096 when USB done.

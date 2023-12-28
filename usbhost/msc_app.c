@@ -71,6 +71,7 @@ bool inquiry_complete_cb(uint8_t dev_addr, tuh_msc_complete_data_t const* cb_dat
   uprintf("Block Count = %lu, Block Size: %lu\r\n", block_count, block_size);
 
   usb_storage_block_count = block_count;
+  storage_devices ++;
 
   return true;
 }
@@ -89,8 +90,8 @@ bool msc_fat_complete_cb(uint8_t dev_addr, tuh_msc_complete_data_t const *d)
 {
     (void)dev_addr;
     // success = csw->status == MSC_CSW_STATUS_PASSED;
-    printf("msc_fat_complete_cb: status = %d\n", d->csw->status == MSC_CSW_STATUS_PASSED);
-    printf("msc_fat_complete_cb: csw->status = %d\n", d->csw->status);
+    uprintf("msc_fat_complete_cb: status = %d\n", d->csw->status == MSC_CSW_STATUS_PASSED);
+    uprintf("msc_fat_complete_cb: csw->status = %d\n", d->csw->status);
 
     if (d->user_arg) {
       *((int *)d->user_arg) = 1;
@@ -128,28 +129,34 @@ int read_sector(int pdrv, uint8_t *buff, uint32_t sector) {
 
 unsigned char usb_host_storage_read(unsigned long lba, unsigned char *pReadBuffer, uint16_t len) {
   volatile int complete_operation = 0;
-  if (!tuh_msc_read10(1, 0, pReadBuffer, lba, len, msc_fat_complete_cb, (uintptr_t)&complete_operation)) {
-    return 1;
+  uprintf("usb_host_storage_read: usbdev %02x lba %ld len %d\n", usbdev, lba, len);
+  if (!tuh_msc_read10(usbdev, 0, pReadBuffer, lba, len, msc_fat_complete_cb, (uintptr_t)&complete_operation)) {
+    uprintf("usb_host_storage_read: failed\n");
+    return 0;
   }
 
   while (!complete_operation) {
     tuh_task();
   }
 
-  return 0;
+  uprintf("usb_host_storage_read: done\n");
+  return 1;
 }
 
 unsigned char usb_host_storage_write(unsigned long lba, const unsigned char *pWriteBuffer, uint16_t len) {
   volatile int complete_operation = 0;
-  if (!tuh_msc_write10(1, 0, pWriteBuffer, lba, len, msc_fat_complete_cb, (uintptr_t)&complete_operation)) {
-    return 1;
+  uprintf("usb_host_storage_write: usbdev %02x lba %ld len %d\n", usbdev, lba, len);
+  if (!tuh_msc_write10(usbdev, 0, pWriteBuffer, lba, len, msc_fat_complete_cb, (uintptr_t)&complete_operation)) {
+    uprintf("usb_host_storage_write: failed\n");
+    return 0;
   }
 
   while (!complete_operation) {
     tuh_task();
   }
 
-  return 0;
+  uprintf("usb_host_storage_write: done\n");
+  return 1;
 }
 
 unsigned int usb_host_storage_capacity() {
@@ -160,11 +167,10 @@ unsigned int usb_host_storage_capacity() {
 //------------- IMPLEMENTATION -------------//
 void tuh_msc_mount_cb(uint8_t dev_addr)
 {
-  printf("A MassStorage device is mounted\r\n");
+  uprintf("A MassStorage device is mounted\r\n");
 
   uint8_t const lun = 0;
   tuh_msc_inquiry(dev_addr, lun, &inquiry_resp, inquiry_complete_cb, (uintptr_t)NULL);
-  storage_devices ++;
 //
 //  //------------- file system (only 1 LUN support) -------------//
 //  uint8_t phy_disk = dev_addr-1;
@@ -188,7 +194,7 @@ void tuh_msc_mount_cb(uint8_t dev_addr)
 void tuh_msc_umount_cb(uint8_t dev_addr)
 {
   (void) dev_addr;
-  printf("A MassStorage device is unmounted\r\n");
+  uprintf("A MassStorage device is unmounted\r\n");
   storage_devices--;
   usb_storage_block_count = 0;
 

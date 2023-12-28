@@ -203,6 +203,7 @@ target_compile_options(mistusbxilinx PUBLIC
   "-DUSB"
   "-DMIST_USB"
   "-DUSB_STORAGE"
+  #"-DDEVKIT_DEBUG"
   "-DUSB_DEBUG_OFF"
 #  "-DALTERA_FPGA"
 )

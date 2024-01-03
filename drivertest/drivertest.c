@@ -21,6 +21,7 @@
 #include "ps2.h"
 #include "ipc.h"
 #include "kbd.h"
+#include "fifo.h"
 #define DEBUG
 #include "debug.h"
 
@@ -355,10 +356,11 @@ int main()
   pio_spi_inst_t *spi = NULL;
   uint8_t buf[16];
   int i;
+  uint8_t rddata = 0;
 
   // set up error led
-  gpio_init(PICO_DEFAULT_LED_PIN);
-  gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
+//   gpio_init(PICO_DEFAULT_LED_PIN);
+//   gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
 
 #if PICO_NO_FLASH
   enable_xip();
@@ -510,6 +512,23 @@ int main()
       case '\'': {
         printf("int ipc_SlaveTick();\n");
         ipc_SlaveTick();
+        break;
+      }
+      case ';': {
+        uint8_t len = ipc_Command(IPC_READBACKSIZE, NULL, 0);
+        uint8_t readbackdata[256];
+
+        printf("ipc_Command returns %d\n", len);
+        if (len) {
+          ipc_ReadBack(readbackdata, len);
+          hexdump(readbackdata, len);
+        }
+        break;
+      }
+      case ':': {
+        fifo_t *f = ipc_GetFifo();
+        fifo_Put(f, rddata++);
+        printf("put data len %d\n", fifo_Count(f));
         break;
       }
 #endif

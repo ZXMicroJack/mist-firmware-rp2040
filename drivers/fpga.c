@@ -16,7 +16,7 @@
 #include "pins.h"
 #include "fpga.h"
 #include "bitfile.h"
-// #define DEBUG
+#define DEBUG
 #include "debug.h"
 
 #include "fpga.pio.h"
@@ -36,6 +36,11 @@ int fpga_initialise() {
   gpio_init(GPIO_FPGA_NCONFIG);
   gpio_put(GPIO_FPGA_NCONFIG, 1);
   gpio_set_dir(GPIO_FPGA_NCONFIG, GPIO_OUT);
+#ifndef QMTECH
+  gpio_init(GPIO_FPGA_MSEL1);
+  gpio_put(GPIO_FPGA_MSEL1, MSEL1_AS);
+  gpio_set_dir(GPIO_FPGA_MSEL1, GPIO_OUT);
+#endif
 #else
   gpio_init(GPIO_FPGA_M1M2);
   gpio_put(GPIO_FPGA_M1M2, 0);
@@ -53,8 +58,13 @@ int fpga_initialise() {
 }
 
 int fpga_claim(uint8_t claim) {
-#ifdef ALTERA_FPGA
+#if defined(ALTERA_FPGA)
+#ifndef QMTECH
   debug(("fpga_status: done %u nstatus %u\n", gpio_get(GPIO_FPGA_CONF_DONE), gpio_get(GPIO_FPGA_NSTATUS)));
+  gpio_init(GPIO_FPGA_MSEL1);
+  gpio_put(GPIO_FPGA_MSEL1, claim ? MSEL1_PS : MSEL1_AS);
+  gpio_set_dir(GPIO_FPGA_MSEL1, GPIO_OUT);
+#endif
 #else
   gpio_init(GPIO_FPGA_M1M2);
   gpio_put(GPIO_FPGA_M1M2, claim ? 1 : 0);
@@ -232,7 +242,7 @@ int fpga_configure(void *user_data, uint8_t (*next_block)(void *, uint8_t *), ui
     }
     len -= thislen;
 
-    debug(("fpga_configure: remaining %u / %u %u %u %08X %08X\n",
+    debug(("fpga_configure: remaining %u / %u %u %u %08X %08X %08X\n",
            len,
            totallen,
 #ifdef ALTERA_FPGA
@@ -240,15 +250,23 @@ int fpga_configure(void *user_data, uint8_t (*next_block)(void *, uint8_t *), ui
 #else
            gpio_get(GPIO_FPGA_INITB), 0,
 #endif
-           crc, crc32(0xffffffff, bits, thislen)));
+           crc, crc32(0xffffffff, bits, thislen), gpio_get_all()));
 #ifdef ALTERA_FPGA
+#ifdef ALTERA_DONT_CHECK_DONE
+  } while (len > 0 && next_block(user_data, bits) && gpio_get(GPIO_FPGA_NSTATUS));
+#else
   } while (len > 0 && next_block(user_data, bits) && !gpio_get(GPIO_FPGA_CONF_DONE) && gpio_get(GPIO_FPGA_NSTATUS));
+#endif
 #else
   } while (len > 0 && next_block(user_data, bits) && gpio_get(GPIO_FPGA_INITB));
 #endif
 
   // wait until fifo is empty
+#ifndef ALTERA_DONT_CHECK_DONE
   for (int i=0; i<32 && !gpio_get(GPIO_FPGA_CONF_DONE); i++) {
+#else
+  for (int i=0; i<32; i++) {
+#endif
     pio_sm_put_blocking(fpga_pio, fpga_sm, 0xffffffff);
   }
   while (!pio_sm_is_rx_fifo_empty(fpga_pio, fpga_sm))
@@ -264,7 +282,7 @@ int fpga_configure(void *user_data, uint8_t (*next_block)(void *, uint8_t *), ui
   debug(("fpga_configure: crc %08X %d\n", crc, gpio_get(GPIO_FPGA_INITB)));
 #endif
 
-#ifdef ALTERA_FPGA
+#if defined (ALTERA_FPGA) && !defined (ALTERA_DONT_CHECK_DONE)
   return (gpio_get(GPIO_FPGA_NSTATUS) && gpio_get(GPIO_FPGA_CONF_DONE)) ? 0 : 1;
 #else
   return 0;

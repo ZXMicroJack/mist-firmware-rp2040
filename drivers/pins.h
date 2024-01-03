@@ -82,6 +82,11 @@
 // Altera pins
 #define GPIO_FPGA_DCLK    0
 #define GPIO_FPGA_DATA0   1
+#define GPIO_FPGA_MSEL1   25
+
+#define MSEL1_AS          1
+#define MSEL1_PS          0
+
 #ifdef ALTERA_FPGA_DEV
 //TODO remove - its just for dev
 #define GPIO_FPGA_NCONFIG 8
@@ -89,7 +94,11 @@
 #define GPIO_FPGA_NSTATUS 6
 #else
 #define GPIO_FPGA_NCONFIG 10
+#ifdef QMTECH
 #define GPIO_FPGA_CONF_DONE 25
+#else
+#define GPIO_FPGA_CONF_DONE 24
+#endif
 #define GPIO_FPGA_NSTATUS 13
 #endif
 

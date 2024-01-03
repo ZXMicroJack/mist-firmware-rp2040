@@ -8,8 +8,8 @@ include(pico_extras_import.cmake)
 project(pico_examples C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DIPC_SLAVE -DIPC_MASTER -DPICO_XOSC_STARTUP_DELAY_MULTIPLIER=64 -DPS2HOST -DJAMMADB9 -DALTERA_FPGA -DALTERA_FPGA_DEV")
-
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DIPC_SLAVE -DIPC_MASTER -DPICO_XOSC_STARTUP_DELAY_MULTIPLIER=64 -DPS2HOST -DJAMMADB9 -DALTERA_FPGA -DIPCDEV -DQMTECH")
+# -DALTERA_FPGA_DEV
 set(PICO_EXAMPLES_PATH ${PROJECT_SOURCE_DIR})
 
 # Initialize the SDK
@@ -22,7 +22,7 @@ include(example_auto_set_url.cmake)
 include_directories(../drivers .)
 
 # fpga program  
-add_executable(drivertest drivertest.c ../drivers/fpga.c ../drivers/pio_spi.c ../drivers/ps2.c ../drivers/sdcard.c ../drivers/bitfile.c ../drivers/ipc.c ../drivers/flash.c ../drivers/debug.c ../drivers/fifo.c ../drivers/kbd.c ../drivers/jamma.c)
+add_executable(drivertest drivertest.c ../drivers/fpga.c ../drivers/pio_spi.c ../drivers/ps2.c ../drivers/sdcard.c ../drivers/bitfile.c ../drivers/ipc.c ../drivers/flash.c ../drivers/debug.c ../drivers/fifo.c ../drivers/kbd.c ../drivers/jamma.c ../drivers/crc16.c)
 target_link_libraries(drivertest pico_stdlib hardware_spi hardware_pio hardware_flash hardware_i2c)
 add_compile_options(-O2)
 pico_generate_pio_header(drivertest ../drivers/fpga.pio)

@@ -9,6 +9,7 @@
 #include "hardware/flash.h"
 #include "hardware/resets.h"
 #include "hardware/i2c.h"
+#include "hardware/spi.h"
 #include "hardware/irq.h"
 
 #include "pico/bootrom.h"
@@ -17,6 +18,7 @@
 
 #include "hardware/pio.h"
 #include "ipc.h"
+#include "fifo.h"
 #include "pins.h"
 #define DEBUG
 #include "debug.h"
@@ -75,9 +77,19 @@ static uint8_t response = 0xff;
 static uint8_t got_cmd = 0;
 static uint8_t error = 0;
 
+static fifo_t readback_fifo;
+
+// void fifo_InitEx(fifo_t *f, uint8_t mask);
+// uint8_t fifo_Count(fifo_t *f);
+
+
 void ipc_Debug() {
   debug(("len %d got_cmd %d error %d response %02X\n", len, got_cmd, error, response));
   hexdump(cmdbuff, 130);
+}
+
+fifo_t *ipc_GetFifo() {
+  return &readback_fifo;
 }
 
 // Interrupt handler implements the RAM
@@ -99,7 +111,12 @@ static void i2c0_irq_handler() {
             }
         } else if (len == 1) {
           cmdbuff[len++] = (uint8_t)(value & I2C_DATA_CMD_DATA);
-          if (len == (cmdbuff[1] + 2)) got_cmd = 1;
+          if (len == (cmdbuff[1] + 2)) {
+            if (cmdbuff[0] == IPC_READBACKSIZE) {
+              response = fifo_Count(&readback_fifo);
+            }
+            got_cmd = 1;
+          }
         } else if (len < (cmdbuff[1] + 2)) {
             // If not 1st byte then store the data in the RAM
             // and increment the address to point to next byte
@@ -112,7 +129,11 @@ static void i2c0_irq_handler() {
     if (status & I2C_INTR_STAT_READ_REQ) {
         // Write the data from the current address in RAM
         error = 0;
-        *I2C0_DATA_CMD = (uint32_t)response;
+        if (cmdbuff[0] == IPC_READBACKDATA) {
+          *I2C0_DATA_CMD = (uint32_t)fifo_Get(&readback_fifo);
+        } else {
+          *I2C0_DATA_CMD = (uint32_t)response;
+        }
         // Clear the interrupt
         *I2C0_CLR_RD_REQ;
     }
@@ -135,6 +156,7 @@ void ipc_InitSlave() {
   irq_set_exclusive_handler(I2C0_IRQ, i2c0_irq_handler);
   // Enable I2C interrupts
   irq_set_enabled(I2C0_IRQ, true);
+  fifo_InitEx(&readback_fifo, 0xff);
 }
 
 int ipc_SlaveTick() {
@@ -159,6 +181,14 @@ void ipc_InitMaster() {
   i2c_set_slave_mode(i2c1, false, 0x00);
 }
 
+int ipc_ReadBack(uint8_t *data, uint8_t len) {
+  uint8_t cmd[2] = {IPC_READBACKDATA, 0x00};
+  i2c_write_blocking (i2c1, SLAVE_ADDRESS, cmd, sizeof cmd, false);
+  i2c_read_blocking(i2c1, SLAVE_ADDRESS, data, len, true);
+  return len;
+}
+
+
 int ipc_Command(uint8_t cmd, uint8_t *data, uint8_t len) {
   uint8_t response;
   uint8_t blob[IPC_MAX_PAYLOAD+2];
@@ -175,7 +205,7 @@ int ipc_Command(uint8_t cmd, uint8_t *data, uint8_t len) {
   if (PICO_ERROR_TIMEOUT == i2c_write_timeout_us(i2c1, SLAVE_ADDRESS, blob, len+2, false, 1000000)) {
     return 0xee;
   }
-  i2c_write_blocking (i2c1, SLAVE_ADDRESS, blob, len+2, false);
+  i2c_write_blocking (i2c1, SLAVE_ADDRESS, blob+2, len, false);
   i2c_read_blocking(i2c1, SLAVE_ADDRESS, &response, 1, true);
   
   // if cmd takes longer...
@@ -196,3 +226,46 @@ int ipc_Command(uint8_t cmd, uint8_t *data, uint8_t len) {
 }
 #endif
 
+#if 0
+#define
+
+#define GPIO_IPCM_DL_CLK   14 // SPI1 SCK
+#define GPIO_IPCM_DL_DAT   15 // SPI1 TX
+#define GPIO_IPCM_DL_SEL   13 // SPI1 CSN
+
+#define GPIO_IPCS_DL_CLK   16
+#define GPIO_IPCS_DL_DAT   17
+#define GPIO_IPCS_DL_SEL   18
+
+// (SPI0 SCK) (UART1 CTS) (I2C1 SDA) GP22 - COM6 - GP14 (SPI1 SCK) (I2C1 SDA)
+//  (SPI0 TX) (UART1 RTS) (I2C1 SCL) GP23 - COM7 - GP15 (SPI1 TX)  (I2C1 SCL)
+
+
+void ipc_InitMasterFast() {
+  i2c_init(i2c1, IPC_BAUDRATE);
+  gpio_init(GPIO_IPCM_DL_CLK);
+  gpio_init(GPIO_IPCM_DL_DAT);
+  gpio_init(GPIO_IPCM_DL_SEL);
+  gpio_put(GPIO_IPCM_DL_SEL, 1);
+  gpio_set_dir(GPIO_IPCM_DL_SEL, GPIO_OUT);
+  gpio_set_function(GPIO_IPCM_DL_CLK, GPIO_FUNC_SPI);
+  gpio_set_function(GPIO_IPCM_DL_DAT, GPIO_FUNC_SPI);
+  gpio_pull_up(GPIO_IPCM_DL_CLK);
+  gpio_pull_up(GPIO_IPCM_DL_DAT);
+}
+
+void ipc_InitSlaveFast() {
+}
+
+void ipc_SendPacketFast(uint8_t *data, uint16_t len) {
+  gpio_put(GPIO_IPCM_DL_SEL, 0);
+
+}
+
+void ipc_ProcessPacketFast(uint8_t *data, uint16_t len) {
+}
+
+void ipc_TickFast() {
+}
+
+#endif

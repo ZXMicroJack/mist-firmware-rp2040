@@ -42,6 +42,8 @@
 #define IPC_APPDATA         0x12
 #define IPC_UPGRADEFN       0x13
 #define IPC_TRAINJOYPAD     0x14
+#define IPC_READBACKSIZE    0x80
+#define IPC_READBACKDATA    0x81
 
 enum {
   UPST_IDLE,
@@ -63,6 +65,7 @@ void ipc_Debug();
 #ifdef IPC_MASTER
 void ipc_InitMaster();
 int ipc_Command(uint8_t cmd, uint8_t *data, uint8_t len);
+int ipc_ReadBack(uint8_t *data, uint8_t len);
 #endif
 
 #endif

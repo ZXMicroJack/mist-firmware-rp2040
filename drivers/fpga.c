@@ -16,7 +16,7 @@
 #include "pins.h"
 #include "fpga.h"
 #include "bitfile.h"
-#define DEBUG
+// #define DEBUG
 #include "debug.h"
 
 #include "fpga.pio.h"

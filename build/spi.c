@@ -15,11 +15,15 @@
 #define MIST_CSN    17 // user io
 #define MIST_SS2    20 // data io
 #define MIST_SS3    21 // osd
-#define MIST_SS4    24 // dmode?
+// #define MIST_SS4    24 // dmode?
+#define MIST_SS4    22 // dmode?
 
 #define SPI_SLOW_BAUD   500000
 #define SPI_SDC_BAUD   24000000
 #define SPI_MMC_BAUD   16000000
+// #define SPI_SLOW_BAUD   500000
+// #define SPI_SDC_BAUD   500000
+// #define SPI_MMC_BAUD   500000
 
 static unsigned char spi_speed;
 
@@ -51,6 +55,41 @@ static unsigned char spi_speed;
 
 #define spi spi0
 
+void initSPI() {
+  gpio_init(MIST_CSN);
+  gpio_put(MIST_CSN, 1);
+  gpio_set_dir(MIST_CSN, GPIO_OUT);
+  uint8_t spi_pins[] = {16, 18, 19};
+
+  for (int i=0; i<sizeof spi_pins; i++) {
+    gpio_init(spi_pins[i]);
+    gpio_set_function(spi_pins[i], GPIO_FUNC_SPI);
+  }
+  spi_init(spi0, 500000); // 500khz
+  spi_set_format(spi0, 8, SPI_CPOL_1, SPI_CPHA_1, SPI_MSB_FIRST);
+}
+
+void kickSPI() {
+  uint8_t data[6];
+// int spi_write_read_blocking (spi_inst_t *spi, const uint8_t *src, uint8_t *dst, size_t len)
+//   uint8_t cmd[] = {0x1a, 0x00, 0x00, 0x00, 0xff, 0xff};
+  uint8_t cmd[] = {0x02, 0xff};
+
+  gpio_put(MIST_CSN, 0);
+
+  cmd[1] = 0x55;
+
+  memset(data, 0xff, sizeof data);
+  spi_write_read_blocking(spi0, cmd, data, sizeof cmd);
+  printf("Returns: ");
+  for (int i=0; i<sizeof data; i++) {
+    printf("%02X ", data[i]);
+  }
+  printf("\n");
+  gpio_put(MIST_CSN, 1);
+}
+
+
 void mist_spi_init() {
   uint8_t csn_lut[] = {MIST_CSN, MIST_SS2, MIST_SS3, MIST_SS4};
 
@@ -66,8 +105,8 @@ void mist_spi_init() {
     gpio_init(spi_pins[i]);
     gpio_set_function(spi_pins[i], GPIO_FUNC_SPI);
   }
-  spi_set_format(spi0, 8, SPI_CPOL_1, SPI_CPHA_1, SPI_MSB_FIRST);
   spi_init(spi0, SPI_SLOW_BAUD); // 500khz
+  spi_set_format(spi0, 8, SPI_CPOL_1, SPI_CPHA_1, SPI_MSB_FIRST);
   spi_speed = SPI_SLOW_CLK_VALUE;
 }
 

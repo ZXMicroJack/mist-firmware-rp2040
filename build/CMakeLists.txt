@@ -138,9 +138,11 @@ target_compile_options(mistram PUBLIC
   "-DVDATE=\"\""
   "-Dhexdump=driver_hexdump"
   "-DPS2HOST"
-  "-DXILINX"
+#  "-DXILINX"
   "-DJAMMADB9"
-  "-DTEST_BUILD"
+  #"-DTEST_BUILD"
+  "-DALTERA_FPGA"
+  "-DQMTECH"
 )
 
 
@@ -237,6 +239,7 @@ target_compile_options(mistusb PUBLIC
   "-DUSB"
   "-DMIST_USB"
   "-DALTERA_FPGA"
+  "-DQMTECH"
   "-DUSB_STORAGE"
   "-DUSB_DEBUG_OFF"
 )

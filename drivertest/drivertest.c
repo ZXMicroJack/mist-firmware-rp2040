@@ -29,10 +29,10 @@
 // #define TEST_PS2_HOST
 // #define TEST_IPC
 // #define TEST_SDCARD_SPI
-#define TEST_FPGA
+// #define TEST_FPGA
 // #define TEST_MATRIX
 // #define TEST_FLASH
-// #define TEST_USERIO
+#define TEST_USERIO
 // #define TEST_JAMMA
 
 // KEY ACTION ALLOCATION

@@ -31,7 +31,7 @@ static uint8_t read_next_block(void *ud, uint8_t *data) {
     return 0;
   }
 
-  if (br >= cf->size) {
+  if (br > cf->size) {
     cf->error = 0;
     return 0;
   }
@@ -39,10 +39,11 @@ static uint8_t read_next_block(void *ud, uint8_t *data) {
   return 1;
 }
 
+void initSPI();
+void kickSPI();
 
-//TODO MJ Insert code here for Altera programming.
 unsigned char ConfigureFpga(const char *bitfile) {
-// #ifdef XILINX
+// #if 1
   configFpga cf;
 
   if (f_open(&cf.file, bitfile ? bitfile : "CORE.RBF", FA_READ) != FR_OK) {
@@ -57,7 +58,7 @@ unsigned char ConfigureFpga(const char *bitfile) {
 
   /* initialise fpga */
   fpga_initialise();
-  fpga_claim(true);
+//   fpga_claim(true);
 
   /* now configure */
   int r = fpga_reset();
@@ -66,14 +67,19 @@ unsigned char ConfigureFpga(const char *bitfile) {
     return 0;
   }
 
-  fpga_configure(&cf, read_next_block, cf.size);
-  fpga_claim(false);
+  r = fpga_configure(&cf, read_next_block, cf.size);
+//   fpga_claim(false);
 
   f_close(&cf.file);
+// #endif
+//   sleep_ms(2000);
+
+//   kickSPI();
+//   kickSPI();
+//   kickSPI();
+//   kickSPI();
 
   // returns 1 if success / 0 on fail
-  return !cf.error;
-// #else
-//   return 1; // no Altera to test at the moment.
-// #endif
+//   return !cf.error && r == 0;
+  return 1;
 }

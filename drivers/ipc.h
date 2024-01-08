@@ -60,12 +60,14 @@ void ipc_InitSlave();
 int ipc_SlaveTick();
 uint8_t ipc_GotCommand(uint8_t cmd, uint8_t *data, uint8_t len);
 void ipc_Debug();
+fifo_t *ipc_GetFifo();
 #endif
 
 #ifdef IPC_MASTER
 void ipc_InitMaster();
 int ipc_Command(uint8_t cmd, uint8_t *data, uint8_t len);
 int ipc_ReadBack(uint8_t *data, uint8_t len);
+int ipc_ReadBackLen();
 #endif
 
 #endif

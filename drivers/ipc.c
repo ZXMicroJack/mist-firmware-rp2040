@@ -17,8 +17,8 @@
 #include "pico/bootrom.h"
 
 #include "hardware/pio.h"
-#include "ipc.h"
 #include "fifo.h"
+#include "ipc.h"
 #include "pins.h"
 #define DEBUG
 #include "debug.h"
@@ -53,7 +53,7 @@
 #define SLAVE_ADDRESS     0xaa
 #define IPC_CMD_TIMEOUT 1000000
 // #define IPC_BAUDRATE    100000
-#define IPC_BAUDRATE    500000
+#define IPC_BAUDRATE    1000000
 #define IPC_MAX_PAYLOAD 192
 
 #ifdef IPC_SLAVE
@@ -114,11 +114,9 @@ static void i2c0_irq_handler() {
         } else if (len == 1) {
           cmdbuff[len++] = (uint8_t)(value & I2C_DATA_CMD_DATA);
           if (len == (cmdbuff[1] + 2)) {
-            if (cmdbuff[0] == IPC_READBACKSIZE) {
-              uint16_t cnt = fifo_Count(&readback_fifo);
-              response = cnt > 255 ? 255 : cnt;
+            if (cmdbuff[0] != IPC_READBACKSIZE && cmdbuff[0] != IPC_READBACKDATA) {
+              got_cmd = 1;
             }
-            got_cmd = 1;
           }
         } else if (len < (cmdbuff[1] + 2)) {
             // If not 1st byte then store the data in the RAM
@@ -132,7 +130,10 @@ static void i2c0_irq_handler() {
     if (status & I2C_INTR_STAT_READ_REQ) {
         // Write the data from the current address in RAM
         error = 0;
-        if (cmdbuff[0] == IPC_READBACKDATA) {
+        if (cmdbuff[0] == IPC_READBACKSIZE) {
+          uint16_t cnt = fifo_Count(&readback_fifo);
+          *I2C0_DATA_CMD = (uint32_t) (cnt > 255 ? 255 : cnt);
+        } else if (cmdbuff[0] == IPC_READBACKDATA) {
           *I2C0_DATA_CMD = (uint32_t)fifo_Get(&readback_fifo);
         } else {
           *I2C0_DATA_CMD = (uint32_t)response;
@@ -185,6 +186,14 @@ void ipc_InitMaster() {
   i2c_set_slave_mode(i2c1, false, 0x00);
 }
 
+int ipc_ReadBackLen() {
+  uint8_t cmd[2] = {IPC_READBACKSIZE, 0x00};
+  uint8_t len = 0;
+  i2c_write_blocking (i2c1, SLAVE_ADDRESS, cmd, sizeof cmd, false);
+  i2c_read_blocking(i2c1, SLAVE_ADDRESS, &len, 1, true);
+  return len;
+}
+
 int ipc_ReadBack(uint8_t *data, uint8_t len) {
   uint8_t cmd[2] = {IPC_READBACKDATA, 0x00};
   i2c_write_blocking (i2c1, SLAVE_ADDRESS, cmd, sizeof cmd, false);
@@ -209,7 +218,7 @@ int ipc_Command(uint8_t cmd, uint8_t *data, uint8_t len) {
   if (PICO_ERROR_TIMEOUT == i2c_write_timeout_us(i2c1, SLAVE_ADDRESS, blob, len+2, false, 1000000)) {
     return 0xee;
   }
-  i2c_write_blocking (i2c1, SLAVE_ADDRESS, blob+2, len, false);
+//   i2c_write_blocking (i2c1, SLAVE_ADDRESS, blob+2, len, false);
   i2c_read_blocking(i2c1, SLAVE_ADDRESS, &response, 1, true);
   
   // if cmd takes longer...

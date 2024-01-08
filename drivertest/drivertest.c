@@ -19,9 +19,9 @@
 #include "pio_spi.h"
 #include "sdcard.h"
 #include "ps2.h"
+#include "fifo.h"
 #include "ipc.h"
 #include "kbd.h"
-#include "fifo.h"
 #define DEBUG
 #include "debug.h"
 
@@ -515,7 +515,8 @@ int main()
         break;
       }
       case ';': {
-        uint8_t len = ipc_Command(IPC_READBACKSIZE, NULL, 0);
+//         uint8_t len = ipc_Command(IPC_READBACKSIZE, NULL, 0);
+        uint8_t len = ipc_ReadBackLen();
         uint8_t readbackdata[256];
 
         printf("ipc_Command returns %d\n", len);

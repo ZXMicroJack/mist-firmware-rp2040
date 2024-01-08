@@ -37,7 +37,9 @@ typedef struct {
   int gpio_data;
   uint8_t channel;
   fifo_t fifo;
+  uint8_t fifobuf[64];
   fifo_t fifo_rx;
+  uint8_t fiforxbuf[64];
 } ps2_t;
 
 ps2_t ps2port[NR_PS2];
@@ -270,10 +272,10 @@ void ps2_Init() {
   ps2port[1].gpio_data = GPIO_PS2_DATA2;
   ps2port[0].channel = 0;
   ps2port[1].channel = 1;
-  fifo_Init(&ps2port[0].fifo);
-  fifo_Init(&ps2port[1].fifo);
-  fifo_Init(&ps2port[0].fifo_rx);
-  fifo_Init(&ps2port[1].fifo_rx);
+  fifo_Init(&ps2port[0].fifo, ps2port[0].fifobuf, sizeof ps2port[0].fifobuf);
+  fifo_Init(&ps2port[1].fifo, ps2port[1].fifobuf, sizeof ps2port[1].fifobuf);
+  fifo_Init(&ps2port[0].fifo_rx, ps2port[0].fiforxbuf, sizeof ps2port[0].fiforxbuf);
+  fifo_Init(&ps2port[1].fifo_rx, ps2port[0].fiforxbuf, sizeof ps2port[0].fiforxbuf);
   
   for (int i=0; i<sizeof lut; i++) {
     gpio_init(lut[i]);

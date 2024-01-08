@@ -52,7 +52,8 @@
 
 #define SLAVE_ADDRESS     0xaa
 #define IPC_CMD_TIMEOUT 1000000
-#define IPC_BAUDRATE    100000
+// #define IPC_BAUDRATE    100000
+#define IPC_BAUDRATE    500000
 #define IPC_MAX_PAYLOAD 192
 
 #ifdef IPC_SLAVE
@@ -78,6 +79,7 @@ static uint8_t got_cmd = 0;
 static uint8_t error = 0;
 
 static fifo_t readback_fifo;
+uint8_t readback_fifo_buf[1024];
 
 // void fifo_InitEx(fifo_t *f, uint8_t mask);
 // uint8_t fifo_Count(fifo_t *f);
@@ -113,7 +115,8 @@ static void i2c0_irq_handler() {
           cmdbuff[len++] = (uint8_t)(value & I2C_DATA_CMD_DATA);
           if (len == (cmdbuff[1] + 2)) {
             if (cmdbuff[0] == IPC_READBACKSIZE) {
-              response = fifo_Count(&readback_fifo);
+              uint16_t cnt = fifo_Count(&readback_fifo);
+              response = cnt > 255 ? 255 : cnt;
             }
             got_cmd = 1;
           }
@@ -156,7 +159,8 @@ void ipc_InitSlave() {
   irq_set_exclusive_handler(I2C0_IRQ, i2c0_irq_handler);
   // Enable I2C interrupts
   irq_set_enabled(I2C0_IRQ, true);
-  fifo_InitEx(&readback_fifo, 0xff);
+  fifo_Init(&readback_fifo, readback_fifo_buf, sizeof readback_fifo_buf);
+
 }
 
 int ipc_SlaveTick() {

@@ -4,14 +4,10 @@
 
 #include "fifo.h"
 
-void fifo_Init(fifo_t *f) {
+void fifo_Init(fifo_t *f, uint8_t *buf, uint16_t len) {
   f->l = f->r = f->c = 0;
-  f->m = 63;
-}
-
-void fifo_InitEx(fifo_t *f, uint8_t mask) {
-  f->l = f->r = f->c = 0;
-  f->m = mask;
+  f->m = len - 1;
+  f->buf = buf;
 }
 
 int fifo_Get(fifo_t *f) {
@@ -26,7 +22,7 @@ int fifo_Get(fifo_t *f) {
 
 void fifo_Put(fifo_t *f, uint8_t ch) {
   int r = -1;
-  uint8_t rn = (f->r + 1) & f->m;
+  uint16_t rn = (f->r + 1) & f->m;
   if (rn != f->l) {
     f->buf[f->r] = ch;
     f->r = rn;
@@ -34,6 +30,6 @@ void fifo_Put(fifo_t *f, uint8_t ch) {
   }
 }
 
-uint8_t fifo_Count(fifo_t *f) {
+uint16_t fifo_Count(fifo_t *f) {
   return f->c;
 }

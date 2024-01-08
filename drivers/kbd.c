@@ -25,6 +25,7 @@ static uint16_t keyheld_map[COLS];
 static struct repeating_timer kbd_timer;
 static int col = 0;
 static fifo_t kbd_fifo;
+static uint8_t kbd_fifo_buf[64];
 static uint8_t opqa_cursors = 0;
 
 uint8_t shift_held = 0;
@@ -104,7 +105,7 @@ void kbd_Init() {
     gpio_set_dir(GPIO_KROW(i), GPIO_IN);
   }
 
-  fifo_Init(&kbd_fifo);
+  fifo_Init(&kbd_fifo, kbd_fifo_buf, sizeof kbd_fifo_buf);
   memset(keyheld_map, 0, sizeof keyheld_map);
   add_repeating_timer_us(200, kbd_timer_callback,
                          NULL, &kbd_timer);

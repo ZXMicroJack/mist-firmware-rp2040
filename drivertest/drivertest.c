@@ -27,9 +27,9 @@
 
 // #define TEST_PS2
 // #define TEST_PS2_HOST
-// #define TEST_IPC
+#define TEST_IPC
 // #define TEST_SDCARD_SPI
-#define TEST_FPGA
+// #define TEST_FPGA
 // #define TEST_MATRIX
 // #define TEST_FLASH
 // #define TEST_USERIO
@@ -528,6 +528,14 @@ int main()
       case ':': {
         fifo_t *f = ipc_GetFifo();
         fifo_Put(f, rddata++);
+        printf("put data len %d\n", fifo_Count(f));
+        break;
+      }
+      case '@': {
+        fifo_t *f = ipc_GetFifo();
+        for (i=0; i<1024; i++) {
+          fifo_Put(f, rddata++);
+        }
         printf("put data len %d\n", fifo_Count(f));
         break;
       }

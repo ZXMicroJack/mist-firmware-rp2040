@@ -52,8 +52,10 @@
 
 #define SLAVE_ADDRESS     0xaa
 #define IPC_CMD_TIMEOUT 1000000
-// #define IPC_BAUDRATE    100000
-#define IPC_BAUDRATE    1000000
+
+// MJ: have seen it working up to 4M
+#define IPC_BAUDRATE        100000
+#define IPC_BAUDRATE_MAX    2000000
 #define IPC_MAX_PAYLOAD 192
 
 #ifdef IPC_SLAVE
@@ -80,10 +82,6 @@ static uint8_t error = 0;
 
 static fifo_t readback_fifo;
 uint8_t readback_fifo_buf[1024];
-
-// void fifo_InitEx(fifo_t *f, uint8_t mask);
-// uint8_t fifo_Count(fifo_t *f);
-
 
 void ipc_Debug() {
   debug(("len %d got_cmd %d error %d response %02X\n", len, got_cmd, error, response));
@@ -201,6 +199,14 @@ int ipc_ReadBack(uint8_t *data, uint8_t len) {
   return len;
 }
 
+int ipc_SetFastMode(uint8_t on) {
+#ifdef IPC_SLAVE
+  i2c_set_baudrate(i2c0, IPC_BAUDRATE_MAX);
+#endif
+#ifdef IPC_MASTER
+  i2c_set_baudrate(i2c1, IPC_BAUDRATE_MAX);
+#endif
+}
 
 int ipc_Command(uint8_t cmd, uint8_t *data, uint8_t len) {
   uint8_t response;
@@ -214,13 +220,18 @@ int ipc_Command(uint8_t cmd, uint8_t *data, uint8_t len) {
   blob[0] = cmd;
   blob[1] = len;
   memcpy(&blob[2], data, len);
+//   hexdump(blob, len+2);
 
   if (PICO_ERROR_TIMEOUT == i2c_write_timeout_us(i2c1, SLAVE_ADDRESS, blob, len+2, false, 1000000)) {
     return 0xee;
   }
-//   i2c_write_blocking (i2c1, SLAVE_ADDRESS, blob+2, len, false);
+#ifdef IPC_SLAVE
+  ipc_SlaveTick();
+#endif
+
+//   i2c_write_blocking (i2c1, SLAVE_ADDRESS, blob, len+2, false);
   i2c_read_blocking(i2c1, SLAVE_ADDRESS, &response, 1, true);
-  
+
   // if cmd takes longer...
   if (response == 0xff) {
     uint8_t get_response_msg[] = {IPC_GETRESPONSE};
@@ -237,48 +248,4 @@ int ipc_Command(uint8_t cmd, uint8_t *data, uint8_t len) {
 
   return response;
 }
-#endif
-
-#if 0
-#define
-
-#define GPIO_IPCM_DL_CLK   14 // SPI1 SCK
-#define GPIO_IPCM_DL_DAT   15 // SPI1 TX
-#define GPIO_IPCM_DL_SEL   13 // SPI1 CSN
-
-#define GPIO_IPCS_DL_CLK   16
-#define GPIO_IPCS_DL_DAT   17
-#define GPIO_IPCS_DL_SEL   18
-
-// (SPI0 SCK) (UART1 CTS) (I2C1 SDA) GP22 - COM6 - GP14 (SPI1 SCK) (I2C1 SDA)
-//  (SPI0 TX) (UART1 RTS) (I2C1 SCL) GP23 - COM7 - GP15 (SPI1 TX)  (I2C1 SCL)
-
-
-void ipc_InitMasterFast() {
-  i2c_init(i2c1, IPC_BAUDRATE);
-  gpio_init(GPIO_IPCM_DL_CLK);
-  gpio_init(GPIO_IPCM_DL_DAT);
-  gpio_init(GPIO_IPCM_DL_SEL);
-  gpio_put(GPIO_IPCM_DL_SEL, 1);
-  gpio_set_dir(GPIO_IPCM_DL_SEL, GPIO_OUT);
-  gpio_set_function(GPIO_IPCM_DL_CLK, GPIO_FUNC_SPI);
-  gpio_set_function(GPIO_IPCM_DL_DAT, GPIO_FUNC_SPI);
-  gpio_pull_up(GPIO_IPCM_DL_CLK);
-  gpio_pull_up(GPIO_IPCM_DL_DAT);
-}
-
-void ipc_InitSlaveFast() {
-}
-
-void ipc_SendPacketFast(uint8_t *data, uint16_t len) {
-  gpio_put(GPIO_IPCM_DL_SEL, 0);
-
-}
-
-void ipc_ProcessPacketFast(uint8_t *data, uint16_t len) {
-}
-
-void ipc_TickFast() {
-}
-
 #endif

@@ -462,6 +462,7 @@ int main()
         printf("FPGA: (p)rogram (f)pga init (F)pga reset (C)laim dis(c)laim\n");
         printf("PS2: (k)ps2init sendc(h)ar (e)n ps0 (E)n ps1 (d)isps0 (D)isps1\n");
         printf("IPC: (-)initslave (=)initmaster ([)cmd1 (])cmd2 (')slavetick (#)debug\n");
+        printf("IPC: (;) read fast (:) write 1 byte fast (@) write 1024 bytes fast\n");
         printf("FLASH: (P)rogram (I)pc based program (B)ad crc ipc program\n");
         printf("KBD: (K)bd init (L)kbd process\n");
         printf("USERIO: (u)init (U)close (V)coreid\n");

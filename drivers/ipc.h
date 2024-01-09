@@ -63,6 +63,8 @@ void ipc_Debug();
 fifo_t *ipc_GetFifo();
 #endif
 
+int ipc_SetFastMode(uint8_t on);
+
 #ifdef IPC_MASTER
 void ipc_InitMaster();
 int ipc_Command(uint8_t cmd, uint8_t *data, uint8_t len);

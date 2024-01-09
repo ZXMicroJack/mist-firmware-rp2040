@@ -23,6 +23,7 @@
 #include "drivers/pio_spi.h"
 #include "drivers/sdcard.h"
 #include "drivers/ps2.h"
+#include "drivers/fifo.h"
 #include "drivers/ipc.h"
 #include "drivers/kbd.h"
 #define DEBUG

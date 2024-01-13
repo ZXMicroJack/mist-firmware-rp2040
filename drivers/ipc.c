@@ -172,6 +172,37 @@ int ipc_SlaveTick() {
   }
   return 0;
 }
+
+void ipc_SendData(uint8_t tag, uint8_t *data, uint16_t len) {
+  uint16_t crc = 0xffff;
+  uint8_t d;
+  uint16_t pktlen;
+
+  pktlen = len + 7;
+  d = 0x55;
+  crc = crc16iv(&d, 1, crc);
+  d = 0xaa;
+  crc = crc16iv(&d, 1, crc);
+  crc = crc16iv(&tag, 1, crc);
+  d = pktlen >> 8;
+  crc = crc16iv(&d, 1, crc);
+  d = pktlen & 0xff;
+  crc = crc16iv(&d, 1, crc);
+
+  crc = crc16iv(data, len, crc);
+
+  fifo_Put(&readback_fifo, 0x55);
+  fifo_Put(&readback_fifo, 0xaa);
+  fifo_Put(&readback_fifo, tag);
+  fifo_Put(&readback_fifo, pktlen >> 8);
+  fifo_Put(&readback_fifo, pktlen & 0xff);
+  for (int i=0; i<len; i++) {
+    fifo_Put(&readback_fifo, data[i]);
+  }
+  fifo_Put(&readback_fifo, crc >> 8);
+  fifo_Put(&readback_fifo, crc & 0xff);
+}
+
 #endif
 
 #ifdef IPC_MASTER
@@ -248,4 +279,55 @@ int ipc_Command(uint8_t cmd, uint8_t *data, uint8_t len) {
 
   return response;
 }
+
+static uint8_t pkt[512];
+static uint16_t pos = 0;
+static uint16_t pktlen = 0;
+void ipc_MasterTick() {
+  int readable = ipc_ReadBackLen();
+  int wantlen, thisread;
+
+  while (readable) {
+    printf("readable = %d\n", readable);
+    if (pos >= 5) {
+      pktlen = (pkt[3] << 8) | pkt[4];
+      wantlen = pktlen - pos;
+    } else if ( pos < 2 ) {
+      wantlen = 1;
+    } else {
+      wantlen = 5 - pos;
+    }
+
+    thisread = readable > wantlen ? wantlen : readable;
+    readable -= thisread;
+
+    ipc_ReadBack(&pkt[pos], thisread);
+    pos += thisread;
+
+    // if no sync - skip
+    if (pos == 1 && pkt[0] != 0x55) {
+      pos = 0;
+      debug(("pkt[0] = %02X\n", pkt[0]));
+    }
+    if (pos == 2 && pkt[1] != 0xaa) {
+      if (pkt[1] == 0x55) {
+        pos = 1;
+      } else {
+        pos = 0;
+      }
+      debug(("pkt[1] = %02X\n", pkt[1]));
+    }
+
+    if (pos >= pktlen && pos > 5) {
+      // got packet
+      if (!crc16(pkt, pktlen)) ipc_HandleData(pkt[2], &pkt[5], pktlen - 7);
+      else debug(("Packet failed CRC %04X vs %02X%02X\n", crc16(pkt, pktlen + 3), pkt[pktlen-2], pkt[pktlen-1]));
+
+      pos = 0;
+    }
+    readable = ipc_ReadBackLen();
+  }
+}
+
 #endif
+

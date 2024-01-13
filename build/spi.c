@@ -15,6 +15,7 @@
 #define MIST_CSN    17 // user io
 #define MIST_SS2    20 // data io
 #define MIST_SS3    21 // osd
+//TODO MJ - incorrect.... is it correct on the right branch?
 #define MIST_SS4    24 // dmode?
 
 #define SPI_SLOW_BAUD   500000

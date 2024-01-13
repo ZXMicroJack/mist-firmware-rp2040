@@ -306,6 +306,11 @@ void test_UserIOSPI() {
 #define MIST_SS4    24
 
 
+void ipc_HandleData(uint8_t tag, uint8_t *data, uint16_t len) {
+  printf("ipc_HandleData: tag %02X\n", tag);
+  hexdump(data, len);
+}
+
 void test_UserIOSPI(uint8_t datain) {
   uint8_t data[6];
 // int spi_write_read_blocking (spi_inst_t *spi, const uint8_t *src, uint8_t *dst, size_t len)
@@ -383,9 +388,13 @@ int main()
   printf("Running test\n");
   printf("Running test\n");
   
+  ipc_InitMaster();
+  ps2_InitEx(1);
   for(;;) {
-//     int c = getchar_timeout_us(100000);
-    int c = getchar();
+    int c = getchar_timeout_us(10);
+    ipc_MasterTick();
+
+//     int c = getchar();
     if (forceexit) break;
     if (c == 'q') break;
 //     if (c == 'h') printf("Hello\n");
@@ -504,15 +513,30 @@ int main()
         printf("ipc_Command returns %d\n", ipc_Command(0xed, cmddata, sizeof cmddata));
       }
       break;
+      case '{': {
+        uint8_t cmddata[20];
+        memset(cmddata, 0x55, sizeof cmddata);
+        ipc_SendData(0xed, cmddata, sizeof cmddata);
+        printf("ipc_SendData ED\n");
+      }
+      break;
       case ']': {
         uint8_t cmddata[128];
         memset(cmddata, 0x45, sizeof cmddata);
         printf("ipc_Command returns %d\n", ipc_Command(0x12, cmddata, sizeof cmddata));
       }
       break;
+      case '}': {
+        uint8_t cmddata[128];
+        memset(cmddata, 0x45, sizeof cmddata);
+        ipc_SendData(0x12, cmddata, sizeof cmddata);
+        printf("ipc_SendData 1\n");
+      }
+      break;
       case '\'': {
         printf("int ipc_SlaveTick();\n");
         ipc_SlaveTick();
+        ipc_MasterTick();
         break;
       }
       case ';': {

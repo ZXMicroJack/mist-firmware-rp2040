@@ -193,7 +193,9 @@ usb_device_t *usb_get_devices() {
 
 uint8_t usb_get_conf_descr( usb_device_t *dev, uint16_t nbytes, uint8_t conf, usb_configuration_descriptor_t* dataptr ) {
   debug(("usb_get_conf_descr: dev %08x, nbytes %04X conf %02X data %08X\n", dev, nbytes, conf, dataptr));
+#ifndef USBFAKE
   tuh_descriptor_get_configuration_sync(dev - device, conf, dataptr, nbytes);
+#endif
   return 0;
 }
 

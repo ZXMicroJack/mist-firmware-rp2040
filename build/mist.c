@@ -387,13 +387,19 @@ void joy3_usbaction(char c) {
 
 #if defined(USB) && !defined(USBFAKE)
 void usb_poll() {
-    tuh_task();
-    hid_app_task();
+#ifdef MB2
+//   ipc_MasterTick();
+#else
+  tuh_task();
+  hid_app_task();
+#endif
 }
 #else
 void usb_poll() {
 }
 #endif
+
+
 
 #ifdef DEVKIT_DEBUG
 static char str[256];
@@ -440,7 +446,7 @@ int main() {
 
   printf("Drivertest Microjack\'23\n");
 
-#if defined(USB) && !defined (USBFAKE)
+#if defined(USB) && !defined (USBFAKE) && !defined(MB2)
   board_init();
   tusb_init();
 #endif
@@ -448,6 +454,10 @@ int main() {
   mist_init();
 #ifdef USB
   mist_usb_init();
+#endif
+
+#ifdef MB2
+  ipc_InitMaster();
 #endif
 
   char lastch = 0;

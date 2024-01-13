@@ -45,6 +45,29 @@
 #define IPC_READBACKSIZE    0x80
 #define IPC_READBACKDATA    0x81
 
+#define IPC_SETMISTER       0x15
+#define IPC_SETFASTMODE     0x16
+#define IPC_USB_SETCONFIG   0x17
+
+// return codes
+#define IPC_USB_ATTACHED        0x40
+#define IPC_USB_DETACHED        0x41
+#define IPC_USB_HANDLE_DATA     0x42
+#define IPC_UPDATE_JAMMA        0x43
+#define IPC_PS2_DATA            0x44
+#define IPC_USB_DEVICE_DESC     0x45
+#define IPC_USB_CONFIG_DESC     0x46
+
+typedef struct {
+  uint8_t dev;
+  uint8_t idx;
+  uint16_t vid;
+  uint16_t pid;
+} IPC_usb_attached_t;
+
+#define USB_DEVICE_DESCRIPTOR_LEN   18
+
+
 enum {
   UPST_IDLE,
   UPST_WORKING,
@@ -61,15 +84,27 @@ int ipc_SlaveTick();
 uint8_t ipc_GotCommand(uint8_t cmd, uint8_t *data, uint8_t len);
 void ipc_Debug();
 fifo_t *ipc_GetFifo();
+void ipc_SendData(uint8_t tag, uint8_t *data, uint16_t len);
 #endif
 
 int ipc_SetFastMode(uint8_t on);
 
 #ifdef IPC_MASTER
 void ipc_InitMaster();
+void ipc_MasterTick();
 int ipc_Command(uint8_t cmd, uint8_t *data, uint8_t len);
 int ipc_ReadBack(uint8_t *data, uint8_t len);
 int ipc_ReadBackLen();
+#endif
+
+void ipc_HandleData(uint8_t tag, uint8_t *data, uint16_t len);
+
+
+#if 0
+void ipc_HandleData(uint8_t tag, uint8_t *data, uint16_t len) {
+  printf("ipc_HandleData: tag %02X len %d\n", tag, len);
+  hexdump(data, len);
+}
 #endif
 
 #endif

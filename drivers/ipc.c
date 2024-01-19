@@ -3,6 +3,9 @@
 #include <string.h>
 
 #include <pico/time.h>
+#ifdef IPC_SLAVE
+#include <pico/i2c_slave.h>
+#endif
 
 #include "hardware/clocks.h"
 #include "hardware/structs/clocks.h"
@@ -93,6 +96,42 @@ fifo_t *ipc_GetFifo() {
 }
 
 // Interrupt handler implements the RAM
+static void i2c0_irq_handler(i2c_inst_t *i2c, i2c_slave_event_t event) {
+  switch (event) {
+    case I2C_SLAVE_RECEIVE: // master has written some data
+      cmdbuff[len++] = i2c_read_byte_raw(i2c);
+      if (len > 1) {
+        if (len >= (cmdbuff[1] + 2)) {
+          if (cmdbuff[0] != IPC_READBACKSIZE && cmdbuff[0] != IPC_READBACKDATA) {
+            got_cmd = 1;
+          }
+//           got_cmd = 1;
+          response = 0xff;
+        }
+      }
+      break;
+
+    case I2C_SLAVE_REQUEST: // master is requesting data
+      // load from memory
+      if (cmdbuff[0] == IPC_READBACKSIZE) {
+        uint16_t cnt = fifo_Count(&readback_fifo);
+        i2c_write_byte_raw(i2c, cnt > 255 ? 255 : cnt);
+      } else if (cmdbuff[0] == IPC_READBACKDATA) {
+        i2c_write_byte_raw(i2c, fifo_Get(&readback_fifo));
+      } else {
+        i2c_write_byte_raw(i2c, response);
+      }
+      break;
+    case I2C_SLAVE_FINISH: // master has signalled Stop / Restart
+      len = 0;
+      break;
+    default:
+      break;
+    }
+}
+
+
+#if 0
 static void i2c0_irq_handler() {
     // Get interrupt status
     uint32_t status = *I2C0_INTR_STAT;
@@ -140,16 +179,21 @@ static void i2c0_irq_handler() {
         *I2C0_CLR_RD_REQ;
     }
 }
+#endif
 
 void ipc_InitSlave() {
   gpio_init(GPIO_IPCS_I2C_CLK);
   gpio_init(GPIO_IPCS_I2C_DAT);
 
-  i2c_init(i2c0, IPC_BAUDRATE);
   gpio_set_function(GPIO_IPCS_I2C_CLK, GPIO_FUNC_I2C);
   gpio_set_function(GPIO_IPCS_I2C_DAT, GPIO_FUNC_I2C);
   gpio_pull_up(GPIO_IPCS_I2C_CLK);
   gpio_pull_up(GPIO_IPCS_I2C_DAT);
+
+  i2c_init(i2c0, IPC_BAUDRATE);
+  i2c_slave_init(i2c0, SLAVE_ADDRESS, &i2c0_irq_handler);
+
+#if 0
   i2c_set_slave_mode(i2c0, true, SLAVE_ADDRESS);
   // Enable the interrupts we want
   *I2C0_INTR_MASK = (I2C_INTR_MASK_READ_REQ | I2C_INTR_MASK_RX_FULL);
@@ -158,6 +202,7 @@ void ipc_InitSlave() {
   irq_set_exclusive_handler(I2C0_IRQ, i2c0_irq_handler);
   // Enable I2C interrupts
   irq_set_enabled(I2C0_IRQ, true);
+#endif
   fifo_Init(&readback_fifo, readback_fifo_buf, sizeof readback_fifo_buf);
 
 }
@@ -173,12 +218,14 @@ int ipc_SlaveTick() {
   return 0;
 }
 
-void ipc_SendData(uint8_t tag, uint8_t *data, uint16_t len) {
+void ipc_SendDataEx(uint8_t tag, uint8_t *data, uint16_t len, uint8_t *data2, uint16_t len2) {
   uint16_t crc = 0xffff;
   uint8_t d;
   uint16_t pktlen;
 
-  pktlen = len + 7;
+//   debug(("ipc_SendDataEx: tag %02X len %d len2 %d\n", tag, len, len2));
+
+  pktlen = len + len2 + 7;
   d = 0x55;
   crc = crc16iv(&d, 1, crc);
   d = 0xaa;
@@ -190,6 +237,7 @@ void ipc_SendData(uint8_t tag, uint8_t *data, uint16_t len) {
   crc = crc16iv(&d, 1, crc);
 
   crc = crc16iv(data, len, crc);
+  if (data2) crc = crc16iv(data2, len2, crc);
 
   fifo_Put(&readback_fifo, 0x55);
   fifo_Put(&readback_fifo, 0xaa);
@@ -199,36 +247,19 @@ void ipc_SendData(uint8_t tag, uint8_t *data, uint16_t len) {
   for (int i=0; i<len; i++) {
     fifo_Put(&readback_fifo, data[i]);
   }
+  for (int i=0; i<len2; i++) {
+    fifo_Put(&readback_fifo, data2[i]);
+  }
   fifo_Put(&readback_fifo, crc >> 8);
   fifo_Put(&readback_fifo, crc & 0xff);
+  debug(("ipc_SendDataEx: tag %02X len %d len2 %d fifo %d\n", tag, len, len2, fifo_Count(&readback_fifo)));
+}
+
+void ipc_SendData(uint8_t tag, uint8_t *data, uint16_t len) {
+  ipc_SendDataEx(tag, data, len, NULL, 0);
 }
 
 #endif
-
-#ifdef IPC_MASTER
-void ipc_InitMaster() {
-  i2c_init(i2c1, IPC_BAUDRATE);
-  gpio_set_function(GPIO_IPCM_I2C_CLK, GPIO_FUNC_I2C);
-  gpio_set_function(GPIO_IPCM_I2C_DAT, GPIO_FUNC_I2C);
-  gpio_pull_up(GPIO_IPCM_I2C_CLK);
-  gpio_pull_up(GPIO_IPCM_I2C_DAT);
-  i2c_set_slave_mode(i2c1, false, 0x00);
-}
-
-int ipc_ReadBackLen() {
-  uint8_t cmd[2] = {IPC_READBACKSIZE, 0x00};
-  uint8_t len = 0;
-  i2c_write_blocking (i2c1, SLAVE_ADDRESS, cmd, sizeof cmd, false);
-  i2c_read_blocking(i2c1, SLAVE_ADDRESS, &len, 1, true);
-  return len;
-}
-
-int ipc_ReadBack(uint8_t *data, uint8_t len) {
-  uint8_t cmd[2] = {IPC_READBACKDATA, 0x00};
-  i2c_write_blocking (i2c1, SLAVE_ADDRESS, cmd, sizeof cmd, false);
-  i2c_read_blocking(i2c1, SLAVE_ADDRESS, data, len, true);
-  return len;
-}
 
 int ipc_SetFastMode(uint8_t on) {
 #ifdef IPC_SLAVE
@@ -238,6 +269,55 @@ int ipc_SetFastMode(uint8_t on) {
   i2c_set_baudrate(i2c1, IPC_BAUDRATE_MAX);
 #endif
 }
+
+#ifdef IPC_MASTER
+static fifo_t read_fifo;
+static uint8_t read_fifo_buf[256];
+
+void ipc_InitMaster() {
+  i2c_init(i2c1, IPC_BAUDRATE);
+  gpio_set_function(GPIO_IPCM_I2C_CLK, GPIO_FUNC_I2C);
+  gpio_set_function(GPIO_IPCM_I2C_DAT, GPIO_FUNC_I2C);
+  gpio_pull_up(GPIO_IPCM_I2C_CLK);
+  gpio_pull_up(GPIO_IPCM_I2C_DAT);
+  i2c_set_slave_mode(i2c1, false, 0x00);
+  fifo_Init(&read_fifo, read_fifo_buf, sizeof read_fifo_buf);
+}
+
+
+int ipc_ReadBackLen() {
+  uint8_t cmd[2] = {IPC_READBACKSIZE, 0x00};
+  uint8_t len = 0;
+  i2c_write_blocking (i2c1, SLAVE_ADDRESS, cmd, sizeof cmd, false);
+  i2c_read_blocking(i2c1, SLAVE_ADDRESS, &len, 1, true);
+  return len;
+}
+
+uint8_t ipc_ReadKeyboard() {
+  uint8_t cmd[2] = {IPC_READKEYBOARD, 0x00};
+  uint8_t data = 0;
+  i2c_write_blocking (i2c1, SLAVE_ADDRESS, cmd, sizeof cmd, false);
+  i2c_read_blocking(i2c1, SLAVE_ADDRESS, &data, 1, true);
+  return data;
+}
+
+int ipc_ReadBack(uint8_t *data, uint8_t len) {
+  uint8_t cmd[2] = {IPC_READBACKDATA, 0x00};
+  i2c_write_blocking (i2c1, SLAVE_ADDRESS, cmd, sizeof cmd, false);
+  i2c_read_blocking(i2c1, SLAVE_ADDRESS, data, len, true);
+  return len;
+}
+
+#if 0
+int ipc_SetFastMode(uint8_t on) {
+#ifdef IPC_SLAVE
+  i2c_set_baudrate(i2c0, IPC_BAUDRATE_MAX);
+#endif
+#ifdef IPC_MASTER
+  i2c_set_baudrate(i2c1, IPC_BAUDRATE_MAX);
+#endif
+}
+#endif
 
 int ipc_Command(uint8_t cmd, uint8_t *data, uint8_t len) {
   uint8_t response;
@@ -283,12 +363,23 @@ int ipc_Command(uint8_t cmd, uint8_t *data, uint8_t len) {
 static uint8_t pkt[512];
 static uint16_t pos = 0;
 static uint16_t pktlen = 0;
+
+// uint64_t lastmsg = 0;
 void ipc_MasterTick() {
-  int readable = ipc_ReadBackLen();
+  int readable;
   int wantlen, thisread;
+  
+  readable = ipc_ReadBackLen();
+  // printf("?"); readable = ipc_ReadBackLen(); printf("[%02X]!", readable);
+  // uint64_t now = time_us_64();
+  // if ((now - lastmsg) > 250000) {
+  //   printf("Tick\n");
+  //   lastmsg = now;
+  // }
 
   while (readable) {
-    printf("readable = %d\n", readable);
+    if (readable == 0xff) return;
+    // printf("readable = %d\n", readable);
     if (pos >= 5) {
       pktlen = (pkt[3] << 8) | pkt[4];
       wantlen = pktlen - pos;
@@ -301,6 +392,7 @@ void ipc_MasterTick() {
     thisread = readable > wantlen ? wantlen : readable;
     readable -= thisread;
 
+    // printf("?"); ipc_ReadBack(&pkt[pos], thisread); printf("!");
     ipc_ReadBack(&pkt[pos], thisread);
     pos += thisread;
 

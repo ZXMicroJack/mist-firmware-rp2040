@@ -189,6 +189,41 @@ target_compile_options(mistusbfake PUBLIC
 
 ####################################################################################
 # FLASH build - release binary for Xilinx ZXTres board -with single CPU middleboard.
+add_executable(mistxilinx
+  ${driver_src}
+  ${main_src}
+  )
+  # ${usb_src}
+
+target_link_libraries(mistxilinx pico_stdlib mistfirmware hardware_spi hardware_pio hardware_flash hardware_i2c)
+# target_include_directories(mistxilinx PUBLIC ../usbhost)
+add_compile_options(-O2)
+pico_generate_pio_header(mistxilinx ../drivers/fpga.pio)
+pico_generate_pio_header(mistxilinx ../drivers/spi.pio)
+pico_generate_pio_header(mistxilinx ../drivers/jamma.pio)
+pico_generate_pio_header(mistxilinx ../drivers/jammadb9.pio)
+pico_enable_stdio_usb(mistxilinx 1)
+pico_enable_stdio_uart(mistxilinx 0)
+pico_add_extra_outputs(mistxilinx)
+example_auto_set_url(mistxilinx)
+#pico_set_binary_type(mistusb no_flash)
+target_compile_options(mistxilinx PUBLIC
+  "-DVDATE=\"\""
+  "-Dhexdump=driver_hexdump"
+  "-DPS2HOST"
+  "-DXILINX"
+  "-DJAMMADB9"
+  # "-DUSBFAKE"
+  # "-DUSB"
+  # "-DMIST_USB"
+  # "-DUSB_STORAGE"
+  #"-DDEVKIT_DEBUG"
+  "-DUSB_DEBUG_OFF"
+#  "-DALTERA_FPGA"
+)
+
+####################################################################################
+# FLASH build - release binary for Xilinx ZXTres board -with single CPU middleboard.
 add_executable(mistusbxilinx
   ${driver_src}
   ${main_src}
@@ -269,7 +304,7 @@ pico_enable_stdio_usb(mistmb2xilinx 1)
 pico_enable_stdio_uart(mistmb2xilinx 0)
 pico_add_extra_outputs(mistmb2xilinx)
 example_auto_set_url(mistmb2xilinx)
-pico_set_binary_type(mistmb2xilinx no_flash)
+#pico_set_binary_type(mistmb2xilinx no_flash)
 target_compile_options(mistmb2xilinx PUBLIC
   "-DVDATE=\"\""
   "-Dhexdump=driver_hexdump"

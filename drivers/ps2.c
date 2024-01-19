@@ -10,7 +10,7 @@
 #include "pins.h"
 #include "ps2.h"
 #include "fifo.h"
-// #define DEBUG
+#define DEBUG
 #include "debug.h"
 
 enum {
@@ -211,6 +211,7 @@ static void gpio_callback(uint gpio, uint32_t events) {
 
 static void gpio_callback(uint gpio, uint32_t events) {
   if (gpio_cb) gpio_cb(gpio, events);
+  // printf("gpio_callback: gpio %d events %x\n", gpio, events);
 
   if (events & 0x4) { // fall
     for (int i=0; i<NR_PS2; i++) {

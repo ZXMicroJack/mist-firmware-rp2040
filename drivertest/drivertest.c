@@ -388,11 +388,11 @@ int main()
   printf("Running test\n");
   printf("Running test\n");
   
-  ipc_InitMaster();
-  ps2_InitEx(1);
+//   ipc_InitMaster();
+//   ps2_InitEx(1);
   for(;;) {
     int c = getchar_timeout_us(10);
-    ipc_MasterTick();
+//     ipc_MasterTick();
 
 //     int c = getchar();
     if (forceexit) break;

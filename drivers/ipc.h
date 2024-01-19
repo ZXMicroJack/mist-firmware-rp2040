@@ -42,8 +42,10 @@
 #define IPC_APPDATA         0x12
 #define IPC_UPGRADEFN       0x13
 #define IPC_TRAINJOYPAD     0x14
+
 #define IPC_READBACKSIZE    0x80
 #define IPC_READBACKDATA    0x81
+#define IPC_READKEYBOARD    0x82
 
 #define IPC_SETMISTER       0x15
 #define IPC_SETFASTMODE     0x16
@@ -95,6 +97,7 @@ void ipc_MasterTick();
 int ipc_Command(uint8_t cmd, uint8_t *data, uint8_t len);
 int ipc_ReadBack(uint8_t *data, uint8_t len);
 int ipc_ReadBackLen();
+uint8_t ipc_ReadKeyboard();
 #endif
 
 void ipc_HandleData(uint8_t tag, uint8_t *data, uint16_t len);

@@ -9,6 +9,7 @@
 #include "ikbd.h"
 #include "usb.h"
 #include "drivers/ps2.h"
+#define DEBUG
 #include "drivers/debug.h"
 
 // remap modifiers to each other if requested
@@ -304,16 +305,20 @@ static uint8_t firsttime = 1;
 void ps2_Poll() {
   int k;
 
+  // printf("ps2_Poll\n");
+
   if (firsttime) {
     modifier = 0;
     memset(keys, 0, sizeof keys);
     ps2_Init();
+    // ps2_EnablePort(0, true);
     ps2_EnablePort(0, true);
     firsttime = 0;
   }
 
   int changed = 0;
   while ((k = ps2_GetChar(0)) >= 0) {
+	  printf("[%02X]\n", k);
     if (k == 0xe0) {
       ps2ext = 1;
     } else if (k == 0xf0) {

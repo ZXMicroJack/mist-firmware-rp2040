@@ -23,7 +23,7 @@
 #include "fifo.h"
 #include "ipc.h"
 #include "pins.h"
-#define DEBUG
+// #define DEBUG
 #include "debug.h"
 
 /*                                 USB          MIDI

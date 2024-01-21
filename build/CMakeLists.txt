@@ -8,7 +8,7 @@ include(pico_extras_import.cmake)
 project(pico_examples C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DIPC_MASTER -DPICO_XOSC_STARTUP_DELAY_MULTIPLIER=64")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DIPC_MASTER -DPICO_XOSC_STARTUP_DELAY_MULTIPLIER=64 -DNR_PS2=2")
 
 set(PICO_EXAMPLES_PATH ${PROJECT_SOURCE_DIR})
 set(CMAKE_BUILD_TYPE "Debug")
@@ -275,7 +275,7 @@ pico_enable_stdio_usb(mistusb 0)
 pico_enable_stdio_uart(mistusb 0)
 pico_add_extra_outputs(mistusb)
 example_auto_set_url(mistusb)
-#pico_set_binary_type(mistusb no_flash)
+# pico_set_binary_type(mistusb no_flash)
 target_compile_options(mistusb PUBLIC
   "-DVDATE=\"\""
   "-Dhexdump=driver_hexdump"
@@ -290,21 +290,52 @@ target_compile_options(mistusb PUBLIC
 )
 
 ####################################################################################
-# FLASH build - release binary for Xilinx ZXTres board -with single CPU middleboard.
-add_executable(mistmb2xilinx
+# RAM build - release binary for Xilinx ZXTres board -with single CPU middleboard.
+add_executable(mistmb2xilinxram
   ${driver_mb2_src}
   ${main_src}
   )
 
-target_link_libraries(mistmb2xilinx pico_stdlib mistfirmwareusb hardware_spi hardware_pio hardware_flash hardware_i2c pico_multicore)
+target_link_libraries(mistmb2xilinxram pico_stdlib mistfirmware hardware_spi hardware_pio hardware_flash hardware_i2c pico_multicore)
+add_compile_options(-O2)
+pico_generate_pio_header(mistmb2xilinxram ../drivers/fpga.pio)
+pico_generate_pio_header(mistmb2xilinxram ../drivers/spi.pio)
+pico_enable_stdio_usb(mistmb2xilinxram 1)
+pico_enable_stdio_uart(mistmb2xilinxram 0)
+pico_add_extra_outputs(mistmb2xilinxram)
+example_auto_set_url(mistmb2xilinxram)
+pico_set_binary_type(mistmb2xilinxram no_flash)
+target_compile_options(mistmb2xilinxram PUBLIC
+  "-DVDATE=\"\""
+  "-Dhexdump=driver_hexdump"
+  "-DXILINX"
+  # "-DUSB"
+  # "-DMIST_USB"
+  "-DMB2"
+  # "-DMB2USB"
+  "-DIPC_MASTER"
+  # "-DUSB_STORAGE"
+  "-DUSB_DEBUG_OFF"
+)
+
+####################################################################################
+# FLASH build - release binary for Xilinx ZXTres board -with single CPU middleboard.
+add_executable(mistmb2xilinx
+  ${driver_mb2_src}
+  ${main_src}
+  ${usb_src}
+  )
+
+target_link_libraries(mistmb2xilinx pico_stdlib mistfirmwareusb hardware_spi hardware_pio hardware_flash hardware_i2c pico_multicore tinyusb_host tinyusb_board)
+target_include_directories(mistmb2xilinx PUBLIC ../usbhost)
 add_compile_options(-O2)
 pico_generate_pio_header(mistmb2xilinx ../drivers/fpga.pio)
 pico_generate_pio_header(mistmb2xilinx ../drivers/spi.pio)
-pico_enable_stdio_usb(mistmb2xilinx 1)
+pico_enable_stdio_usb(mistmb2xilinx 0)
 pico_enable_stdio_uart(mistmb2xilinx 0)
 pico_add_extra_outputs(mistmb2xilinx)
 example_auto_set_url(mistmb2xilinx)
-#pico_set_binary_type(mistmb2xilinx no_flash)
+# pico_set_binary_type(mistmb2xilinx no_flash)
 target_compile_options(mistmb2xilinx PUBLIC
   "-DVDATE=\"\""
   "-Dhexdump=driver_hexdump"
@@ -312,6 +343,7 @@ target_compile_options(mistmb2xilinx PUBLIC
   "-DUSB"
   "-DMIST_USB"
   "-DMB2"
+  # "-DMB2USB"
   "-DIPC_MASTER"
   "-DUSB_STORAGE"
   "-DUSB_DEBUG_OFF"

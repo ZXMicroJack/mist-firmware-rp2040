@@ -9,7 +9,7 @@
 #include "ikbd.h"
 #include "usb.h"
 #include "drivers/ps2.h"
-#define DEBUG
+// #define DEBUG
 #include "drivers/debug.h"
 
 // remap modifiers to each other if requested
@@ -226,7 +226,7 @@ MOD|LGUI, // 1f: NoEvent
 0x00, // 3a: NoEvent
 0x00, // 3b: NoEvent
 0x00, // 3c: NoEvent
-0x00, // 3d: NoEvent
+0x00, // 3d: NoEvent7
 0x00, // 3e: NoEvent
 0x00, // 3f: NoEvent
 0x00, // 40: NoEvent
@@ -312,13 +312,13 @@ void ps2_Poll() {
     memset(keys, 0, sizeof keys);
     ps2_Init();
     // ps2_EnablePort(0, true);
-    ps2_EnablePort(0, true);
+    ps2_EnablePortEx(0, true, 1);
     firsttime = 0;
   }
 
   int changed = 0;
   while ((k = ps2_GetChar(0)) >= 0) {
-	  printf("[%02X]\n", k);
+	  // printf("[%02X]\n", k);
     if (k == 0xe0) {
       ps2ext = 1;
     } else if (k == 0xf0) {

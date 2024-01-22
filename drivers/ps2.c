@@ -41,10 +41,6 @@ typedef struct {
 
   uint8_t fifo_buf[64];
   uint8_t fifo_rx_buf[64];
-#if 0
-  uint64_t lastAction;
-  uint32_t capture;
-#endif
   
 } ps2_t;
 
@@ -234,7 +230,7 @@ static void gpio_handle_normal(ps2_t *ps2, uint gpio, uint32_t events) {
     }
   }
 
-  if (events & 0x8) { // fall
+  if (events & 0x8) { // fal l
     if (gpio == ps2->gpio_clk) {
       if (ps2->ps2_state == PS2_SIGNALTRANSMIT) {
         ps2->ps2_state = PS2_TRANSMIT;
@@ -263,87 +259,6 @@ static void gpio_callback(uint gpio, uint32_t events) {
     }
   }
 }
-
-#if 0
-static void gpio_callback(uint gpio, uint32_t events) {
-  if (gpio_cb) gpio_cb(gpio, events);
-  
-  if (events & 0x4) { // fall
-    for (int i=0; i<NR_PS2; i++) {
-      if (gpio == ps2port[i].gpio_clk && ps2port[i].ps2_state == PS2_IDLE) {
-        ps2port[i].ps2_state = PS2_SUPRESS;
-      } else if (gpio == ps2port[i].gpio_data && ps2port[i].ps2_state == PS2_SUPRESS) {
-        ps2port[i].ps2_state = PS2_SIGNALTRANSMIT;
-      }
-    }
-  }
-    
-  if (events & 0x8) { // fall
-    for (int i=0; i<NR_PS2; i++) {
-      if (gpio == ps2port[i].gpio_clk) {
-        if (ps2port[i].ps2_state == PS2_SIGNALTRANSMIT) {
-          ps2port[i].ps2_state = PS2_TRANSMIT;
-          ps2port[i].ps2_states = 22;
-          gpio_set_dir(ps2port[i].gpio_clk, GPIO_OUT);
-          add_repeating_timer_us(200, ps2_timer_callback, &ps2port[i], &ps2port[i].ps2timer);
-        
-        } else if (ps2port[i].ps2_state == PS2_SUPRESS) {
-          ps2port[i].ps2_state = PS2_IDLE;
-        }
-      }
-    }
-  }
-}
-
-static void gpio_callback_host(uint gpio, uint32_t events) {
-  if (gpio_cb) gpio_cb(gpio, events);
-  // printf("gpio_callback: gpio %d events %x\n", gpio, events);
-
-  if (events & 0x4) { // fall
-    for (int i=0; i<NR_PS2; i++) {
-      if (gpio == ps2port[i].gpio_clk) {
-        // handle falling clock
-        if (ps2port[i].ps2_state == PS2_RECEIVE) {
-          ps2port[i].ps2_data = (ps2port[i].ps2_data >> 1) | (gpio_get(ps2port[i].gpio_data) ? 0x200 : 0);
-          ps2port[i].ps2_states --;
-          if (!ps2port[i].ps2_states) {
-            ps2port[i].ps2_state = PS2_IDLE;
-            debug(("ps2rx %02X\n", ps2port[i].ps2_data & 0xff));
-            fifo_Put(&ps2port[i].fifo_rx, ps2port[i].ps2_data & 0xff);
-          }
-        } else if (ps2port[i].ps2_state == PS2_TRANSMIT) {
-          gpio_put(ps2port[i].gpio_data, ps2port[i].ps2_data & 1);
-          ps2port[i].ps2_data >>= 1;
-          ps2port[i].ps2_states --;
-
-          if (!ps2port[i].ps2_states) {
-            gpio_put(ps2port[i].gpio_data, 1);
-            gpio_set_dir(ps2port[i].gpio_data, GPIO_IN);
-            ps2port[i].ps2_state = PS2_IDLE;
-            add_repeating_timer_us(40, ps2_timer_callback_host, &ps2port[i], &ps2port[i].ps2timer);
-          }
-        }
-      } else if (gpio == ps2port[i].gpio_data) {
-        // handle falling data
-        if (ps2port[i].ps2_state == PS2_IDLE) {
-          ps2port[i].ps2_states = 11;
-          ps2port[i].ps2_state = PS2_RECEIVE;
-          ps2port[i].ps2_data = 0;
-        }
-      }
-    }
-  }
-
-  if (events & 0x8) { // rise
-    for (int i=0; i<NR_PS2; i++) {
-      if (gpio == ps2port[i].gpio_clk) {
-        // handle rising clock
-      }
-    }
-  }
-
-}
-#endif
 
 void ps2_Init() {
   uint8_t lut[] = {
@@ -376,18 +291,6 @@ void ps2_Init() {
     fifo_Init(&ps2port[i].fifo, ps2port[i].fifo_buf, sizeof ps2port[i].fifo_buf);
     fifo_Init(&ps2port[i].fifo_rx, ps2port[i].fifo_rx_buf, sizeof ps2port[i].fifo_rx_buf);
   }
-  // ps2port[0].channel = 0;
-  // ps2port[1].channel = 1;
-  // ps2port[2].channel = 2;
-  // ps2port[3].channel = 3;
-  // fifo_Init(&ps2port[0].fifo, ps2port[0].fifo_buf[64], sizeof ps2port[0].fifo_buf);
-  // fifo_Init(&ps2port[1].fifo);
-  // fifo_Init(&ps2port[2].fifo);
-  // fifo_Init(&ps2port[3].fifo);
-  // fifo_Init(&ps2port[0].fifo_rx);
-  // fifo_Init(&ps2port[1].fifo_rx);
-  // fifo_Init(&ps2port[2].fifo_rx);
-  // fifo_Init(&ps2port[3].fifo_rx);
 
   for (int i=0; i<sizeof lut; i++) {
     gpio_init(lut[i]);

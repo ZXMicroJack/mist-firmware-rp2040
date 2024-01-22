@@ -170,11 +170,9 @@ unsigned int usb_host_storage_capacity() {
 int mist_init() {
     uint8_t mmc_ok = 0;
 
-    __init_hardware();
-
     DISKLED_ON;
 
-    Timer_Init();
+    // Timer_Init();
     USART_Init(115200);
 
     iprintf("\rMinimig by Dennis van Weeren");
@@ -240,15 +238,12 @@ int mist_init() {
     font_load();
 
     user_io_init();
-//     printf("[%d]\n", __LINE__);
 
     // tos config also contains cdc redirect settings used by minimig
     tos_config_load(-1);
-//     printf("[%d]\n", __LINE__);
 
     char mod = -1;
 
-//     printf("[%d]\n", __LINE__);
     if((USB_LOAD_VAR != USB_LOAD_VALUE) && !user_io_dip_switch1()) {
         mod = arc_open("/CORE.ARC");
     } else {
@@ -259,7 +254,6 @@ int mist_init() {
             mod = arc_open(s);
         }
     }
-//     printf("[%d]\n", __LINE__);
 
     if(mod < 0 || !strlen(arc_get_rbfname())) {
         fpga_init(NULL); // error opening default ARC, try with default RBF
@@ -270,10 +264,8 @@ int mist_init() {
         fpga_init(s);
     }
 
-//     printf("[%d]\n", __LINE__);
     usb_dev_open();
-//     printf("[%d]\n", __LINE__);
-  jamma_Init();
+    jamma_Init();
     return 0;
 }
 
@@ -284,7 +276,6 @@ int mist_loop() {
     storage_control_poll();
     user_io_poll();
 
-//     printf("user_io_core_type = %02X\n", user_io_core_type());
     // MIST (atari) core supports the same UI as Minimig
     if((user_io_core_type() == CORE_TYPE_MIST) || (user_io_core_type() == CORE_TYPE_MIST2)) {
       if(!fat_medium_present())

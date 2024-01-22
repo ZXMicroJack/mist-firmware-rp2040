@@ -442,15 +442,12 @@ int main() {
 
   printf("Drivertest Microjack\'23\n");
 
-#if defined(USB) && !defined (USBFAKE) // && !defined(MB2)
+#if defined(USB) && !defined (USBFAKE)
   board_init();
   tusb_init();
 #endif
 
   mist_init();
-#ifdef USB
-  mist_usb_init();
-#endif
 
 #ifdef MB2
   ipc_InitMaster();
@@ -507,11 +504,9 @@ int main() {
 //     } else if (lastch == 'm') {
 //       mouse_usbaction(c);
 //     }
+
     mist_loop();
     usb_poll();
-#ifdef USB
-    mist_usb_loop();
-#endif
   }
 
   reset_usb_boot(0, 0);

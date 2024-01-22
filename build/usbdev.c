@@ -55,21 +55,6 @@ uint16_t usb_cdc_read(char *pData, uint16_t length) { return 0; }
 
 #ifdef USB
 
-// // usb_data_t *usb_get_handle(uint16_t vid, uint16_t pid) {
-// //   usb_data_t *this = malloc(sizeof(usb_data_t));
-// //   memset(this, 0, sizeof(usb_data_t));
-// //
-// //   this->vid = vid;
-// //   this->pid = pid;
-// // }
-//
-// // static uint8_t usb_hid_init(usb_device_t *dev, usb_device_descriptor_t *dev_desc) {
-// // static uint8_t usb_hid_release(usb_device_t *dev)
-// // static uint8_t usb_hid_poll(usb_device_t *dev)
-//
-// extern const usb_device_class_config_t usb_hid_class;
-// extern const usb_device_class_config_t usb_hid_class;
-
 #ifdef TEST_BUILD
 #define MAX_USB   1
 #else
@@ -88,7 +73,6 @@ struct {
 };
 
 uint8_t tuh_descriptor_get_device_sync(uint8_t dev_addr, uint8_t *dd, uint16_t len);
-
 
 uint8_t dd[128];
 
@@ -140,11 +124,11 @@ void usb_handle_data(uint8_t dev, uint8_t *desc, uint16_t desclen) {
 // usb_ctrl_req( dev, HID_REQ_HIDOUT, HID_REQUEST_SET_REPORT, report_id, report_type, iface, nbytes, dataptr);
 
 
-void mist_usb_init() {
-}
+// void mist_usb_init() {
+// }
 
-void mist_usb_loop() {
-}
+// void mist_usb_loop() {
+// }
 
 #if 1
 // TODO MJ implement usb_ctrl_req
@@ -162,8 +146,6 @@ uint8_t usb_ctrl_req( usb_device_t *dev, uint8_t bmReqType,
 
   return 0;
 }
-
-// void usb_poll() {}
 
 // TODO MJ implement usb_ctrl_req
 // NOTE: Faked purely to pass on the last report.

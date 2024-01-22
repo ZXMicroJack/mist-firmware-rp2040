@@ -64,7 +64,6 @@ char SetRTC(unsigned char *d);
 // void hid_set_kbd_led(unsigned char led, bool on);
 
 // TODO MJ reset CPU
-// void inline MCUReset() {/* *AT91C_RSTC_RCR = 0xA5 << 24 | AT91C_RSTC_PERRST | AT91C_RSTC_PROCRST | AT91C_RSTC_EXTRST; */}
 void MCUReset();
 
 // TODO MJ spi - just for display
@@ -89,10 +88,6 @@ void DisableIO(void);
 
 #define DEBUG_FUNC_IN()
 #define DEBUG_FUNC_OUT()
-
-#ifdef __GNUC__
-void __init_hardware(void);
-#endif
 
 int8_t pl2303_is_blocked(void);
 uint8_t *get_mac();

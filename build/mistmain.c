@@ -260,7 +260,11 @@ int mist_init() {
     } else {
         user_io_set_core_mod(mod);
         strncpy(s, arc_get_rbfname(), sizeof(s)-5);
+#ifdef XILINX
+        strcat(s,".BIT");
+#else
         strcat(s,".RBF");
+#endif
         fpga_init(s);
     }
 

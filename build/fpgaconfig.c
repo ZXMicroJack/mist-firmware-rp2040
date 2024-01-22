@@ -42,7 +42,11 @@ static uint8_t read_next_block(void *ud, uint8_t *data) {
 unsigned char ConfigureFpga(const char *bitfile) {
   configFpga cf;
 
+#ifdef XILINX
+  if (f_open(&cf.file, bitfile ? bitfile : "CORE.BIT", FA_READ) != FR_OK) {
+#else
   if (f_open(&cf.file, bitfile ? bitfile : "CORE.RBF", FA_READ) != FR_OK) {
+#endif
     iprintf("No FPGA configuration file found %s!\r", bitfile);
     FatalError(4);
   }

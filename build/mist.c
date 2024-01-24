@@ -447,11 +447,11 @@ int main() {
   tusb_init();
 #endif
 
-  mist_init();
-
 #ifdef MB2
   ipc_InitMaster();
 #endif
+
+  mist_init();
 
   char lastch = 0;
   for(;;) {

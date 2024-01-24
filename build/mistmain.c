@@ -117,6 +117,22 @@ void HandleFpga(void) {
 
 extern void inserttestfloppy();
 
+#define LEGACY_MODE     2
+#define MIST_MODE       1
+#define DEFAULT_MODE    0
+
+static uint8_t legacy_mode = DEFAULT_MODE;
+
+void set_legacy_mode(uint8_t mode) {
+  if (mode != legacy_mode) {
+    printf("Setting legacy mode to %d\n", mode);
+#ifdef MB2
+    ipc_Command(IPC_SETMISTER, &mode, sizeof mode);
+#endif
+  }
+  legacy_mode = mode;
+}
+
 #ifdef USB_STORAGE
 int GetUSBStorageDevices()
 {
@@ -278,6 +294,7 @@ int mist_init() {
 #ifdef MB2
     midi_init();
 #endif
+    set_legacy_mode(user_io_core_type() == CORE_TYPE_UNKNOWN ? LEGACY_MODE : MIST_MODE);
     return 0;
 }
 
@@ -305,24 +322,6 @@ uint8_t sysex_buffer[MAX_SYSEX];
 #define CMD_INITFPGA        0x0C
 #define CMD_INITFPGAFN      0x0D
 #define CMD_BOOTSTRAP       0x0E
-
-
-static uint8_t legacy_mode = false;
-
-#define LEGACY_MODE     2
-#define MIST_MODE       1
-#define DEFAULT_MODE    0
-
-void set_legacy_mode(uint8_t on) {
-  if ((!legacy_mode && on) || (legacy_mode && !on)) {
-    uint8_t misterMode = on ? LEGACY_MODE : MIST_MODE;
-    printf("Setting legacy mode to %d\n", misterMode);
-#ifdef MB2
-    ipc_Command(IPC_SETMISTER, &misterMode, sizeof misterMode);
-#endif
-  }
-  legacy_mode = on;
-}
 
 uint8_t old_coretype = 0;
 
@@ -477,9 +476,9 @@ int mist_loop() {
       check_core_at = 0;
     }
 
-    if (legacy_mode) {
+    if (legacy_mode == LEGACY_MODE) {
       if (user_io_core_type() != CORE_TYPE_UNKNOWN) {
-        set_legacy_mode(false);
+        set_legacy_mode(MIST_MODE);
       }
   // beep(1);
     } else {
@@ -496,7 +495,7 @@ int mist_loop() {
       // MJ: check for legacy core and switch support on
 #if 1
       if (user_io_core_type() == CORE_TYPE_UNKNOWN) {
-        set_legacy_mode(true);
+        set_legacy_mode(LEGACY_MODE);
       }
 #endif
       // printf("[%d]\n", __LINE__);

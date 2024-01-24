@@ -42,6 +42,8 @@ set(driver_mb2_src
   ../drivers/sdcard.c
   ../drivers/bitfile.c
   ../drivers/ipc.c
+  ../drivers/cookie.c
+  ../drivers/midi.c
   #../drivers/flash.c
   ../drivers/debug.c
   ../drivers/fifo.c

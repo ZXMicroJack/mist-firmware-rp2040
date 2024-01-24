@@ -316,9 +316,13 @@ void ps2_Poll() {
     firsttime = 0;
   }
 
+#ifndef CORE2_IPC_TICKS
+  ipc_MasterTick();
+#endif
+
   int changed = 0;
   while ((k = ps2_GetChar(0)) >= 0) {
-	  // printf("[%02X]\n", k);
+	  printf("[%02X]\n", k);
     if (k == 0xe0) {
       ps2ext = 1;
     } else if (k == 0xf0) {

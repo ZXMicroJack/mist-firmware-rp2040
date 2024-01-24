@@ -37,14 +37,14 @@ static fifo_t kbdfifo;
 static uint8_t kbdfifo_buf[64];
 
 
+#ifdef CORE2_IPC_TICKS
 static void ipc_core() {
   ipc_InitMaster();
   for(;;) {
     ipc_MasterTick();
   }
 }
-
-
+#endif
 
 int ps2_GetChar(uint8_t ch) {
   return fifo_Get(&kbdfifo);
@@ -55,8 +55,12 @@ void ps2_Init() {
   fifo_Init(&kbdfifo, kbdfifo_buf, sizeof kbdfifo_buf);
 
   if (!ipc_started) {
+#ifdef CORE2_IPC_TICKS
     multicore_reset_core1();
     multicore_launch_core1(ipc_core);
+#else
+  ipc_InitMaster();
+#endif
     ipc_started = 1;
   }
 }

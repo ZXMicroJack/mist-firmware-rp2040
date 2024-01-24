@@ -15,6 +15,8 @@
 #include "usb/joymapping.h"
 
 #include "drivers/fpga.h"
+#define DEBUG
+#include "drivers/debug.h"
 
 
 typedef struct {
@@ -39,8 +41,37 @@ static uint8_t read_next_block(void *ud, uint8_t *data) {
   return 1;
 }
 
-unsigned char ConfigureFpga(const char *bitfile) {
+//MJ TODO remove
+int ResetFPGA() {
+  /* initialise fpga */
+  fpga_initialise();
+  fpga_claim(true);
+
+  /* now configure */
+  return fpga_reset();
+}
+
+//MJ TODO remove
+unsigned char ConfigureFpgaEx(const char *bitfile, uint8_t fatal, uint8_t reset) {
   configFpga cf;
+
+#ifdef XILINX // go to flash boot
+  if (bitfile && !strcmp(bitfile, "ZXTRES.BIT")) {
+    fpga_initialise();
+    fpga_claim(false);
+    fpga_reset();
+    return 1;
+  }
+#endif
+
+  /* now configure */
+  if (reset) {
+    int r = ResetFPGA();
+    if (r) {
+      printf("Failed: FPGA reset returns %d\n", r);
+      return 0;
+    }
+  }
 
 #ifdef XILINX
   if (f_open(&cf.file, bitfile ? bitfile : "CORE.BIT", FA_READ) != FR_OK) {
@@ -48,7 +79,8 @@ unsigned char ConfigureFpga(const char *bitfile) {
   if (f_open(&cf.file, bitfile ? bitfile : "CORE.RBF", FA_READ) != FR_OK) {
 #endif
     iprintf("No FPGA configuration file found %s!\r", bitfile);
-    FatalError(4);
+    if (fatal) FatalError(4);
+    else return 0;
   }
 
   cf.size = f_size(&cf.file);
@@ -61,10 +93,12 @@ unsigned char ConfigureFpga(const char *bitfile) {
   fpga_claim(true);
 
   /* now configure */
-  int r = fpga_reset();
-  if (r) {
-    printf("Failed: FPGA reset returns %d\n", r);
-    return 0;
+  if (!reset) {
+    int r = ResetFPGA();
+    if (r) {
+      printf("Failed: FPGA reset returns %d\n", r);
+      return 0;
+    }
   }
 
   fpga_configure(&cf, read_next_block, cf.size);
@@ -75,3 +109,8 @@ unsigned char ConfigureFpga(const char *bitfile) {
   // returns 1 if success / 0 on fail
   return !cf.error;
 }
+
+unsigned char ConfigureFpga(const char *bitfile) {
+  return ConfigureFpgaEx(bitfile, true, false);
+}
+

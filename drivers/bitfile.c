@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "bitfile.h"
-// #define DEBUG
+#define DEBUG
 #include "debug.h"
 
 #define BLOCKSIZE 512
@@ -38,11 +38,14 @@ uint32_t bitfile_get_length(uint8_t *data, uint32_t filesize) {
     debug(("bitfile_get_length: tag (%02X) %c - %u (%04X)\n", tag, tag, len, len));
 
     if (tag == 'e' && i <= (BLOCKSIZE-7)) {
-      return ((data[i+1]<<24) | (data[i+2]<<16) |
+      uint32_t len = ((data[i+1]<<24) | (data[i+2]<<16) |
         (data[i+3]<<8) | data[i+4]) + i + 5;
+      debug(("bitfile_get_length: detected len %d\n", len));
+      return len;
     }
     i += len + (tag == 'e' ? 1 : 3);
   }
+  debug(("bitfile_get_length: failed to detect len\n"));
   return 0;
 }
 

@@ -129,11 +129,11 @@ typedef struct pio_spi_inst {
 
 void pio_spi_select(const pio_spi_inst_t *spi, uint8_t state) {
 	if (state) {
-  		gpio_put(spi->cs_pin, 1);
-		// inactive
-	} else {
-  		gpio_put(spi->cs_pin, 0);
 		// active
+		pio_spi_unkill(spi->pio, spi->sm, spi->sck_pin, spi->mosi_pin, spi->miso_pin);
+	} else {
+		// inactive
+		pio_spi_kill(spi->pio, spi->sm, spi->sck_pin, spi->mosi_pin, spi->miso_pin);
 	}
 }
 

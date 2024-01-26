@@ -115,3 +115,26 @@ void __time_critical_func(pio_spi_write8_read8_blocking)(const pio_spi_inst_t *s
     }
 }
 
+#if 0
+static inline void pio_spi_unkill(PIO pio, uint sm, uint pin_sck, uint pin_mosi, uint pin_miso) {
+static inline void pio_spi_kill(PIO pio, uint sm, uint pin_sck, uint pin_mosi, uint pin_miso) {
+
+				
+typedef struct pio_spi_inst {
+    PIO pio;
+    uint sm;
+    uint cs_pin;
+} pio_spi_inst_t;
+#endif
+
+void pio_spi_select(const pio_spi_inst_t *spi, uint8_t state) {
+	if (state) {
+  		gpio_put(spi->cs_pin, 1);
+		// inactive
+	} else {
+  		gpio_put(spi->cs_pin, 0);
+		// active
+	}
+}
+
+

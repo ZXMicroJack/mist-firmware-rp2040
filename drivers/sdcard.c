@@ -131,8 +131,10 @@ static uint8_t sd_cmd(pio_spi_inst_t *spi, uint8_t cmd[], int cmdlen, uint8_t bu
 
 static uint8_t sd_cxd(pio_spi_inst_t *spi, uint8_t cmd[], uint8_t buf[]) {
   uint8_t buf1[1];
+	pio_spi_select(spi, 1);
   if (sd_cmd(spi, cmd, 6, buf1, sizeof buf1, 0x00, DEFAULT_RETRIES, 1) != 0x00) {
     sd_select(spi, 1);
+		pio_spi_select(spi, 0);
     return 1;
   }
 
@@ -147,10 +149,12 @@ static uint8_t sd_cxd(pio_spi_inst_t *spi, uint8_t cmd[], uint8_t buf[]) {
 
   if (timeout <= 0) {
     sd_select(spi, 1);
+		pio_spi_select(spi, 0);
     return 1;
   }
 
   get_bytes(spi, buf, 16);
+	pio_spi_select(spi, 0);
   return 0;
 }
 
@@ -240,11 +244,12 @@ uint8_t sd_writesector(pio_spi_inst_t *spi, uint32_t lba, uint8_t *data) {
   cmd[4] = (lba >> 8) & 0xff;
   cmd[5] = lba & 0xff;
 
-
+	pio_spi_select(spi, 1);
   sd_select(spi, 0);
   
   if (sd_cmd(spi, cmd, sizeof cmd, buf, sizeof buf, 0x00, DEFAULT_RETRIES, 1)!=0x00) {
     sd_select(spi, 1);
+		pio_spi_select(spi, 0);
     debug(("Write failed 1 %02X\n", buf[0]));
     return 1;
   }
@@ -263,6 +268,7 @@ uint8_t sd_writesector(pio_spi_inst_t *spi, uint32_t lba, uint8_t *data) {
   }
   
   sd_select(spi, 1);
+	pio_spi_select(spi, 0);
   return timeout > 0;
 }  
 
@@ -328,6 +334,7 @@ int xretry2used = 0;
 uint8_t sd_readsector(pio_spi_inst_t *spi, uint32_t lba, uint8_t *sector) {
   int retries, resets = 3;
   
+	pio_spi_select(spi, 1);
   do {
     retries = 10;
     while (sd_readsector_ll(spi, lba, sector) && retries --) {
@@ -338,6 +345,7 @@ uint8_t sd_readsector(pio_spi_inst_t *spi, uint32_t lba, uint8_t *sector) {
     }
   
     if (retries >= 0) {
+			pio_spi_select(spi, 0);
       return 0;
     }
 #ifdef TEST_RETRIES
@@ -348,6 +356,7 @@ uint8_t sd_readsector(pio_spi_inst_t *spi, uint32_t lba, uint8_t *sector) {
   } while (resets--);
 
   // failed
+	pio_spi_select(spi, 0);
   return 1;
 }
 
@@ -396,6 +405,7 @@ static int sd_init_card_ll(pio_spi_inst_t *spi) {
 
 int sd_init_card(pio_spi_inst_t *spi) {
   int timeout = 10;
+  pio_spi_select(spi, 1);
   sd_set_highspeed(spi, 0);
   while (!sd_init_card_ll(spi) && timeout --)
     ;
@@ -404,6 +414,7 @@ int sd_init_card(pio_spi_inst_t *spi) {
     sd_set_highspeed(spi, 1);
   }
   
+  pio_spi_select(spi, 0);
   return timeout > 0 ? 0 : 1;
 }
 
@@ -420,7 +431,10 @@ void sd_hw_kill(pio_spi_inst_t *spi) {
 static pio_spi_inst_t spi = {
     .pio = pio0,
     .sm = 1,
-    .cs_pin = PICO_DEFAULT_SPI_CSN_PIN
+    .cs_pin = PICO_DEFAULT_SPI_CSN_PIN,
+    .sck_pin = PICO_DEFAULT_SPI_SCK_PIN,
+    .mosi_pin = PICO_DEFAULT_SPI_TX_PIN,
+    .miso_pin = PICO_DEFAULT_SPI_RX_PIN
 };
 
 pio_spi_inst_t *sd_hw_init() {

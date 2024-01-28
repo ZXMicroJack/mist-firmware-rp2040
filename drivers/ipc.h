@@ -60,6 +60,10 @@
 #define IPC_USB_DEVICE_DESC     0x45
 #define IPC_USB_CONFIG_DESC     0x46
 
+#define LEGACY_MODE     2
+#define MIST_MODE       1
+#define DEFAULT_MODE    0
+
 typedef struct {
   uint8_t dev;
   uint8_t idx;

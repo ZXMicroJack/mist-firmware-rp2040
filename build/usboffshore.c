@@ -9,6 +9,9 @@
 #include "drivers/fifo.h"
 #include "drivers/ipc.h"
 
+// #define DEBUG
+#include "drivers/debug.h"
+
 #include "usbdev.h"
 
 #define MAX_USB   5
@@ -18,13 +21,15 @@
 static uint8_t storedDD[USB_DEVICE_DESCRIPTOR_LEN];
 static uint8_t config[MAX_USB][256];
 
-static uint32_t jammaData = 0;
+static uint32_t jammaData = 0xffff0000;
 
 void jamma_Init() {
 }
 
 uint32_t jamma_GetData(uint8_t inst) {
-  return (inst ? (jammaData >> 8) : jammaData) & 0xff;
+  uint8_t d = (inst ? (jammaData >> 24) : (jammaData >> 16)) ^ 0xff;
+  // debug(("jamma_GetData: inst %d returns %02X\n", inst, d));
+  return d;
 }
 
 #ifdef MB2USB
@@ -141,6 +146,7 @@ void ipc_HandleData(uint8_t tag, uint8_t *data, uint16_t len) {
 
     case IPC_UPDATE_JAMMA:
       memcpy(&jammaData, data, sizeof jammaData);
+      debug(("IPC_UPDATE_JAMMA: %x\n", jammaData));
       break;
 
     case IPC_PS2_DATA: {

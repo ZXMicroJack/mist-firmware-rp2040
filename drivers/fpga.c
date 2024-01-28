@@ -16,7 +16,7 @@
 #include "pins.h"
 #include "fpga.h"
 #include "bitfile.h"
-#define DEBUG
+// #define DEBUG
 #include "debug.h"
 
 #include "fpga.pio.h"
@@ -113,6 +113,9 @@ int fpga_reset() {
   debug(("fpga_status: done %u nstatus %u\n", gpio_get(GPIO_FPGA_CONF_DONE), gpio_get(GPIO_FPGA_NSTATUS)));
 #else
   uint64_t timeout;
+
+  gpio_init(GPIO_FPGA_DATA);
+  gpio_init(GPIO_FPGA_CLOCK);
 
   gpio_init(GPIO_FPGA_INITB);
   gpio_init(GPIO_FPGA_RESET);

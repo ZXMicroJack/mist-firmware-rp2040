@@ -170,7 +170,8 @@ unsigned long CheckTimer(unsigned long time)
 void WaitTimer(unsigned long time)
 {
     time = GetTimer(time);
-    while (!CheckTimer(time));
+    while (!CheckTimer(time))
+      tight_loop_contents();
 }
 
 
@@ -194,14 +195,12 @@ unsigned char UserButton() {
   return 0;
 }
 
-// TODO MJ no DB9 input at present
 void InitDB9() {
 }
 
 // poll db9 joysticks
 const static uint8_t joylut[] = {0, JOY_UP, JOY_DOWN, JOY_LEFT, JOY_RIGHT, JOY_BTN1, JOY_BTN2, 0};
 char GetDB9(char index, unsigned char *joy_map) {
-  // TODO - no DB9 joypad at present, but when implemented,
   // *joy_map is set to a combination of the following bitmapped values
   // JOY_UP, JOY_DOWN, JOY_LEFT, JOY_RIGHT, JOY_BTN1, JOY_BTN2
 
@@ -215,6 +214,7 @@ char GetDB9(char index, unsigned char *joy_map) {
     ndx++;
     mask >>= 1;
   }
+  *joy_map = j;
   return 1;
 }
 

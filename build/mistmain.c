@@ -117,10 +117,6 @@ void HandleFpga(void) {
 
 extern void inserttestfloppy();
 
-#define LEGACY_MODE     2
-#define MIST_MODE       1
-#define DEFAULT_MODE    0
-
 static uint8_t legacy_mode = DEFAULT_MODE;
 
 void set_legacy_mode(uint8_t mode) {
@@ -239,15 +235,26 @@ int mist_init() {
 
         fat_switch_to_usb();  // redirect file io to usb
 #else
+        // no file to boot
+#ifdef BOOT_FLASH_ON_ERROR
+        // BootFromFlash();
+#else
         FatalError(ERROR_FILE_NOT_FOUND);
+#endif
 #endif
       }
 #ifdef USB_STORAGE
     }
 #endif
 
-    if (!FindDrive())
+    if (!FindDrive()) {
+#ifdef BOOT_FLASH_ON_ERROR
+        BootFromFlash();
+        return 0;
+#else
         FatalError(ERROR_INVALID_DATA);
+#endif
+    }
 
     disk_ioctl(fs.pdrv, GET_SECTOR_COUNT, &storage_size);
     storage_size >>= 11;

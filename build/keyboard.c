@@ -316,7 +316,7 @@ void ps2_Poll() {
     firsttime = 0;
   }
 
-#ifndef CORE2_IPC_TICKS
+#if defined(MB2) && !defined(CORE2_IPC_TICKS)
   ipc_MasterTick();
 #endif
 

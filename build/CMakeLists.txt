@@ -27,6 +27,7 @@ set(driver_src
   ../drivers/ps2.c
   ../drivers/sdcard.c
   ../drivers/bitfile.c
+  ../drivers/midi.c
   #../drivers/ipc.c
   #../drivers/flash.c
   ../drivers/debug.c
@@ -341,6 +342,7 @@ target_compile_options(mistmb2xilinxram PUBLIC
   "-DIPC_MASTER"
   # "-DUSB_STORAGE"
   "-DUSB_DEBUG_OFF"
+  "-DBOOT_FLASH_ON_ERROR"
 )
 
 ####################################################################################
@@ -375,4 +377,5 @@ target_compile_options(mistmb2xilinx PUBLIC
   "-DIPC_MASTER"
   # "-DUSB_STORAGE"
   "-DUSB_DEBUG_OFF"
+  "-DBOOT_FLASH_ON_ERROR"
 )

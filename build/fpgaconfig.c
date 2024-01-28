@@ -15,7 +15,7 @@
 #include "usb/joymapping.h"
 
 #include "drivers/fpga.h"
-#define DEBUG
+// #define DEBUG
 #include "drivers/debug.h"
 
 #define BUFFER_SIZE     16 // PACKETS
@@ -40,7 +40,7 @@ static uint8_t read_next_block(void *ud, uint8_t *data) {
   UINT br;
   configFpga *cf = (configFpga *)ud;
 
-  printf("read_next_block cf->c = %d\n", cf->c);
+  debug(("read_next_block cf->c = %d\n", cf->c));
   if (f_read(&cf->file, data, 512, &br) != FR_OK) {
     cf->error = 1;
     return 0;
@@ -90,7 +90,7 @@ uint8_t read_next_block_buffered(void *user_data, uint8_t *block) {
   uint8_t result = 0;
   
   configFpga *brl = (configFpga *)user_data;
-  printf("read_next_block_buffered cf->c = %d\n", brl->c);
+  debug(("read_next_block_buffered cf->c = %d\n", brl->c));
   if (brl->c) {
     memcpy(block, brl->buff[brl->l], 512);
     brl->c --;
@@ -111,9 +111,20 @@ int ResetFPGA() {
   return fpga_reset();
 }
 
+#ifdef BOOT_FLASH_ON_ERROR
+void BootFromFlash() {
+  debug(("BootFromFlash!\n"));
+  fpga_initialise();
+  fpga_claim(false);
+  int r = fpga_reset();
+  debug(("fpga_reset returns %d\n", r));
+}
+#endif
+
 //MJ TODO remove
 unsigned char ConfigureFpgaEx(const char *bitfile, uint8_t fatal, uint8_t reset) {
   configFpga cf;
+  debug(("ConfigureFpgaEx: %s\n", bitfile ? bitfile : "null"));
 
 #ifdef XILINX // go to flash boot
   if (bitfile && !strcmp(bitfile, "ZXTRES.BIT")) {
@@ -128,7 +139,7 @@ unsigned char ConfigureFpgaEx(const char *bitfile, uint8_t fatal, uint8_t reset)
   if (reset) {
     int r = ResetFPGA();
     if (r) {
-      printf("Failed: FPGA reset returns %d\n", r);
+      debug(("Failed: FPGA reset returns %d\n", r));
       return 0;
     }
   }
@@ -139,13 +150,19 @@ unsigned char ConfigureFpgaEx(const char *bitfile, uint8_t fatal, uint8_t reset)
   if (f_open(&cf.file, bitfile ? bitfile : "CORE.RBF", FA_READ) != FR_OK) {
 #endif
     iprintf("No FPGA configuration file found %s!\r", bitfile);
+#ifdef BOOT_FLASH_ON_ERROR
+    printf("!!! booting from flash!!!\n");
+    BootFromFlash();
+    return 1;
+#else
     if (fatal) FatalError(4);
     else return 0;
+#endif
   }
 
   cf.size = f_size(&cf.file);
   cf.error = 0;
-  printf("cf.size = %ld\n", cf.size);
+  debug(("cf.size = %ld\n", cf.size));
   iprintf("FPGA bitstream file %s opened, file size = %ld\r", bitfile, cf.size);
 
   /* initialise fpga */
@@ -165,7 +182,7 @@ unsigned char ConfigureFpgaEx(const char *bitfile, uint8_t fatal, uint8_t reset)
   if (!reset) {
     int r = ResetFPGA();
     if (r) {
-      printf("Failed: FPGA reset returns %d\n", r);
+      debug(("Failed: FPGA reset returns %d\n", r));
       f_close(&cf.file);
       return 0;
     }

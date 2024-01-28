@@ -38,6 +38,10 @@
 #define SECTOR_BUFFER_SIZE   4096
 #endif
 
+#ifdef BOOT_FLASH_ON_ERROR
+void BootFromFlash();
+#endif
+
 // TODO MJ - no sense switches for these two
 char mmc_inserted(void);
 char mmc_write_protected(void);

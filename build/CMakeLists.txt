@@ -121,6 +121,7 @@ add_library(mistfirmware STATIC ${mistfirmware_src})
 target_compile_options(mistfirmware PUBLIC
   "-DVDATE=\"\""
   "-DMIST"
+  "-DMIST_ROOT=\"/\""
 )
 
 # mist library xilinx
@@ -129,6 +130,7 @@ target_compile_options(mistfirmwarexilinx PUBLIC
   "-DVDATE=\"\""
   "-DXILINX"
   "-DMIST"
+  "-DMIST_ROOT=\"/MIST\""
 )
 
 # mist USB library
@@ -139,6 +141,7 @@ target_compile_options(mistfirmwareusbxilinx PUBLIC
   "-DUSB_STORAGE"
   "-DXILINX"
   "-DEXCL_XBOX_JPAD"
+  "-DMIST_ROOT=\"/MIST\""
 )
 
 # mist USB library
@@ -148,6 +151,7 @@ target_compile_options(mistfirmwareusb PUBLIC
   "-DMIST"
   "-DUSB_STORAGE"
   "-DEXCL_XBOX_JPAD"
+  "-DMIST_ROOT=\"/\""
 )
 
 ####################################################################################
@@ -239,6 +243,7 @@ target_compile_options(mistxilinx PUBLIC
   "-DPS2HOST"
   "-DXILINX"
   "-DJAMMADB9"
+  "-DMIST_ROOT=\"/MIST\""
   # "-DUSBFAKE"
   # "-DUSB"
   # "-DMIST_USB"
@@ -279,6 +284,7 @@ target_compile_options(mistusbxilinx PUBLIC
   "-DUSB_STORAGE"
   #"-DDEVKIT_DEBUG"
   "-DUSB_DEBUG_OFF"
+  "-DMIST_ROOT=\"/MIST\""
 #  "-DALTERA_FPGA"
 )
 

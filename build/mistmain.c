@@ -259,7 +259,7 @@ int mist_init() {
     disk_ioctl(fs.pdrv, GET_SECTOR_COUNT, &storage_size);
     storage_size >>= 11;
 
-    ChangeDirectoryName("/");
+    ChangeDirectoryName(MIST_ROOT);
 
     arc_reset();
 
@@ -273,7 +273,7 @@ int mist_init() {
     char mod = -1;
 
     if((USB_LOAD_VAR != USB_LOAD_VALUE) && !user_io_dip_switch1()) {
-        mod = arc_open("/CORE.ARC");
+        mod = arc_open(MIST_ROOT "/CORE.ARC");
     } else {
         user_io_detect_core_type();
         if(user_io_core_type() != CORE_TYPE_UNKNOWN && !user_io_create_config_name(s, "ARC", CONFIG_ROOT)) {
@@ -471,7 +471,9 @@ void midi_loop() {
 
 int mist_loop() {
   ps2_Poll();
+#ifdef MB2
   midi_loop();
+#endif
 
     cdc_control_poll();
     storage_control_poll();

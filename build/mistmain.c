@@ -298,7 +298,7 @@ int mist_init() {
 
     usb_dev_open();
     jamma_Init();
-#ifdef MB2
+#if defined(XILINX) && !defined(USBFAKE)
     midi_init();
 #endif
     set_legacy_mode(user_io_core_type() == CORE_TYPE_UNKNOWN ? LEGACY_MODE : MIST_MODE);
@@ -351,7 +351,7 @@ void beep(int n) {
 #endif
 
 
-#ifdef MB2
+#if defined(XILINX) && !defined(USBFAKE)
 void sysex_Process() {
   switch(sysex_buffer[0]) {
     case CMD_RESET: {
@@ -471,7 +471,7 @@ void midi_loop() {
 
 int mist_loop() {
   ps2_Poll();
-#ifdef MB2
+#if defined(XILINX) && !defined(USBFAKE)
   midi_loop();
 #endif
 

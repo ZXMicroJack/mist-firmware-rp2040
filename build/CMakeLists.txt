@@ -173,7 +173,7 @@ target_compile_options(mistusbfake PUBLIC
   "-DUSB"
   "-DUSBFAKE"
   "-DTEST_BUILD"
-#  "-DALTERA_FPGA"
+  "-DALTERA_FPGA"
 )
 
 ####################################################################################

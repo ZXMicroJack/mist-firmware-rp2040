@@ -29,6 +29,10 @@
 // #define DEBUG
 #include "debug.h"
 #include "joypad.h"
+#ifdef RP2U
+#include "fifo.h"
+#include "ipc.h"
+#endif
 
 //--------------------------------------------------------------------+
 // MACRO TYPEDEF CONSTANT ENUM DECLARATION
@@ -88,6 +92,13 @@ uint8_t kbd_addr = 0;
 uint8_t kbd_inst = 0;
 uint8_t leds = 0;
 
+#ifdef RP2U
+static uint8_t mistMode = 1;
+
+void HID_setMistMode(uint8_t on) {
+  mistMode = on;
+}
+#endif
 
 // Each HID instance can has multiple reports
 static struct hid_info
@@ -111,19 +122,56 @@ static struct hid_info
 
 #define printf uprintf
 
-  
+#ifdef USB_ON_RP2U
+#define ipc_SendData(a,b,c) while(0) {}
+#define ipc_SendDataEx(a,b,c,d,e) while(0) {}
+
+void usb_attached(uint8_t dev, uint8_t idx, uint16_t vid, uint16_t pid, uint8_t *desc, uint16_t desclen) {
+  uint8_t dd[USB_DEVICE_DESCRIPTOR_LEN];
+  tuh_descriptor_get_device_sync(dev, dd, sizeof dd);
+  ipc_SendData(IPC_USB_DEVICE_DESC, dd, sizeof dd);
+
+  uint8_t cfg[256];
+  tuh_descriptor_get_configuration_sync(dev, 0, cfg, sizeof cfg);
+  ipc_SendDataEx(IPC_USB_CONFIG_DESC, &dev, sizeof dev, cfg, sizeof cfg);
+
+  IPC_usb_attached_t d;
+  d.dev = dev;
+  d.idx = idx;
+  d.vid = vid;
+  d.pid = pid;
+  ipc_SendDataEx(IPC_USB_ATTACHED, &d, sizeof d, desc, desclen);
+}
+
+void usb_detached(uint8_t dev) {
+  ipc_SendData(IPC_USB_DETACHED, &dev, sizeof dev);
+}
+
+void usb_handle_data(uint8_t dev, uint8_t *desc, uint16_t desclen) {
+  ipc_SendDataEx(IPC_USB_HANDLE_DATA, &dev, sizeof dev, desc, desclen);
+}
+#endif
+
 void process_kbd(uint8_t data);
 void process_ms(uint8_t data);
 
 void hid_app_task(void)
 {
-  int ch;
-  while ((ch = ps2_GetChar(0)) >= 0) {
-    process_kbd(ch);
+#ifdef RP2U
+  // mist mode off, means ps2 reacts in client mode
+  // these are normally messages to the keyboard.
+  if (!mistMode) {
+#endif
+    int ch;
+    while ((ch = ps2_GetChar(0)) >= 0) {
+      process_kbd(ch);
+    }
+    while ((ch = ps2_GetChar(1)) >= 0) {
+      process_ms(ch);
+    }
+#ifdef RP2U
   }
-  while ((ch = ps2_GetChar(1)) >= 0) {
-    process_ms(ch);
-  }
+#endif
 }
 
 //--------------------------------------------------------------------+
@@ -140,6 +188,120 @@ void hid_app_task(void)
 // can be used to parse common/simple enough descriptor.
 // Note: if report descriptor length > CFG_TUH_ENUMERATION_BUFSIZE, it will be skipped
 // therefore report_desc = NULL, desc_len = 0
+
+void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_report, uint16_t desc_len)
+{
+#ifdef DEBUG
+  printf("HID device address = %d, instance = %d is mounted\r\n", dev_addr, instance);
+#endif  
+
+#ifdef USB_ON_RP2U
+  if (mistMode) {
+    tuh_vid_pid_get(dev_addr, &hid_info[dev_addr].vid, &hid_info[dev_addr].pid);
+    usb_attached(dev_addr, instance, hid_info[dev_addr].vid, hid_info[dev_addr].pid, desc_report, desc_len);
+  } else {
+#endif
+    // Interface protocol (hid_interface_protocol_enum_t)
+    const char* protocol_str[] = { "None", "Keyboard", "Mouse" };
+    uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
+    hid_info[dev_addr].joypad = false;
+
+#ifdef RP2U
+#ifdef USB_ON_RP2U
+  if (mistMode) {
+    tuh_vid_pid_get(dev_addr, &hid_info[dev_addr].vid, &hid_info[dev_addr].pid);
+    usb_attached(dev_addr, instance, hid_info[dev_addr].vid, hid_info[dev_addr].pid, desc_report, desc_len);
+  } else {
+#endif
+
+#ifdef DEBUG
+  printf("HID Interface Protocol = %s\r\n", protocol_str[itf_protocol]);
+#endif
+    if ( itf_protocol == HID_ITF_PROTOCOL_KEYBOARD ) {
+#ifndef RP2U
+      ps2_EnablePort(0, true);
+#endif
+      kbd_addr = dev_addr;
+      kbd_inst = instance;
+    } else if ( itf_protocol == HID_ITF_PROTOCOL_MOUSE ) {
+#ifndef RP2U
+      ps2_EnablePort(1, true);
+#endif
+    } else if ( itf_protocol == HID_ITF_PROTOCOL_NONE ) {
+      hid_info[dev_addr].report_count = tuh_hid_parse_report_descriptor(hid_info[dev_addr].report_info, MAX_REPORT, desc_report, desc_len);
+  #ifdef DEBUG
+      printf("HID has %u reports \r\n", hid_info[dev_addr].report_count);
+      printf("Descriptor len: \n");
+  #endif
+      uint8_t joystick_desc[4] = {0x05, 0x01, 0x09, 0x04};
+      uint16_t vid, pid;
+      if (!memcmp(desc_report, joystick_desc, 4)) {
+        hid_info[dev_addr].joypad = true;
+
+        // device is a joystick - is it one of our exceptions?
+        tuh_vid_pid_get(dev_addr, &vid, &pid);
+        // decide which is which
+        hid_info[dev_addr].joypad_inst = 0;
+        for (int i=0; i<MAX_USB; i++) {
+          if (i != dev_addr && hid_info[i].joypad) {
+            hid_info[dev_addr].joypad_inst = hid_info[i].joypad_inst ? 0 : 1;
+          }
+        }
+        joypad_Add(hid_info[dev_addr].joypad_inst, dev_addr, vid, pid, desc_report, desc_len);
+      }
+
+  #ifdef DEBUG
+      for (int i=0; i<desc_len; i++) {
+        uprintf("%02X ", desc_report[i]);
+        if ((i & 0xf) == 0xf) uprintf("\n");
+      }
+      uprintf("\n");
+  #endif
+    }
+#ifdef RP2U
+#ifdef USB_ON_RP2U
+  }
+#endif
+#endif
+
+  // request to receive report
+  // tuh_hid_report_received_cb() will be invoked when report is available
+  if ( !tuh_hid_receive_report(dev_addr, instance) )
+  {
+#ifdef DEBUG
+    printf("Error: cannot request to receive report\r\n");
+#endif
+
+  }
+}
+
+// Invoked when device with hid interface is un-mounted
+void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance)
+{
+#ifdef USB_ON_RP2U
+  if (mistMode) {
+    usb_detached(dev_addr);
+    return;
+  }
+#endif
+
+#ifdef DEBUG
+  printf("HID device address = %d, instance = %d is unmounted\r\n", dev_addr, instance);
+#endif
+  uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
+  if ( itf_protocol == HID_ITF_PROTOCOL_KEYBOARD ) {
+#ifndef RP2U
+    ps2_EnablePort(0, false);
+#endif
+  } else if ( itf_protocol == HID_ITF_PROTOCOL_MOUSE ) {
+#ifndef RP2U
+    ps2_EnablePort(1, false);
+#endif
+  } else if (hid_info[dev_addr].joypad) {
+    joypad_Add(hid_info[dev_addr].joypad_inst, dev_addr, 0, 0, NULL, 0);
+  }
+}
+
 
 void kbd_set_leds(uint8_t data) {
   if(data > 7) data = 0;
@@ -171,7 +333,15 @@ int64_t repeat_callback(alarm_id_t id, void *user_data) {
 }
 
 void ps2_send(uint8_t data, bool isKbd) {
+#ifndef RP2U
   ps2_SendChar(isKbd ? 0 : 1, data);
+#else
+  if (mistMode) {
+    ps2_InsertChar(isKbd ? 0 : 1, data);
+  } else {
+    ps2_SendChar(isKbd ? 0 : 1, data);
+  }
+#endif
 }
 
 void ms_send(uint8_t data) {
@@ -438,87 +608,14 @@ static bool training_timer_callback(struct repeating_timer *t) {
 */
 
 
-void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_report, uint16_t desc_len)
-{
-#ifdef DEBUG
-  printf("HID device address = %d, instance = %d is mounted\r\n", dev_addr, instance);
-#endif
-
-  // Interface protocol (hid_interface_protocol_enum_t)
-  const char* protocol_str[] = { "None", "Keyboard", "Mouse" };
-  uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
-  hid_info[dev_addr].joypad = false;
-
-#ifdef DEBUG
-  printf("HID Interface Protocol = %s\r\n", protocol_str[itf_protocol]);
-#endif
-  if ( itf_protocol == HID_ITF_PROTOCOL_KEYBOARD ) {
-    ps2_EnablePort(0, true);
-    kbd_addr = dev_addr;
-    kbd_inst = instance;
-  } else if ( itf_protocol == HID_ITF_PROTOCOL_MOUSE ) {
-    ps2_EnablePort(1, true);
-  } else if ( itf_protocol == HID_ITF_PROTOCOL_NONE ) {
-    hid_info[dev_addr].report_count = tuh_hid_parse_report_descriptor(hid_info[dev_addr].report_info, MAX_REPORT, desc_report, desc_len);
-#ifdef DEBUG
-    printf("HID has %u reports \r\n", hid_info[dev_addr].report_count);
-    printf("Descriptor len: \n");
-#endif
-    uint8_t joystick_desc[4] = {0x05, 0x01, 0x09, 0x04};
-    uint16_t vid, pid;
-    if (!memcmp(desc_report, joystick_desc, 4)) {
-      hid_info[dev_addr].joypad = true;
-
-      // device is a joystick - is it one of our exceptions?
-      tuh_vid_pid_get(dev_addr, &vid, &pid);
-      // decide which is which
-      hid_info[dev_addr].joypad_inst = 0;
-      for (int i=0; i<MAX_USB; i++) {
-        if (i != dev_addr && hid_info[i].joypad) {
-          hid_info[dev_addr].joypad_inst = hid_info[i].joypad_inst ? 0 : 1;
-        }
-      }
-      joypad_Add(hid_info[dev_addr].joypad_inst, dev_addr, vid, pid, desc_report, desc_len);
-    }
-
-#ifdef DEBUG
-    for (int i=0; i<desc_len; i++) {
-      uprintf("%02X ", desc_report[i]);
-      if ((i & 0xf) == 0xf) uprintf("\n");
-    }
-    uprintf("\n");
-#endif
-  }
-
-  // request to receive report
-  // tuh_hid_report_received_cb() will be invoked when report is available
-  if ( !tuh_hid_receive_report(dev_addr, instance) )
-  {
-#ifdef DEBUG
-    printf("Error: cannot request to receive report\r\n");
-#endif
-
-  }
-}
-
-// Invoked when device with hid interface is un-mounted
-void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance)
-{
-#ifdef DEBUG
-  printf("HID device address = %d, instance = %d is unmounted\r\n", dev_addr, instance);
-#endif
-  uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
-  if ( itf_protocol == HID_ITF_PROTOCOL_KEYBOARD ) {
-    ps2_EnablePort(0, false);
-  } else if ( itf_protocol == HID_ITF_PROTOCOL_MOUSE ) {
-    ps2_EnablePort(1, false);
-  } else if (hid_info[dev_addr].joypad) {
-    joypad_Add(hid_info[dev_addr].joypad_inst, dev_addr, 0, 0, NULL, 0);
-  }
-}
-
 void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len) {
-  
+#ifdef USB_ON_RP2U
+  if (mistMode) {
+    usb_handle_data(dev_addr, report, len);
+    tuh_hid_receive_report(dev_addr, instance);
+    return;
+  }
+#endif  
   switch(tuh_hid_interface_protocol(dev_addr, instance)) {
     case HID_ITF_PROTOCOL_KEYBOARD:
       
@@ -695,6 +792,11 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
           hid_info[dev_addr].last_joydata = joydata;
 //           joypad_action(hid_info[dev_addr].joypad_inst, joydata);
           jamma_SetData(hid_info[dev_addr].joypad_inst, joydata);
+
+#ifndef RP2U
+          uint8_t data[] = {hid_info[dev_addr].joypad_inst, joydata};
+          ipc_SendData(IPC_UPDATE_JAMMA, data, sizeof data);
+#endif
         }
       } else {
 #ifdef DEBUG

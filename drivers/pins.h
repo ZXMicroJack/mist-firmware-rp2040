@@ -8,8 +8,8 @@
 
 /* what gpios to what fpga pins...
  * seems to be;
-0   fclk - l12 - sj2 - cclk
-1   fmiso - r22 - sj1 - 
+0   fclk - l12 - sj2 - cclk - altera fpga_dclk
+1   fmiso - r22 - sj1 - altera fpga_data0
 2   aa8_clkdb \
 3   y8_wsdb   |- midi
 4   ab8_dabd  |
@@ -30,10 +30,10 @@
 19  v7_cs   /   SPI0TX
 20  w5 - MIST_SS2
 21  w6 - MIST_SS3
-22  w4 - when core is running, it detects as low, and when in reset detects as high
+22  w4 - MIST_SS4 (AE9 on neptuno2)
 23  y6 - signal high when error state to boot /BOOT.BIT
-24  y9 - MIST_SS4
-25  r19_pal
+24  y9 - MIST_SS4 - altera FPGA_CONF_DONE (neptuno1++)
+25  r19_pal  - altera FPGA_MSEL1 (neptuno1++)     FPGA_CONF_DONE (neptuno2)
 26  aa4_xload
 27  ab5_xsck
 28  aa6_xdata
@@ -59,6 +59,13 @@
 // when reset, it pulls it down.  Rudamentry core detection.
 #define PICO_FPGA_MONITOR_PIN 22
 #define PICO_FPGA_BOOT_SD     23
+
+
+#define GPIO_MIST_CSN    17 // user io
+#define GPIO_MIST_SS2    20 // data io
+#define GPIO_MIST_SS3    21 // osd
+#define GPIO_MIST_SS4    22 // dmode?
+
 
 #ifdef USBDEV
 #define GPIO_PS2_CLK      3
@@ -118,6 +125,12 @@
   (SPI1 RX) (UART1 TX) (I2C0 SDA) GP24 - COM0 - GP26 (SPI1 SCK) (UART1 CTS) (I2C1 SDA)
  (SPI1 CSN) (UART1 RX) (I2C0 SCL) GP25 - COM1 - GP27 (SPI1 TX) (UART1 RTS) (I2C1 SCL)
 */
+
+#define MIST_CSN    17 // user io
+#define MIST_SS2    20 // data io
+#define MIST_SS3    21 // osd
+// #define MIST_SS4    24 // dmode?
+#define MIST_SS4    22 // dmode?
 
 // #define GPIO_IPCM_I2C_CLK   15
 // #define GPIO_IPCM_I2C_DAT   14

@@ -32,7 +32,7 @@
 // #define TEST_FPGA
 // #define TEST_MATRIX
 // #define TEST_FLASH
-// #define TEST_USERIO
+#define TEST_USERIO
 // #define TEST_JAMMA
 
 // KEY ACTION ALLOCATION

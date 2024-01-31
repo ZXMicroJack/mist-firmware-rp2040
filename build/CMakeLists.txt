@@ -183,7 +183,9 @@ target_compile_options(mistram PUBLIC
   "-DPS2HOST"
   ${archdefs}
   "-DJAMMADB9"
-  "-DTEST_BUILD"
+  #"-DTEST_BUILD"
+  "-DALTERA_FPGA"
+  "-DQMTECH"
 )
 
 
@@ -214,7 +216,7 @@ target_compile_options(mistusbfake PUBLIC
   "-DUSB"
   "-DUSBFAKE"
   "-DTEST_BUILD"
-#  "-DALTERA_FPGA"
+  "-DALTERA_FPGA"
 )
 
 ####################################################################################
@@ -317,6 +319,7 @@ target_compile_options(mistusb PUBLIC
   "-DUSB"
   "-DMIST_USB"
   "-DALTERA_FPGA"
+  "-DQMTECH"
   "-DUSB_STORAGE"
   "-DUSB_DEBUG_OFF"
 )

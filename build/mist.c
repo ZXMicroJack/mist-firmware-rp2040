@@ -429,8 +429,8 @@ int main() {
   pio_spi_inst_t *spi = NULL;
 
   // set up error led
-  gpio_init(PICO_DEFAULT_LED_PIN);
-  gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
+  //gpio_init(PICO_DEFAULT_LED_PIN);
+  //gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
 
 #ifdef DEVKIT_DEBUG
   usetup();

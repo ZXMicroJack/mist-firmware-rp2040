@@ -46,7 +46,7 @@ static uint8_t read_next_block(void *ud, uint8_t *data) {
     return 0;
   }
 
-  if (br >= cf->size) {
+  if (br > cf->size) {
     cf->error = 0;
     return 0;
   }
@@ -167,7 +167,7 @@ unsigned char ConfigureFpgaEx(const char *bitfile, uint8_t fatal, uint8_t reset)
 
   /* initialise fpga */
   fpga_initialise();
-  fpga_claim(true);
+//   fpga_claim(true);
 
 #ifdef BUFFER_FPGA
 #if 0
@@ -198,6 +198,13 @@ unsigned char ConfigureFpgaEx(const char *bitfile, uint8_t fatal, uint8_t reset)
   fpga_claim(false);
 
   f_close(&cf.file);
+// #endif
+//   sleep_ms(2000);
+
+//   kickSPI();
+//   kickSPI();
+//   kickSPI();
+//   kickSPI();
 
   // returns 1 if success / 0 on fail
   return !cf.error;

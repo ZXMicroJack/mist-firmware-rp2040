@@ -371,6 +371,7 @@ pico_enable_stdio_usb(mistmb2xilinx 1)
 pico_enable_stdio_uart(mistmb2xilinx 0)
 pico_add_extra_outputs(mistmb2xilinx)
 example_auto_set_url(mistmb2xilinx)
+set_target_properties(mistmb2xilinx PROPERTIES PICO_TARGET_LINKER_SCRIPT "./standalone.ld")
 # pico_set_binary_type(mistmb2xilinx no_flash)
 target_compile_options(mistmb2xilinx PUBLIC
   "-DVDATE=\"\""

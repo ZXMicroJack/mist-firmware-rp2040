@@ -1,10 +1,7 @@
 #ifndef _PS2_H
 #define _PS2_H
 
-#ifndef NR_PS2
-#define NR_PS2  4
-#endif
-
+void ps2_InitEx(int mister);
 void ps2_Init();
 void ps2_SendChar(uint8_t ch, uint8_t data);
 void ps2_EnablePortEx(uint8_t ch, bool enabled, uint8_t hostMode);

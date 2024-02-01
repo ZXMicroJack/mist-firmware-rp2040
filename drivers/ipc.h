@@ -43,6 +43,9 @@
 #define IPC_UPGRADEFN       0x13
 #define IPC_TRAINJOYPAD     0x14
 
+#define IPC_SENDPS2         0xa0
+#define IPC_SENDJAMMA       0xa1
+
 #define IPC_READBACKSIZE    0x80
 #define IPC_READBACKDATA    0x81
 #define IPC_READKEYBOARD    0x82
@@ -91,6 +94,7 @@ uint8_t ipc_GotCommand(uint8_t cmd, uint8_t *data, uint8_t len);
 void ipc_Debug();
 fifo_t *ipc_GetFifo();
 void ipc_SendData(uint8_t tag, uint8_t *data, uint16_t len);
+void ipc_SendDataEx(uint8_t tag, uint8_t *data, uint16_t len, uint8_t *data2, uint16_t len2);
 #endif
 
 int ipc_SetFastMode(uint8_t on);

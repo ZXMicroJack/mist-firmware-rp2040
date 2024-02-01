@@ -12,7 +12,7 @@
 #include "hardware/flash.h"
 #include "hardware/resets.h"
 #include "hardware/i2c.h"
-#include "hardware/spi.h"
+// #include "hardware/spi.h"
 #include "hardware/irq.h"
 
 #include "pico/bootrom.h"
@@ -51,7 +51,7 @@
  */
 
 // define base address of I2C controller hardware
-#define I2C0_BASE 0x40044000
+// #define I2C0_BASE 0x40044000
 
 #define SLAVE_ADDRESS     0xaa
 #define IPC_CMD_TIMEOUT 1000000
@@ -84,7 +84,7 @@ static uint8_t got_cmd = 0;
 static uint8_t error = 0;
 
 static fifo_t readback_fifo;
-uint8_t readback_fifo_buf[1024];
+uint8_t readback_fifo_buf[4096];
 
 void ipc_Debug() {
   debug(("len %d got_cmd %d error %d response %02X\n", len, got_cmd, error, response));
@@ -117,6 +117,7 @@ static void i2c0_irq_handler(i2c_inst_t *i2c, i2c_slave_event_t event) {
         i2c_write_byte_raw(i2c, cnt > 255 ? 255 : cnt);
       } else if (cmdbuff[0] == IPC_READBACKDATA) {
         i2c_write_byte_raw(i2c, fifo_Get(&readback_fifo));
+        if (readback_fifo.c == 0) gpio_put(GPIO_RP2U_BCDATAREADY, 0); // no more data
       } else {
         i2c_write_byte_raw(i2c, response);
       }
@@ -141,6 +142,19 @@ void ipc_InitSlave() {
   i2c_init(i2c0, IPC_BAUDRATE);
   i2c_slave_init(i2c0, SLAVE_ADDRESS, &i2c0_irq_handler);
 
+  gpio_init(GPIO_RP2U_BCDATAREADY);
+  gpio_put(GPIO_RP2U_BCDATAREADY, 0); // no data
+
+#if 0
+  i2c_set_slave_mode(i2c0, true, SLAVE_ADDRESS);
+  // Enable the interrupts we want
+  *I2C0_INTR_MASK = (I2C_INTR_MASK_READ_REQ | I2C_INTR_MASK_RX_FULL);
+
+  // Set up the interrupt handlers
+  irq_set_exclusive_handler(I2C0_IRQ, i2c0_irq_handler);
+  // Enable I2C interrupts
+  irq_set_enabled(I2C0_IRQ, true);
+#endif
   fifo_Init(&readback_fifo, readback_fifo_buf, sizeof readback_fifo_buf);
 
 }
@@ -161,6 +175,10 @@ void ipc_SendDataEx(uint8_t tag, uint8_t *data, uint16_t len, uint8_t *data2, ui
 //   debug(("ipc_SendDataEx: tag %02X len %d len2 %d\n", tag, len, len2));
 
   pktlen = len + len2 + 7;
+
+  // don't send if not enough space in fifo
+  if (fifo_Space(&readback_fifo) < pktlen) return;
+
   d = 0x55;
   crc = crc16iv(&d, 1, crc);
   d = 0xaa;
@@ -187,6 +205,9 @@ void ipc_SendDataEx(uint8_t tag, uint8_t *data, uint16_t len, uint8_t *data2, ui
   }
   fifo_Put(&readback_fifo, crc >> 8);
   fifo_Put(&readback_fifo, crc & 0xff);
+  
+  gpio_put(GPIO_RP2U_BCDATAREADY, 1); // got data
+
   debug(("ipc_SendDataEx: tag %02X len %d len2 %d fifo %d\n", tag, len, len2, fifo_Count(&readback_fifo)));
 }
 
@@ -195,6 +216,15 @@ void ipc_SendData(uint8_t tag, uint8_t *data, uint16_t len) {
 }
 
 #endif
+
+int ipc_SetFastMode(uint8_t on) {
+#ifdef IPC_SLAVE
+  i2c_set_baudrate(i2c0, IPC_BAUDRATE_MAX);
+#endif
+#ifdef IPC_MASTER
+  i2c_set_baudrate(i2c1, IPC_BAUDRATE_MAX);
+#endif
+}
 
 #ifdef IPC_MASTER
 static fifo_t read_fifo;
@@ -234,6 +264,7 @@ int ipc_ReadBack(uint8_t *data, uint8_t len) {
   return len;
 }
 
+#if 0
 int ipc_SetFastMode(uint8_t on) {
 #ifdef IPC_SLAVE
   i2c_set_baudrate(i2c0, IPC_BAUDRATE_MAX);
@@ -242,6 +273,7 @@ int ipc_SetFastMode(uint8_t on) {
   i2c_set_baudrate(i2c1, IPC_BAUDRATE_MAX);
 #endif
 }
+#endif
 
 int ipc_Command(uint8_t cmd, uint8_t *data, uint8_t len) {
   uint8_t response;

@@ -93,7 +93,14 @@ static bool kbd_timer_callback(struct repeating_timer *t) {
 }
 
 
-void kbd_Init() {
+static uint8_t mistMode = 0;
+
+void kbd_SetMistMode(uint8_t _mistMode) {
+  mistMode = _mistMode;
+}
+
+void kbd_InitEx(uint8_t _mistMode) {
+  mistMode = _mistMode;
   for (int i=0; i<COLS; i++) {
     gpio_init(GPIO_KCOL(i));
     gpio_set_dir(GPIO_KCOL(i), GPIO_OUT);
@@ -111,6 +118,10 @@ void kbd_Init() {
                          NULL, &kbd_timer);
 }
 
+void kbd_Init() {
+  kbd_InitEx(0);
+}
+
 static int get_mode(uint8_t scancode) {
   for (int i=0; i<sizeof mode_scancodes; i++) {
     if (scancode == mode_scancodes[i])
@@ -121,6 +132,16 @@ static int get_mode(uint8_t scancode) {
 
 //TODO
 int forceexit = 0;
+
+void ps2_SendCharX(uint8_t ch, uint8_t data) {
+  if (mistMode) {
+    ps2_InsertChar(ch, data);
+  } else {
+    ps2_SendChar(ch, data);
+  }
+}
+
+#define ps2_SendChar ps2_SendCharX
 
 static void send_key_raw(uint16_t key, uint8_t pressed) {
   if (!key || key == NADA) return;

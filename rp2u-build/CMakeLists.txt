@@ -106,7 +106,6 @@ pico_generate_pio_header(rp2u ../drivers/jammadb9.pio)
 target_compile_options(rp2u PUBLIC "-DIPC_SLAVE" "-DRP2U" "-DMATRIX_KEYBOARD" "-DUSB")
 # "-DSWITCHABLE_MIST"
 # "-Dprintf=uprintf"
-
 set_target_properties(rp2u PROPERTIES PICO_TARGET_LINKER_SCRIPT "./standalone.ld")
 
 

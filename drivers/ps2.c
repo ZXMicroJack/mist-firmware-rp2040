@@ -10,7 +10,7 @@
 #include "pins.h"
 #include "ps2.h"
 #include "fifo.h"
-#define DEBUG
+// #define DEBUG
 #include "debug.h"
 
 enum {
@@ -22,6 +22,7 @@ enum {
   PS2_PAUSE
 };
 
+#define NR_PS2  2
 #define PS2_GUARDTIME PS2_RX_STATES
 #define PS2_PAUSETIME (1000)
 #define PS2_RX_STATES 23
@@ -36,12 +37,10 @@ typedef struct {
   int gpio_data;
   uint8_t channel;
   fifo_t fifo;
+  uint8_t fifobuf[64];
   fifo_t fifo_rx;
+  uint8_t fiforxbuf[64];
   uint8_t hostMode;
-
-  uint8_t fifo_buf[64];
-  uint8_t fifo_rx_buf[64];
-  
 } ps2_t;
 
 ps2_t ps2port[NR_PS2];
@@ -246,7 +245,6 @@ static void gpio_handle_normal(ps2_t *ps2, uint gpio, uint32_t events) {
 }
 
 static void gpio_callback(uint gpio, uint32_t events) {
-  printf("gpio_callback: gpio %d events %x\n", gpio, events);
   if (gpio_cb) gpio_cb(gpio, events);
   for (int i=0; i<NR_PS2; i++) {
     if (gpio == ps2port[i].gpio_clk || gpio == ps2port[i].gpio_data) {
@@ -260,18 +258,92 @@ static void gpio_callback(uint gpio, uint32_t events) {
   }
 }
 
+#if 0
+static void gpio_callback(uint gpio, uint32_t events) {
+  if (gpio_cb) gpio_cb(gpio, events);
+  
+  if (events & 0x4) { // fall
+    for (int i=0; i<NR_PS2; i++) {
+      if (gpio == ps2port[i].gpio_clk && ps2port[i].ps2_state == PS2_IDLE) {
+        ps2port[i].ps2_state = PS2_SUPRESS;
+      } else if (gpio == ps2port[i].gpio_data && ps2port[i].ps2_state == PS2_SUPRESS) {
+        ps2port[i].ps2_state = PS2_SIGNALTRANSMIT;
+      }
+    }
+  }
+    
+  if (events & 0x8) { // fall
+    for (int i=0; i<NR_PS2; i++) {
+      if (gpio == ps2port[i].gpio_clk) {
+        if (ps2port[i].ps2_state == PS2_SIGNALTRANSMIT) {
+          ps2port[i].ps2_state = PS2_TRANSMIT;
+          ps2port[i].ps2_states = 22;
+          gpio_set_dir(ps2port[i].gpio_clk, GPIO_OUT);
+          add_repeating_timer_us(200, ps2_timer_callback, &ps2port[i], &ps2port[i].ps2timer);
+        
+        } else if (ps2port[i].ps2_state == PS2_SUPRESS) {
+          ps2port[i].ps2_state = PS2_IDLE;
+        }
+      }
+    }
+  }
+}
+
+static void gpio_callback_host(uint gpio, uint32_t events) {
+  if (gpio_cb) gpio_cb(gpio, events);
+
+  if (events & 0x4) { // fall
+    for (int i=0; i<NR_PS2; i++) {
+      if (gpio == ps2port[i].gpio_clk) {
+        // handle falling clock
+        if (ps2port[i].ps2_state == PS2_RECEIVE) {
+          ps2port[i].ps2_data = (ps2port[i].ps2_data >> 1) | (gpio_get(ps2port[i].gpio_data) ? 0x200 : 0);
+          ps2port[i].ps2_states --;
+          if (!ps2port[i].ps2_states) {
+            ps2port[i].ps2_state = PS2_IDLE;
+            debug(("ps2rx %02X\n", ps2port[i].ps2_data & 0xff));
+            fifo_Put(&ps2port[i].fifo_rx, ps2port[i].ps2_data & 0xff);
+          }
+        } else if (ps2port[i].ps2_state == PS2_TRANSMIT) {
+          gpio_put(ps2port[i].gpio_data, ps2port[i].ps2_data & 1);
+          ps2port[i].ps2_data >>= 1;
+          ps2port[i].ps2_states --;
+
+          if (!ps2port[i].ps2_states) {
+            gpio_put(ps2port[i].gpio_data, 1);
+            gpio_set_dir(ps2port[i].gpio_data, GPIO_IN);
+            ps2port[i].ps2_state = PS2_IDLE;
+            add_repeating_timer_us(40, ps2_timer_callback_host, &ps2port[i], &ps2port[i].ps2timer);
+          }
+        }
+      } else if (gpio == ps2port[i].gpio_data) {
+        // handle falling data
+        if (ps2port[i].ps2_state == PS2_IDLE) {
+          ps2port[i].ps2_states = 11;
+          ps2port[i].ps2_state = PS2_RECEIVE;
+          ps2port[i].ps2_data = 0;
+        }
+      }
+    }
+  }
+
+  if (events & 0x8) { // rise
+    for (int i=0; i<NR_PS2; i++) {
+      if (gpio == ps2port[i].gpio_clk) {
+        // handle rising clock
+      }
+    }
+  }
+
+}
+#endif
+
 void ps2_Init() {
   uint8_t lut[] = {
     GPIO_PS2_CLK,
     GPIO_PS2_CLK2,
     GPIO_PS2_DATA,
-    GPIO_PS2_DATA2,
-#if NR_PS2 > 2
-    GPIO_RP2U_PS2_CLK,
-    GPIO_RP2U_PS2_DATA,
-    GPIO_RP2U_PS2_CLK2,
-    GPIO_RP2U_PS2_DATA2
-#endif
+    GPIO_PS2_DATA2
   };
 
   memset(&ps2port, 0x00, sizeof ps2port);
@@ -279,19 +351,13 @@ void ps2_Init() {
   ps2port[0].gpio_data = GPIO_PS2_DATA;
   ps2port[1].gpio_clk = GPIO_PS2_CLK2;
   ps2port[1].gpio_data = GPIO_PS2_DATA2;
-#if NR_PS2 > 2
-  ps2port[2].gpio_clk = GPIO_RP2U_PS2_CLK;
-  ps2port[2].gpio_data = GPIO_RP2U_PS2_DATA;
-  ps2port[3].gpio_clk = GPIO_RP2U_PS2_CLK2;
-  ps2port[3].gpio_data = GPIO_RP2U_PS2_DATA2;
-#endif
-
-  for (int i=0; i<NR_PS2; i++) {
-    ps2port[i].channel = i;
-    fifo_Init(&ps2port[i].fifo, ps2port[i].fifo_buf, sizeof ps2port[i].fifo_buf);
-    fifo_Init(&ps2port[i].fifo_rx, ps2port[i].fifo_rx_buf, sizeof ps2port[i].fifo_rx_buf);
-  }
-
+  ps2port[0].channel = 0;
+  ps2port[1].channel = 1;
+  fifo_Init(&ps2port[0].fifo, ps2port[0].fifobuf, sizeof ps2port[0].fifobuf);
+  fifo_Init(&ps2port[1].fifo, ps2port[1].fifobuf, sizeof ps2port[1].fifobuf);
+  fifo_Init(&ps2port[0].fifo_rx, ps2port[0].fiforxbuf, sizeof ps2port[0].fiforxbuf);
+  fifo_Init(&ps2port[1].fifo_rx, ps2port[0].fiforxbuf, sizeof ps2port[0].fiforxbuf);
+  
   for (int i=0; i<sizeof lut; i++) {
     gpio_init(lut[i]);
     gpio_set_dir(lut[i], GPIO_IN);

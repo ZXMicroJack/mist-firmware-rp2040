@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "fifo.h"
 
@@ -32,4 +33,8 @@ void fifo_Put(fifo_t *f, uint8_t ch) {
 
 uint16_t fifo_Count(fifo_t *f) {
   return f->c;
+}
+
+uint16_t fifo_Space(fifo_t *f) {
+  return f->m - f->c;
 }

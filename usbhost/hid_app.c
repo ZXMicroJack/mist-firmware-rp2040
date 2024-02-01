@@ -213,7 +213,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
     usb_attached(dev_addr, instance, hid_info[dev_addr].vid, hid_info[dev_addr].pid, desc_report, desc_len);
   } else {
 #endif
-
+#endif
 #ifdef DEBUG
   printf("HID Interface Protocol = %s\r\n", protocol_str[itf_protocol]);
 #endif

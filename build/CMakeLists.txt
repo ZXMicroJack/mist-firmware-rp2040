@@ -389,3 +389,36 @@ target_compile_options(mistmb2xilinx PUBLIC
   "-DUSB_DEBUG_OFF"
   "-DBOOT_FLASH_ON_ERROR"
 )
+
+####################################################################################
+# FLASH build - release binary for Altera NeptUno board -with single CPU middleboard.
+add_executable(mistusbn1p
+  ${driver_src}
+  ${main_src}
+  ${usb_src}
+  )
+
+target_link_libraries(mistusbn1p pico_stdlib mistfirmwareusb hardware_spi hardware_pio hardware_flash hardware_i2c tinyusb_host tinyusb_board)
+target_include_directories(mistusbn1p PUBLIC ../usbhost)
+add_compile_options(-O2)
+pico_generate_pio_header(mistusbn1p ../drivers/fpga.pio)
+pico_generate_pio_header(mistusbn1p ../drivers/spi.pio)
+pico_generate_pio_header(mistusbn1p ../drivers/jamma.pio)
+pico_generate_pio_header(mistusbn1p ../drivers/jammadb9.pio)
+pico_enable_stdio_usb(mistusbn1p 0)
+pico_enable_stdio_uart(mistusbn1p 0)
+pico_add_extra_outputs(mistusbn1p)
+example_auto_set_url(mistusbn1p)
+#pico_set_binary_type(mistusb no_flash)
+target_compile_options(mistusbn1p PUBLIC
+  "-DVDATE=\"\""
+  "-Dhexdump=driver_hexdump"
+  "-DPS2HOST"
+  "-DXILINX"
+  "-DJAMMADB9"
+  "-DUSB"
+  "-DMIST_USB"
+  "-DALTERA_FPGA"
+  "-DUSB_STORAGE"
+  "-DUSB_DEBUG_OFF"
+)

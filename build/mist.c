@@ -421,9 +421,26 @@ void usetup() {
 }
 #endif
 
+#ifdef MB2
+uint8_t stop_watchdog = 0;
+
+struct repeating_timer watchdog_timer;
+static bool watchdog_Callback(struct repeating_timer *t) {
+  if (!stop_watchdog) watchdog_update();
+  return true;
+}
+#endif
+
 
 int main() {
   stdio_init_all();
+
+#ifdef MB2
+  cookie_Reset();
+  watchdog_enable(4000, true);
+  add_repeating_timer_us(2000000, watchdog_Callback, NULL, &watchdog_timer);
+#endif
+
 //   test_block_read_t fbrt;
   sleep_ms(2000); // usb settle delay
   pio_spi_inst_t *spi = NULL;

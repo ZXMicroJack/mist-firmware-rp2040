@@ -332,7 +332,7 @@ uint8_t sysex_buffer[MAX_SYSEX];
 
 uint8_t old_coretype = 0;
 
-uint8_t stop_watchdog = 0;
+extern uint8_t stop_watchdog;
 
 uint64_t check_core_at = 0;
 
@@ -355,6 +355,9 @@ void beep(int n) {
 void sysex_Process() {
   switch(sysex_buffer[0]) {
     case CMD_RESET: {
+#ifdef MB2
+      stop_watchdog = 1;
+#endif
       watchdog_enable(1, 1);
       for(;;);
       break;

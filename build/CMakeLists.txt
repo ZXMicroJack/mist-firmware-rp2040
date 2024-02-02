@@ -280,6 +280,7 @@ target_compile_options(mistusbxilinx PUBLIC
   "-Dhexdump=driver_hexdump"
   "-DPS2HOST"
   "-DXILINX"
+  # "-DMB2"
   "-DJAMMADB9"
   "-DUSB"
   "-DMIST_USB"
@@ -359,18 +360,26 @@ target_compile_options(mistmb2xilinxram PUBLIC
 add_executable(mistmb2xilinx
   ${driver_mb2_src}
   ${main_src}
-  # ${usb_src}
+  ${usb_src}
   )
 
 # mistfirmwareusbxilinx
-target_link_libraries(mistmb2xilinx pico_stdlib mistfirmwarexilinx hardware_spi hardware_pio hardware_flash hardware_i2c pico_multicore)
-#  tinyusb_host tinyusb_board
-# target_include_directories(mistmb2xilinx PUBLIC ../usbhost)
+target_link_libraries(mistmb2xilinx 
+  pico_stdlib
+  # mistfirmwarexilinx 
+  mistfirmwareusbxilinx
+  hardware_spi 
+  hardware_pio 
+  hardware_flash 
+  hardware_i2c 
+  # pico_multicore)
+  pico_multicore tinyusb_host tinyusb_board)
+target_include_directories(mistmb2xilinx PUBLIC ../usbhost)
 add_compile_options(-O2)
 pico_generate_pio_header(mistmb2xilinx ../drivers/fpga.pio)
 pico_generate_pio_header(mistmb2xilinx ../drivers/spi.pio)
-# pico_enable_stdio_usb(mistmb2xilinx 0)
-pico_enable_stdio_usb(mistmb2xilinx 1)
+pico_enable_stdio_usb(mistmb2xilinx 0)
+# pico_enable_stdio_usb(mistmb2xilinx 1)
 pico_enable_stdio_uart(mistmb2xilinx 0)
 pico_add_extra_outputs(mistmb2xilinx)
 example_auto_set_url(mistmb2xilinx)
@@ -380,12 +389,12 @@ target_compile_options(mistmb2xilinx PUBLIC
   "-DVDATE=\"\""
   "-Dhexdump=driver_hexdump"
   "-DXILINX"
-  # "-DUSB"
-  # "-DMIST_USB"
+  "-DUSB"
+  "-DMIST_USB"
   "-DMB2"
   # "-DMB2USB"
   "-DIPC_MASTER"
-  # "-DUSB_STORAGE"
+  "-DUSB_STORAGE"
   "-DUSB_DEBUG_OFF"
   "-DBOOT_FLASH_ON_ERROR"
 )

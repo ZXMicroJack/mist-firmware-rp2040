@@ -283,10 +283,10 @@ void ps2_Out(uint8_t ch, uint8_t data) {
 // process mist ps2 queues
 void ps2_MistFlush(uint8_t ch) {
   uint8_t data[16];
-	int c, j=0;
+	int c, j=1;
 
 	data[0] = ch; // channel
-  while (j<16 && (c = fifo_Get(&mist_ps2_out[ch])) != -1) {
+  while (j<16 && ((c = fifo_Get(&mist_ps2_out[ch]))) != -1) {
 #ifdef DEBUG_PS2
     printf("[%02X]", c);
 #endif

@@ -37,10 +37,10 @@ add_executable(rp2ur rp2u.c
   ../drivers/kbd.c
   ../drivers/cookie.c
   ../drivers/jamma.c
-  #../drivers/crc16.c)
-  ../drivers/crc16.c
-  ../usbhost/hid_app.c
-  ../usbhost/joypad.c)
+  ../drivers/crc16.c)
+  #  ../drivers/crc16.c
+  #  ../usbhost/hid_app.c
+  #  ../usbhost/joypad.c)
   
 target_link_libraries(rp2ur
     pico_stdlib 
@@ -48,23 +48,23 @@ target_link_libraries(rp2ur
     hardware_flash 
     hardware_i2c
     pico_i2c_slave
-    #    pico_multicore)
-    pico_multicore
-    tinyusb_host
-    tinyusb_board)
+    pico_multicore)
+    #pico_multicore
+    #tinyusb_host
+    #tinyusb_board)
     
 add_compile_options(-O2)
-target_include_directories(rp2ur PUBLIC ../usbhost)
-#pico_enable_stdio_usb(rp2ur 1)
-pico_enable_stdio_usb(rp2ur 0)
+#target_include_directories(rp2ur PUBLIC ../usbhost)
+pico_enable_stdio_usb(rp2ur 1)
+#pico_enable_stdio_usb(rp2ur 0)
 pico_enable_stdio_uart(rp2ur 0)
 pico_add_extra_outputs(rp2ur)
 example_auto_set_url(rp2ur)
 pico_generate_pio_header(rp2ur ../drivers/jamma.pio)
 pico_generate_pio_header(rp2ur ../drivers/jammadb9.pio)
 # target_compile_options(rp2ur PUBLIC "-DIPC_SLAVE" "-DRP2U" "-DUSBDEV")
-#target_compile_options(rp2ur PUBLIC "-DIPC_SLAVE" "-DRP2U" "-DMATRIX_KEYBOARD")
-target_compile_options(rp2ur PUBLIC "-DIPC_SLAVE" "-DRP2U" "-DMATRIX_KEYBOARD" "-DUSB")
+target_compile_options(rp2ur PUBLIC "-DIPC_SLAVE" "-DRP2U" "-DMATRIX_KEYBOARD")
+#target_compile_options(rp2ur PUBLIC "-DIPC_SLAVE" "-DRP2U" "-DMATRIX_KEYBOARD" "-DUSB")
 
 pico_set_binary_type(rp2ur no_flash)
 #set_target_properties(rp2u PROPERTIES PICO_TARGET_LINKER_SCRIPT "./standalone.ld")

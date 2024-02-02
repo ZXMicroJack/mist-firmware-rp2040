@@ -9,7 +9,7 @@
 #include "drivers/fifo.h"
 #include "drivers/ipc.h"
 
-// #define DEBUG
+#define DEBUG
 #include "drivers/debug.h"
 
 #include "usbdev.h"
@@ -118,7 +118,7 @@ unsigned char usb_host_storage_read(unsigned long lba, unsigned char *pReadBuffe
 #define IPC_USB_CONFIG_DESC     0x46
 
 void ipc_HandleData(uint8_t tag, uint8_t *data, uint16_t len) {
-  // printf("ipc_HandleData: tag %02x len %d\n", tag, len);
+  printf("ipc_HandleData: tag %02x len %d\n", tag, len);
   switch(tag) {
 #ifdef MB2USB
     case IPC_USB_DEVICE_DESC:
@@ -150,6 +150,8 @@ void ipc_HandleData(uint8_t tag, uint8_t *data, uint16_t len) {
       break;
 
     case IPC_PS2_DATA: {
+	debug(("IPC_PS2_DATA\n"));
+	hexdump(data, len);
 			if (data[0] == 0) {
       	for (int i=1; i<len; i++) {
         	fifo_Put(&kbdfifo, data[i]);

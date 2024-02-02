@@ -29,10 +29,8 @@
 // #define DEBUG
 #include "debug.h"
 #include "joypad.h"
-#ifdef RP2U
 #include "fifo.h"
 #include "ipc.h"
-#endif
 
 //--------------------------------------------------------------------+
 // MACRO TYPEDEF CONSTANT ENUM DECLARATION
@@ -92,13 +90,11 @@ uint8_t kbd_addr = 0;
 uint8_t kbd_inst = 0;
 uint8_t leds = 0;
 
-#ifdef RP2U
 static uint8_t mistMode = 1;
 
 void HID_setMistMode(uint8_t on) {
   mistMode = on;
 }
-#endif
 
 // Each HID instance can has multiple reports
 static struct hid_info
@@ -157,11 +153,9 @@ void process_ms(uint8_t data);
 
 void hid_app_task(void)
 {
-#ifdef RP2U
   // mist mode off, means ps2 reacts in client mode
   // these are normally messages to the keyboard.
   if (!mistMode) {
-#endif
     int ch;
     while ((ch = ps2_GetChar(0)) >= 0) {
       process_kbd(ch);
@@ -169,9 +163,7 @@ void hid_app_task(void)
     while ((ch = ps2_GetChar(1)) >= 0) {
       process_ms(ch);
     }
-#ifdef RP2U
   }
-#endif
 }
 
 //--------------------------------------------------------------------+
@@ -206,27 +198,17 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
     uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
     hid_info[dev_addr].joypad = false;
 
-#ifdef RP2U
-#ifdef USB_ON_RP2U
-  if (mistMode) {
-    tuh_vid_pid_get(dev_addr, &hid_info[dev_addr].vid, &hid_info[dev_addr].pid);
-    usb_attached(dev_addr, instance, hid_info[dev_addr].vid, hid_info[dev_addr].pid, desc_report, desc_len);
-  } else {
-#endif
-#endif
-#ifdef DEBUG
-  printf("HID Interface Protocol = %s\r\n", protocol_str[itf_protocol]);
-#endif
+  #ifdef DEBUG
+    printf("HID Interface Protocol = %s\r\n", protocol_str[itf_protocol]);
+  #endif
     if ( itf_protocol == HID_ITF_PROTOCOL_KEYBOARD ) {
-#ifndef RP2U
-      ps2_EnablePort(0, true);
-#endif
+      // in mist mode, send through to main core
+      // if (!mistMode) ps2_EnablePort(0, true);
       kbd_addr = dev_addr;
       kbd_inst = instance;
     } else if ( itf_protocol == HID_ITF_PROTOCOL_MOUSE ) {
-#ifndef RP2U
-      ps2_EnablePort(1, true);
-#endif
+      // in mist mode, send through to main core
+      // if (!mistMode) ps2_EnablePort(1, true);
     } else if ( itf_protocol == HID_ITF_PROTOCOL_NONE ) {
       hid_info[dev_addr].report_count = tuh_hid_parse_report_descriptor(hid_info[dev_addr].report_info, MAX_REPORT, desc_report, desc_len);
   #ifdef DEBUG
@@ -258,10 +240,8 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
       uprintf("\n");
   #endif
     }
-#ifdef RP2U
 #ifdef USB_ON_RP2U
   }
-#endif
 #endif
 
   // request to receive report
@@ -271,7 +251,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
 #ifdef DEBUG
     printf("Error: cannot request to receive report\r\n");
 #endif
-
+    
   }
 }
 
@@ -290,18 +270,13 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance)
 #endif
   uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
   if ( itf_protocol == HID_ITF_PROTOCOL_KEYBOARD ) {
-#ifndef RP2U
-    ps2_EnablePort(0, false);
-#endif
+    // if (!mistMode) ps2_EnablePort(0, false);
   } else if ( itf_protocol == HID_ITF_PROTOCOL_MOUSE ) {
-#ifndef RP2U
-    ps2_EnablePort(1, false);
-#endif
+    // if (!mistMode) ps2_EnablePort(1, false);
   } else if (hid_info[dev_addr].joypad) {
     joypad_Add(hid_info[dev_addr].joypad_inst, dev_addr, 0, 0, NULL, 0);
   }
 }
-
 
 void kbd_set_leds(uint8_t data) {
   if(data > 7) data = 0;
@@ -333,16 +308,13 @@ int64_t repeat_callback(alarm_id_t id, void *user_data) {
 }
 
 void ps2_send(uint8_t data, bool isKbd) {
-#ifndef RP2U
-  ps2_SendChar(isKbd ? 0 : 1, data);
-#else
   if (mistMode) {
     ps2_InsertChar(isKbd ? 0 : 1, data);
   } else {
     ps2_SendChar(isKbd ? 0 : 1, data);
   }
-#endif
 }
+
 
 void ms_send(uint8_t data) {
 #ifdef DEBUG
@@ -793,10 +765,8 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
 //           joypad_action(hid_info[dev_addr].joypad_inst, joydata);
           jamma_SetData(hid_info[dev_addr].joypad_inst, joydata);
 
-#ifndef RP2U
           uint8_t data[] = {hid_info[dev_addr].joypad_inst, joydata};
           ipc_SendData(IPC_UPDATE_JAMMA, data, sizeof data);
-#endif
         }
       } else {
 #ifdef DEBUG

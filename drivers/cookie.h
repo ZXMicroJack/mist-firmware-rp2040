@@ -6,7 +6,7 @@ void cookie_Reset();
 uint8_t cookie_IsPresent();
 
 void cookie_Set2(uint8_t data);
-uint8_t cookie2_IsPresent();
+uint8_t cookie_IsPresent2();
 
 #ifdef USE_COOKIE3
 uint8_t cookie_IsPresent3();

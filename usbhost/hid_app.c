@@ -90,11 +90,36 @@ uint8_t kbd_addr = 0;
 uint8_t kbd_inst = 0;
 uint8_t leds = 0;
 
+#if 0 // TODO not sure this is needed
 static uint8_t mistMode = 1;
 
 void HID_setMistMode(uint8_t on) {
   mistMode = on;
 }
+#endif
+
+static fifo_t ps2d_fifo[2];
+static uint8_t ps2d_fifo_buf[2][64];
+
+static fifo_t ps2h_fifo[2];
+static uint8_t ps2h_fifo_buf[2][64];
+
+fifo_t *HID_getPS2Fifo(uint8_t chan, uint8_t host) {
+  return host ? &ps2h_fifo[chan] : &ps2d_fifo[chan];
+}
+
+void HID_init() {
+  fifo_Init(&ps2d_fifo[0], ps2d_fifo_buf[0], sizeof ps2d_fifo_buf[0]);
+  fifo_Init(&ps2h_fifo[0], ps2h_fifo_buf[0], sizeof ps2h_fifo_buf[0]);
+  fifo_Init(&ps2d_fifo[1], ps2d_fifo_buf[1], sizeof ps2d_fifo_buf[1]);
+  fifo_Init(&ps2h_fifo[1], ps2h_fifo_buf[1], sizeof ps2h_fifo_buf[1]);
+}
+
+
+fifo_t *HID_getPS2Fifo(uint8_t chan, uint8_t host);
+void HID_init();
+//void HID_setMistMode(uint8_t on);
+
 
 // Each HID instance can has multiple reports
 static struct hid_info
@@ -155,7 +180,8 @@ void hid_app_task(void)
 {
   // mist mode off, means ps2 reacts in client mode
   // these are normally messages to the keyboard.
-  if (!mistMode) {
+#if 0
+	if (!mistMode) {
     int ch;
     while ((ch = ps2_GetChar(0)) >= 0) {
       process_kbd(ch);
@@ -164,6 +190,15 @@ void hid_app_task(void)
       process_ms(ch);
     }
   }
+#else
+    int ch;
+    while ((ch = fifo_Get(&ps2h_fifo[0])) >= 0) {
+      process_kbd(ch);
+    }
+    while ((ch = fifo_Get(&ps2h_fifo[1])) >= 0) {
+      process_ms(ch);
+    }
+#endif
 }
 
 //--------------------------------------------------------------------+
@@ -308,11 +343,14 @@ int64_t repeat_callback(alarm_id_t id, void *user_data) {
 }
 
 void ps2_send(uint8_t data, bool isKbd) {
-  if (mistMode) {
+  fifo_Put(&ps2d_fifo[isKbd ? 0 : 1], data);
+#if 0
+	if (mistMode) {
     ps2_InsertChar(isKbd ? 0 : 1, data);
   } else {
     ps2_SendChar(isKbd ? 0 : 1, data);
   }
+#endif
 }
 
 

@@ -150,9 +150,12 @@ void ipc_HandleData(uint8_t tag, uint8_t *data, uint16_t len) {
       break;
 
     case IPC_PS2_DATA: {
-      for (int i=0; i<len; i++) {
-        fifo_Put(&kbdfifo, data[i]);
-      }
+			if (data[0] == 0) {
+      	for (int i=1; i<len; i++) {
+        	fifo_Put(&kbdfifo, data[i]);
+      	}
+			}
+
       break;
     }
   }

@@ -9,6 +9,8 @@
 #include "ikbd.h"
 #include "usb.h"
 #include "drivers/ps2.h"
+#include "drivers/fifo.h"
+#include "drivers/ipc.h"
 // #define DEBUG
 #include "drivers/debug.h"
 
@@ -295,12 +297,103 @@ MOD|LGUI, // 1f: NoEvent
 void user_io_kbd(unsigned char m, unsigned char *k, uint8_t priority, unsigned short vid, unsigned short pid);
 
 
+uint8_t const mod2ps2[] = { 0x14, 0x12, 0x11, 0x1f, 0x14, 0x59, 0x11, 0x27 };
+uint8_t const hid2ps2[] = {
+  0x00, 0x00, 0xfc, 0x00, 0x1c, 0x32, 0x21, 0x23, 0x24, 0x2b, 0x34, 0x33, 0x43, 0x3b, 0x42, 0x4b,
+  0x3a, 0x31, 0x44, 0x4d, 0x15, 0x2d, 0x1b, 0x2c, 0x3c, 0x2a, 0x1d, 0x22, 0x35, 0x1a, 0x16, 0x1e,
+  0x26, 0x25, 0x2e, 0x36, 0x3d, 0x3e, 0x46, 0x45, 0x5a, 0x76, 0x66, 0x0d, 0x29, 0x4e, 0x55, 0x54,
+  0x5b, 0x5d, 0x5d, 0x4c, 0x52, 0x0e, 0x41, 0x49, 0x4a, 0x58, 0x05, 0x06, 0x04, 0x0c, 0x03, 0x0b,
+  0x83, 0x0a, 0x01, 0x09, 0x78, 0x07, 0x7c, 0x7e, 0x7e, 0x70, 0x6c, 0x7d, 0x71, 0x69, 0x7a, 0x74,
+  0x6b, 0x72, 0x75, 0x77, 0x4a, 0x7c, 0x7b, 0x79, 0x5a, 0x69, 0x72, 0x7a, 0x6b, 0x73, 0x74, 0x6c,
+  0x75, 0x7d, 0x70, 0x71, 0x61, 0x2f, 0x37, 0x0f, 0x08, 0x10, 0x18, 0x20, 0x28, 0x30, 0x38, 0x40,
+  0x48, 0x50, 0x57, 0x5f
+};
+
 static uint8_t keys[6];
 static uint8_t modifier = 0;
 static uint8_t ps2ext = 0;
 static uint8_t ps2rel = 0;
 
 static uint8_t firsttime = 1;
+
+static uint8_t prev_modifier = 0;
+
+
+static uint32_t pressed[256/32];
+static uint8_t hidreport[6];
+
+static int isExtended(uint8_t data) {
+  return (data == 0x46 ||
+     data >= 0x48 && data <= 0x52 ||
+     data == 0x54 || data == 0x58 ||
+     data == 0x65 || data == 0x66 ||
+     data >= 0x81);
+}
+
+void usb_ToPS2(uint8_t modifier, uint8_t keys[6]) {
+  static int firsttime = 1;
+  uint32_t newpressed[8] = {0,0,0,0,0,0,0,0};
+
+  uint8_t ps2[33];
+  uint8_t nrps2 = 0;
+
+  ps2[nrps2++] = 0; // keyboard
+
+  // first time initialise
+  if (firsttime) {
+    firsttime = 0;
+    memset(pressed, 0, sizeof pressed);
+    memset(hidreport, 0, sizeof hidreport);
+  }
+
+  // detect newly pressed
+  for (int i=0; i<6; i++) {
+    uint8_t off = keys[i] >> 5;
+    uint32_t bit = 1 << (keys[i] & 0x1f);
+
+    if ((pressed[off] & bit) == 0) {
+      // not previously pressed
+      pressed[off] |= bit;
+
+      // indicate pressed
+      if (isExtended(keys[i])) ps2[nrps2++] = 0xe0;
+      ps2[nrps2++] = hid2ps2[keys[i]];
+    }
+    newpressed[off] |= bit;
+  }
+
+  for (int i=0; i<6; i++) {
+    uint8_t off = hidreport[i] >> 5;
+    uint32_t bit = 1 << (hidreport[i] & 0x1f);
+
+    if ((newpressed[off] & bit) == 0) {
+      // indicate released
+      pressed[off] &= ~bit;
+
+      if (isExtended(hidreport[i])) ps2[nrps2++] = 0xe0;
+      ps2[nrps2++] = 0xf0;
+      ps2[nrps2++] = hid2ps2[hidreport[i]];
+    }
+  }
+
+  // copy latest report
+  memcpy(hidreport, keys, sizeof hidreport);
+
+  // handle modifiers
+  uint8_t m = 0x80;
+  for (int i=0; i<8; i++) {
+      if (!(prev_modifier&m) && (modifier&m)) {
+        ps2[nrps2++] = mod2ps2[i];
+      }
+      if ((prev_modifier&m) && !(modifier&m)) {
+        ps2[nrps2++] = 0xf0;
+        ps2[nrps2++] = mod2ps2[i];
+      }
+  }
+  prev_modifier = modifier;
+
+  if (nrps2 > 1) ipc_Command(IPC_SENDPS2, ps2, nrps2);
+}
 
 void ps2_Poll() {
   int k;

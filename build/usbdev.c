@@ -72,6 +72,7 @@ struct {
   {0,0}
 };
 
+
 uint8_t tuh_descriptor_get_device_sync(uint8_t dev_addr, uint8_t *dd, uint16_t len);
 
 uint8_t dd[128];

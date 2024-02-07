@@ -64,7 +64,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "drivers/ipc.h"
 #include "drivers/midi.h"
-#define DEBUG
+// #define DEBUG
 #include "drivers/debug.h"
 
 #ifndef _WANT_IO_LONG_LONG

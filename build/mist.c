@@ -26,7 +26,7 @@
 #include "drivers/fifo.h"
 #include "drivers/ipc.h"
 #include "drivers/kbd.h"
-#define DEBUG
+// #define DEBUG
 #include "drivers/debug.h"
 
 #include "mistmain.h"

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "bitfile.h"
-#define DEBUG
+// #define DEBUG
 #include "debug.h"
 
 #define BLOCKSIZE 512

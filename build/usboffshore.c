@@ -9,7 +9,7 @@
 #include "drivers/fifo.h"
 #include "drivers/ipc.h"
 
-#define DEBUG
+// #define DEBUG
 #include "drivers/debug.h"
 
 #include "usbdev.h"

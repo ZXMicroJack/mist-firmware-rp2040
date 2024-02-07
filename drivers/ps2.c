@@ -41,6 +41,7 @@ typedef struct {
   fifo_t fifo_rx;
   uint8_t fiforxbuf[64];
   uint8_t hostMode;
+  uint64_t lastAction;
 } ps2_t;
 
 ps2_t ps2port[NR_PS2];
@@ -180,8 +181,16 @@ void ps2_SetGPIOListener(void (*cb)(uint gpio, uint32_t events)) {
   gpio_cb = cb;
 }
 
+#define IDLE_RESET_PERIOD_US 4000
 
 static void gpio_handle_host(ps2_t *ps2, uint gpio, uint32_t events) {
+  // unstall interface if its out of sync
+  uint64_t now = time_us_64();
+  if ((now - ps2->lastAction) > IDLE_RESET_PERIOD_US) {
+    ps2->ps2_state = PS2_IDLE;
+  }
+  ps2->lastAction = now;
+
   if (events & 0x8) { // rising
     if (gpio == ps2->gpio_clk) {
 

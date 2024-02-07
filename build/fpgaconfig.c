@@ -15,6 +15,7 @@
 #include "usb/joymapping.h"
 
 #include "drivers/fpga.h"
+#include "drivers/bitfile.h"
 // #define DEBUG
 #include "drivers/debug.h"
 
@@ -40,7 +41,7 @@ static uint8_t read_next_block(void *ud, uint8_t *data) {
   UINT br;
   configFpga *cf = (configFpga *)ud;
 
-  debug(("read_next_block cf->c = %d\n", cf->c));
+  debug(("read_next_block cf->c = %d cf->size = %d\n", cf->c, cf->size));
   if (f_read(&cf->file, data, 512, &br) != FR_OK) {
     cf->error = 1;
     return 0;
@@ -68,6 +69,7 @@ static void read_next_block_buffered_fill(configFpga *brl) {
   uint8_t result;
 
   if (!brl->size) return; // no more blocks don't try to read more.
+  if (brl->error) return; // error encountered
   
   while (brl->c < BUFFER_SIZE) {
      result = read_next_block(brl, brl->buff[brl->r]);
@@ -176,6 +178,15 @@ unsigned char ConfigureFpgaEx(const char *bitfile, uint8_t fatal, uint8_t reset)
 #endif  
   cf.l = cf.r = cf.c = 0;
   read_next_block_buffered_fill(&cf);
+
+#ifdef XILINX
+  // try to figure out actual bitstream size
+  uint32_t bslen = bitfile_get_length(cf.buff[0], 0);
+  if (bslen && bslen != 0xffffffff) {
+    cf.size = bslen - (BUFFER_SIZE * 512);
+    debug(("ConfigureFpga: corrected bitlen to %d\n", cf.size));
+  }
+#endif
 #endif
 
   /* now configure */

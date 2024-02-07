@@ -26,13 +26,13 @@
 #include "debug.h"
 
 // #define TEST_PS2
-// #define TEST_PS2_HOST
-#define TEST_IPC
+#define TEST_PS2_HOST
+// #define TEST_IPC
 // #define TEST_SDCARD_SPI
 // #define TEST_FPGA
 // #define TEST_MATRIX
 // #define TEST_FLASH
-#define TEST_USERIO
+// #define TEST_USERIO
 // #define TEST_JAMMA
 
 // KEY ACTION ALLOCATION
@@ -481,10 +481,19 @@ int main()
       // PS2
 #if defined(TEST_PS2) || defined(TEST_PS2_HOST)
       case 'k': printf("ps2init\n"); ps2_Init(); break;
+#endif
+#if defined(TEST_PS2)
       case 'e': printf("enable ps2 0\n"); ps2_EnablePort(0, true); break;
       case 'E': printf("enable ps2 1\n"); ps2_EnablePort(1, true); break;
       case 'd': printf("disable ps2 0\n"); ps2_EnablePort(0, false); break;
       case 'D': printf("disable ps2 1\n"); ps2_EnablePort(1, false); break;
+#endif
+
+#if defined(TEST_PS2_HOST)
+      case 'e': printf("enable ps2 0\n"); ps2_EnablePortEx(0, true, true); break;
+      case 'E': printf("enable ps2 1\n"); ps2_EnablePortEx(1, true, true); break;
+      case 'd': printf("disable ps2 0\n"); ps2_EnablePortEx(0, false, true); break;
+      case 'D': printf("disable ps2 1\n"); ps2_EnablePortEx(1, false, true); break;
 #endif
 
 #ifdef TEST_PS2

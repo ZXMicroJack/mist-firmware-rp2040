@@ -27,7 +27,7 @@
 #include "ipc.h"
 #include "pins.h"
 // #define printf uprintf
-#define DEBUG
+// #define DEBUG
 #include "debug.h"
 
 #ifdef USB

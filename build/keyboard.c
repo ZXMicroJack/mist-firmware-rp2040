@@ -309,7 +309,7 @@ uint8_t const hid2ps2[] = {
   0x48, 0x50, 0x57, 0x5f
 };
 
-static uint8_t keys[6];
+static uint8_t kbdkeys[6];
 static uint8_t modifier = 0;
 static uint8_t ps2ext = 0;
 static uint8_t ps2rel = 0;
@@ -402,7 +402,7 @@ void ps2_Poll() {
 
   if (firsttime) {
     modifier = 0;
-    memset(keys, 0, sizeof keys);
+    memset(kbdkeys, 0, sizeof kbdkeys);
     ps2_Init();
     // ps2_EnablePort(0, true);
     ps2_EnablePortEx(0, true, 1);
@@ -415,7 +415,7 @@ void ps2_Poll() {
 
   int changed = 0;
   while ((k = ps2_GetChar(0)) >= 0) {
-	  printf("[%02X]\n", k);
+	  debug(("[%02X]\n", k));
     if (k == 0xe0) {
       ps2ext = 1;
     } else if (k == 0xf0) {
@@ -430,17 +430,19 @@ void ps2_Poll() {
         changed = 1;
       } else {
         if (ps2rel) {
+          debug(("release {%03X}\n", d));
           for (int i=0; i<6; i++) {
-            if (keys[i] == (d & 0xff)) {
-              keys[i] = 0;
+            if (kbdkeys[i] == (d & 0xff)) {
+              kbdkeys[i] = 0;
               changed = 1;
             }
           }
         } else {
+          debug(("pressed {%03X}\n", d));
           for (int i=0; i<6; i++) {
-            if (keys[i] == (d & 0xff)) break;
-            if (keys[i] == 0) {
-              keys[i] = d & 0xff;
+            if (kbdkeys[i] == (d & 0xff)) break;
+            if (kbdkeys[i] == 0) {
+              kbdkeys[i] = d & 0xff;
               changed = 1;
               break;
             }
@@ -455,8 +457,10 @@ void ps2_Poll() {
   if (changed) {
     debug(("kbd: %08X ", modifier));
 #ifdef DEBUG
-    for (int i = 0; i<6; i++) printf("%02X ", keys[i]);
+    for (int i = 0; i<6; i++) printf("%02X ", kbdkeys[i]);
 #endif
+    uint8_t keys[6];
+    memcpy(keys, kbdkeys, 6);
     user_io_kbd(modifier, keys, UIO_PRIORITY_KEYBOARD, 0, 0);
   }
 

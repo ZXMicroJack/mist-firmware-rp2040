@@ -442,7 +442,8 @@ int main() {
 #endif
 
 //   test_block_read_t fbrt;
-  sleep_ms(2000); // usb settle delay
+  // MJ removed settle time - not sure its needed
+  // sleep_ms(2000); // usb settle delay
   pio_spi_inst_t *spi = NULL;
 
   // set up error led

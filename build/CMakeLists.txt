@@ -330,7 +330,7 @@ target_compile_options(mistusb PUBLIC
 add_executable(mistmb2xilinxram
   ${driver_mb2_src}
   ${main_src}
-  ${usb_src}
+  # ${usb_src}
   )
 
 target_link_libraries(mistmb2xilinxram 
@@ -346,10 +346,12 @@ target_link_libraries(mistmb2xilinxram
 add_compile_options(-O2)
 pico_generate_pio_header(mistmb2xilinxram ../drivers/fpga.pio)
 pico_generate_pio_header(mistmb2xilinxram ../drivers/spi.pio)
+# NOUSB
 pico_enable_stdio_usb(mistmb2xilinxram 1)
-
+# USB
 # target_include_directories(mistmb2xilinxram PUBLIC ../usbhost)
 # pico_enable_stdio_usb(mistmb2xilinxram 0)
+
 pico_enable_stdio_uart(mistmb2xilinxram 0)
 pico_add_extra_outputs(mistmb2xilinxram)
 example_auto_set_url(mistmb2xilinxram)
@@ -364,6 +366,7 @@ target_compile_options(mistmb2xilinxram PUBLIC
   "-DBOOT_FLASH_ON_ERROR"
   # "-DMB2USB"
 
+  # USB
   # "-DUSB"
   # "-DMIST_USB"
   # "-DUSB_STORAGE"

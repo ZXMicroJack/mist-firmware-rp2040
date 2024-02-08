@@ -5,7 +5,7 @@
 
 #include "errors.h"
 #include "usb/usb.h"
-
+#include "version.h"
 
 //TODO MJ non USB stuff here
 void MCUReset() {}
@@ -86,7 +86,19 @@ void WriteFirmware(char *name) {
   printf("WriteFirmware: name:%s\n", name);
 }
 
-const static char firmwareVersion[] = "v999.999abcd";
+#ifdef XILINX
+#ifdef MB2
+#define ARCH "XMB2"
+#else
+#define ARCH "XMB1"
+#endif
+#else
+#define ARCH "AN+"
+#endif
+
+
+
+const static char firmwareVersion[] = "v" VERSION ARCH;
 
 char *GetFirmwareVersion(char *name) {
   return firmwareVersion;

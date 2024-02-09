@@ -128,12 +128,20 @@ typedef struct pio_spi_inst {
 #endif
 
 void pio_spi_select(const pio_spi_inst_t *spi, uint8_t state) {
+  // printf("pio_spi_select: %d\n", state);
 	if (state) {
 		// active
+    gpio_init(spi->cs_pin);
+    gpio_put(spi->cs_pin, 1);
+    gpio_set_dir(spi->cs_pin, GPIO_OUT);
+
 		pio_spi_unkill(spi->pio, spi->sm, spi->sck_pin, spi->mosi_pin, spi->miso_pin);
 	} else {
 		// inactive
 		pio_spi_kill(spi->pio, spi->sm, spi->sck_pin, spi->mosi_pin, spi->miso_pin);
+    gpio_init(spi->cs_pin);
+    gpio_put(spi->cs_pin, 1);
+    gpio_set_dir(spi->cs_pin, GPIO_IN);
 	}
 }
 

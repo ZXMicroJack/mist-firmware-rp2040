@@ -16,7 +16,7 @@
 
 #include "drivers/fpga.h"
 #include "drivers/bitfile.h"
-// #define DEBUG
+//#define DEBUG
 #include "drivers/debug.h"
 
 #define BUFFER_SIZE     16 // PACKETS
@@ -41,7 +41,9 @@ static uint8_t read_next_block(void *ud, uint8_t *data) {
   UINT br;
   configFpga *cf = (configFpga *)ud;
 
+#ifdef BUFFER_FPGA
   debug(("read_next_block cf->c = %d cf->size = %d\n", cf->c, cf->size));
+#endif
   if (f_read(&cf->file, data, 512, &br) != FR_OK) {
     cf->error = 1;
     return 0;
@@ -63,6 +65,7 @@ static uint8_t read_next_block(void *ud, uint8_t *data) {
 //   uint8_t l, r, c;
 // } buffered_read_lba_t;
 
+#ifdef BUFFER_FPGA
 #define brl_inc(a) (((a) + 1) & BUFFER_SIZE_MASK)
 
 static void read_next_block_buffered_fill(configFpga *brl) {
@@ -102,6 +105,7 @@ uint8_t read_next_block_buffered(void *user_data, uint8_t *block) {
   read_next_block_buffered_fill(brl);
   return result;
 }
+#endif
 
 //MJ TODO remove
 int ResetFPGA() {
@@ -126,6 +130,7 @@ void BootFromFlash() {
 //MJ TODO remove
 unsigned char ConfigureFpgaEx(const char *bitfile, uint8_t fatal, uint8_t reset) {
   configFpga cf;
+  uint32_t fileSize;
   debug(("ConfigureFpgaEx: %s\n", bitfile ? bitfile : "null"));
 
 #ifdef XILINX // go to flash boot
@@ -162,7 +167,7 @@ unsigned char ConfigureFpgaEx(const char *bitfile, uint8_t fatal, uint8_t reset)
 #endif
   }
 
-  cf.size = f_size(&cf.file);
+  fileSize = cf.size = f_size(&cf.file);
   cf.error = 0;
   debug(("cf.size = %ld\n", cf.size));
   iprintf("FPGA bitstream file %s opened, file size = %ld\r", bitfile, cf.size);
@@ -202,9 +207,9 @@ unsigned char ConfigureFpgaEx(const char *bitfile, uint8_t fatal, uint8_t reset)
 
 
 #ifdef BUFFER_FPGA
-  fpga_configure(&cf, read_next_block_buffered, cf.size);
+  fpga_configure(&cf, read_next_block_buffered, fileSize);
 #else
-  fpga_configure(&cf, read_next_block, cf.size);
+  fpga_configure(&cf, read_next_block, fileSize);
 #endif
   fpga_claim(false);
 

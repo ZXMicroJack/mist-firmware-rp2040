@@ -68,12 +68,17 @@ static inline void pio_spi_unkill(PIO pio, uint sm, uint pin_sck, uint pin_mosi,
     pio_gpio_init(pio, pin_mosi);
     pio_gpio_init(pio, pin_miso);
     pio_gpio_init(pio, pin_sck);
+    pio_sm_set_enabled(pio, sm, true);
 }
 
 static inline void pio_spi_kill(PIO pio, uint sm, uint pin_sck, uint pin_mosi, uint pin_miso) {
+    pio_sm_set_enabled(pio, sm, false);
     pio_sm_set_consecutive_pindirs(pio, sm, pin_sck, 1, false);
     pio_sm_set_consecutive_pindirs(pio, sm, pin_mosi, 1, false);
     pio_sm_set_consecutive_pindirs(pio, sm, pin_mosi, 1, false);
+    pio_gpio_init(pio, pin_mosi);
+    pio_gpio_init(pio, pin_miso);
+    pio_gpio_init(pio, pin_sck);
 }
 
 

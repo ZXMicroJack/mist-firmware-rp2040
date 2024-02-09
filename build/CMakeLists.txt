@@ -156,8 +156,8 @@ target_compile_options(mistfirmwareusb PUBLIC
 
 ####################################################################################
 # Main build RAM test build for functionality Xilinx ZXTres
-set(testarch xilinx)
-set(archdefs "-DXILINX")
+# set(testarch xilinx)
+# set(archdefs "-DXILINX")
 
 ####################################################################################
 # Main build RAM test build for functionality Xilinx ZXTres
@@ -315,7 +315,7 @@ target_compile_options(mistusb PUBLIC
   "-DVDATE=\"\""
   "-Dhexdump=driver_hexdump"
   "-DPS2HOST"
-  "-DXILINX"
+  # "-DXILINX"
   "-DJAMMADB9"
   "-DUSB"
   "-DMIST_USB"

@@ -11,7 +11,7 @@
 #include "drivers/ps2.h"
 #include "drivers/fifo.h"
 #include "drivers/ipc.h"
-// #define DEBUG
+#define DEBUG
 #include "drivers/debug.h"
 
 // remap modifiers to each other if requested

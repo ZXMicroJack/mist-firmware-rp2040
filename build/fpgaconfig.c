@@ -23,7 +23,7 @@
 #define BUFFER_SIZE_MASK  0xf
 #define NR_BLOCKS(a) (((a)+511)>>9)
 
-#define BUFFER_FPGA
+//#define BUFFER_FPGA
 
 typedef struct {
   FIL file;

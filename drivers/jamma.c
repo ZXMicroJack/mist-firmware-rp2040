@@ -143,6 +143,7 @@ void jamma_InitEx(uint8_t mister) {
 }
 
 void jamma_SetData(uint8_t inst, uint32_t data) {
+  debug(("jamma_SetData: inst %d data %08X\n", inst, data));
   joydata[inst] = data & 0xff;
   reload_data = (joydata[1] << 8) | joydata[0];
 }

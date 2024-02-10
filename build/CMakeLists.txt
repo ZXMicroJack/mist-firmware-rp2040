@@ -333,14 +333,22 @@ add_executable(mistmb2xilinxram
   # ${usb_src}
   )
 
+#   add_executable(mistram
+#   ${driver_src}
+#   ${main_src}
+#   )
+
+# target_link_libraries(mistram pico_stdlib mistfirmware${testarch} hardware_spi hardware_pio)
+
+
 target_link_libraries(mistmb2xilinxram 
   pico_stdlib 
   mistfirmwarexilinx 
   # mistfirmwareusbxilinx
   hardware_spi 
   hardware_pio 
-  hardware_flash 
-  hardware_i2c 
+  # hardware_flash 
+  hardware_i2c
   pico_multicore)
   # pico_multicore tinyusb_host tinyusb_board)
 add_compile_options(-O2)

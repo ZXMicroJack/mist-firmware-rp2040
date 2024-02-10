@@ -462,6 +462,7 @@ void ps2_Poll() {
     uint8_t keys[6];
     memcpy(keys, kbdkeys, 6);
     user_io_kbd(modifier, keys, UIO_PRIORITY_KEYBOARD, 0, 0);
+    // user_io_kbd(modifier, kbdkeys, UIO_PRIORITY_KEYBOARD, 0, 0);
   }
 
   // void user_io_kbd(unsigned char m, unsigned char *k, uint8_t priority, unsigned short vid, unsigned short pid);

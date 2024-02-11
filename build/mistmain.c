@@ -117,13 +117,14 @@ void HandleFpga(void) {
 
 extern void inserttestfloppy();
 
-static uint8_t legacy_mode = DEFAULT_MODE;
+uint8_t legacy_mode = DEFAULT_MODE;
 
 void set_legacy_mode(uint8_t mode) {
   if (mode != legacy_mode) {
     printf("Setting legacy mode to %d\n", mode);
 #ifdef MB2
     ipc_Command(IPC_SETMISTER, &mode, sizeof mode);
+#else
 #endif
   }
   legacy_mode = mode;

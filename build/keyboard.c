@@ -8,10 +8,11 @@
 #include "xmodem.h"
 #include "ikbd.h"
 #include "usb.h"
+#include "common.h"
 #include "drivers/ps2.h"
 #include "drivers/fifo.h"
 #include "drivers/ipc.h"
-#define DEBUG
+// #define DEBUG
 #include "drivers/debug.h"
 
 // remap modifiers to each other if requested
@@ -330,6 +331,8 @@ static int isExtended(uint8_t data) {
      data >= 0x81);
 }
 
+static uint8_t curr_legacy_mode = DEFAULT_MODE;
+
 void usb_ToPS2(uint8_t modifier, uint8_t keys[6]) {
   static int firsttime = 1;
   uint32_t newpressed[8] = {0,0,0,0,0,0,0,0};
@@ -392,7 +395,15 @@ void usb_ToPS2(uint8_t modifier, uint8_t keys[6]) {
   }
   prev_modifier = modifier;
 
+#ifdef MB2
   if (nrps2 > 1) ipc_Command(IPC_SENDPS2, ps2, nrps2);
+#else
+  if (nrps2 > 1 && curr_legacy_mode == LEGACY_MODE) {
+    for (int i=1; i<nrps2; i++) {
+      ps2_SendChar(0, ps2[i]);
+    }
+  }
+#endif
 }
 
 void ps2_Poll() {
@@ -405,8 +416,19 @@ void ps2_Poll() {
     memset(kbdkeys, 0, sizeof kbdkeys);
     ps2_Init();
     // ps2_EnablePort(0, true);
-    ps2_EnablePortEx(0, true, 1);
+    // ps2_EnablePortEx(0, true, 1);
     firsttime = 0;
+  }
+
+  if (curr_legacy_mode != legacy_mode) {
+    if (legacy_mode == LEGACY_MODE) {
+      ps2_EnablePortEx(0, false, 1);
+      ps2_EnablePortEx(0, true, 0);
+    } else {
+      ps2_EnablePortEx(0, false, 0);
+      ps2_EnablePortEx(0, true, 1);
+    }
+    curr_legacy_mode = legacy_mode;
   }
 
 #if defined(MB2) && !defined(CORE2_IPC_TICKS)

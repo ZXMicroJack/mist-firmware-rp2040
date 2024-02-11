@@ -23,9 +23,10 @@
 #include "drivers/pio_spi.h"
 #include "drivers/sdcard.h"
 #include "drivers/ps2.h"
+#include "drivers/fifo.h"
 #include "drivers/ipc.h"
 #include "drivers/kbd.h"
-#define DEBUG
+// #define DEBUG
 #include "drivers/debug.h"
 
 #include "mistmain.h"
@@ -107,9 +108,9 @@ static void enable_xip(void) {
 #define KBD_DN   0
 
 #define FAKE_KBD
-#define FAKE_JOY1
-#define FAKE_JOY2
-#define FAKE_JOY3
+// #define FAKE_JOY1
+// #define FAKE_JOY2
+// #define FAKE_JOY3
 
 #ifdef FAKE_KBD
 const static uint8_t kbd_rd[] = {0x05,0x01,0x09,0x06,0xA1,0x01,0x05,0x07,0x19,0xE0,0x29,0xE7,0x15,0x00,0x25,0x01,0x75,0x01,0x95,0x08,0x81,0x02,0x95,0x01,0x75,0x08,0x81,0x01,0x95,0x05,0x75,0x01,0x05,0x08,0x19,0x01,0x29,0x05,0x91,0x02,0x95,0x03,0x75,0x01,0x91,0x01,0x95,0x06,0x75,0x08,0x15,0x00,0x26,0xFF,0x00,0x05,0x07,0x19,0x00,0x2A,0xFF,0x00,0x81,0x00,0xC0};
@@ -386,13 +387,15 @@ void joy3_usbaction(char c) {
 
 #if defined(USB) && !defined(USBFAKE)
 void usb_poll() {
-    tuh_task();
-    hid_app_task();
+  tuh_task();
+  hid_app_task();
 }
 #else
 void usb_poll() {
 }
 #endif
+
+
 
 #ifdef DEVKIT_DEBUG
 static char str[256];
@@ -418,11 +421,29 @@ void usetup() {
 }
 #endif
 
+#ifdef MB2
+uint8_t stop_watchdog = 0;
+
+struct repeating_timer watchdog_timer;
+static bool watchdog_Callback(struct repeating_timer *t) {
+  if (!stop_watchdog) watchdog_update();
+  return true;
+}
+#endif
+
 
 int main() {
   stdio_init_all();
+
+#ifdef MB2
+  cookie_Reset();
+  watchdog_enable(4000, true);
+  add_repeating_timer_us(2000000, watchdog_Callback, NULL, &watchdog_timer);
+#endif
+
 //   test_block_read_t fbrt;
-  sleep_ms(2000); // usb settle delay
+  // MJ removed settle time - not sure its needed
+  // sleep_ms(2000); // usb settle delay
   pio_spi_inst_t *spi = NULL;
 
   // set up error led
@@ -444,19 +465,14 @@ int main() {
   tusb_init();
 #endif
 
-  mist_init();
-
-#ifdef USB
-  mist_usb_init();
+#ifdef MB2
+  ipc_InitMaster();
 #endif
+
+  mist_init();
 
   char lastch = 0;
   for(;;) {
-#if defined(USB) && !defined (USBFAKE)
-    tuh_task();
-    hid_app_task();
-#endif
-
     int c = getchar_timeout_us(2);
 //     int c = getchar();
 //     if (forceexit) break;
@@ -506,10 +522,9 @@ int main() {
 //     } else if (lastch == 'm') {
 //       mouse_usbaction(c);
 //     }
+
     mist_loop();
-#ifdef USB
-    mist_usb_loop();
-#endif
+    usb_poll();
   }
 
   reset_usb_boot(0, 0);

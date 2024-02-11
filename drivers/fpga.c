@@ -114,6 +114,9 @@ int fpga_reset() {
 #else
   uint64_t timeout;
 
+  gpio_init(GPIO_FPGA_DATA);
+  gpio_init(GPIO_FPGA_CLOCK);
+
   gpio_init(GPIO_FPGA_INITB);
   gpio_init(GPIO_FPGA_RESET);
   gpio_set_dir(GPIO_FPGA_RESET, GPIO_OUT);

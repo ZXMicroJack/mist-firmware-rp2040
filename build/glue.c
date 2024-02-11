@@ -5,7 +5,9 @@
 
 #include "errors.h"
 #include "usb/usb.h"
+#include "version.h"
 
+#include "pico/bootrom.h"
 
 //TODO MJ non USB stuff here
 void MCUReset() {}
@@ -84,9 +86,26 @@ void usb_hw_init() {}
 // TODO MJ - firmware updating
 void WriteFirmware(char *name) {
   printf("WriteFirmware: name:%s\n", name);
+#ifdef MB2
+  // boot from flash
+#else
+  reset_usb_boot(0, 0);
+#endif
 }
 
-const static char firmwareVersion[] = "v999.999abcd";
+#ifdef XILINX
+#ifdef MB2
+#define ARCH "XMB2"
+#else
+#define ARCH "XMB1"
+#endif
+#else
+#define ARCH "AN+"
+#endif
+
+
+
+const static char firmwareVersion[] = "v" VERSION ARCH;
 
 char *GetFirmwareVersion(char *name) {
   return firmwareVersion;

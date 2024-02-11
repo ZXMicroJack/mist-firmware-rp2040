@@ -25,6 +25,9 @@ static uint16_t keyheld_map[COLS];
 static struct repeating_timer kbd_timer;
 static int col = 0;
 static fifo_t kbd_fifo;
+static uint8_t kbd_fifo_buf[64];
+static fifo_t ps2_fifo;
+static uint8_t ps2_fifo_buf[64];
 static uint8_t opqa_cursors = 0;
 
 uint8_t shift_held = 0;
@@ -92,7 +95,16 @@ static bool kbd_timer_callback(struct repeating_timer *t) {
 }
 
 
+#if 0
+static uint8_t mistMode = 0;
+
+void kbd_SetMistMode(uint8_t _mistMode) {
+  mistMode = _mistMode;
+}
+#endif
+
 void kbd_Init() {
+  //mistMode = _mistMode;
   for (int i=0; i<COLS; i++) {
     gpio_init(GPIO_KCOL(i));
     gpio_set_dir(GPIO_KCOL(i), GPIO_OUT);
@@ -104,12 +116,18 @@ void kbd_Init() {
     gpio_set_dir(GPIO_KROW(i), GPIO_IN);
   }
 
-  fifo_Init(&kbd_fifo);
+  fifo_Init(&kbd_fifo, kbd_fifo_buf, sizeof kbd_fifo_buf);
+  fifo_Init(&ps2_fifo, ps2_fifo_buf, sizeof ps2_fifo_buf);
   memset(keyheld_map, 0, sizeof keyheld_map);
   add_repeating_timer_us(200, kbd_timer_callback,
                          NULL, &kbd_timer);
 }
 
+#if 0
+void kbd_Init() {
+  kbd_InitEx(0);
+}
+#endif
 static int get_mode(uint8_t scancode) {
   for (int i=0; i<sizeof mode_scancodes; i++) {
     if (scancode == mode_scancodes[i])
@@ -120,6 +138,24 @@ static int get_mode(uint8_t scancode) {
 
 //TODO
 int forceexit = 0;
+
+fifo_t *kbd_GetFifo() {
+  return &ps2_fifo;
+}
+
+//TODO MJ remove this
+static void ps2_SendCharX(uint8_t ch, uint8_t data) {
+  fifo_Put(&ps2_fifo, data);
+#if 0
+	if (mistMode) {
+    ps2_InsertChar(ch, data);
+  } else {
+    ps2_SendChar(ch, data);
+  }
+#endif
+}
+
+#define ps2_SendChar ps2_SendCharX
 
 static void send_key_raw(uint16_t key, uint8_t pressed) {
   if (!key || key == NADA) return;

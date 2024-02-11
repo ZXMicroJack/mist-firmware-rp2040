@@ -8,6 +8,7 @@
 #include "hardware/structs/clocks.h"
 #include "hardware/flash.h"
 #include "hardware/resets.h"
+#include "hardware/watchdog.h"
 
 #include "pico/bootrom.h"
 #include "pico/stdlib.h"
@@ -36,6 +37,9 @@
 
 #include "kbd.h"
 #include "cookie.h"
+#ifdef USB
+#include "hiddev.h"
+#endif
 
 #include "version.h"
 
@@ -121,10 +125,13 @@ uint8_t mistMode = 0;
 uint8_t previousMistMode = 0xff;
 
 struct repeating_timer watchdog_timer;
-static int watchdog_Callback(struct repeating_timer *t) {
+static bool watchdog_Callback(struct repeating_timer *t) {
   if (!stop_watchdog) watchdog_update();
   return true;
 }
+
+uint8_t ps2_rp2m_buf[4][64]; // kbd in, mse in, kbd host in, mse host in
+fifo_t ps2_rp2m_fifo[4];
 
 uint8_t ipc_GotCommand(uint8_t cmd, uint8_t *data, uint8_t len) {
   printf("ipc_GotCommand: cmd %02X\n", cmd);
@@ -176,7 +183,7 @@ uint8_t ipc_GotCommand(uint8_t cmd, uint8_t *data, uint8_t len) {
       mistMode = data[0] == MIST_MODE;
       cookie_Set2(data[0]);
 #ifdef USB
-      HID_setMistMode(mistMode);
+      //HID_setMistMode(mistMode);
 #endif
       break;
     }
@@ -189,7 +196,7 @@ uint8_t ipc_GotCommand(uint8_t cmd, uint8_t *data, uint8_t len) {
     // messages to the PS2 devices - keyboard and mouse
     case IPC_SENDPS2: {
       for (int i = 1; i<len; i++) {
-        ps2_SendChar(data[0], data[i]);
+				fifo_Put(&ps2_rp2m_fifo[data[0]], data[i]);
       }
       break;
     }
@@ -226,44 +233,136 @@ uint8_t ipc_GotCommand(uint8_t cmd, uint8_t *data, uint8_t len) {
 }
 
 #ifdef MATRIX_KEYBOARD
+static fifo_t *matkbd_in;
+static fifo_t *hid_ps2_in[2];
+static fifo_t *hid_ps2_out[2];
+static fifo_t mist_ps2_out[2];
+static uint8_t mist_ps2_out_buf[2][64];
+
+// ps2 to host in
+int ps2_In(uint8_t ch) {
+  int c;
+
+	if (ch == 0 && (c = fifo_Get(matkbd_in)) >= 0) return c; // from matrix
+#ifdef USB
+	if ((c = fifo_Get(hid_ps2_in[ch])) >= 0) return c; // from usb
+#endif
+	if ((c = fifo_Get(&ps2_rp2m_fifo[ch])) >= 0) return c; // from rp2m in legacy mode
+  if (mistMode) c = ps2_GetChar(ch); // from host mode ps2 in mist mode
+	return c;
+}
+
+// ps2 to host in
+int ps2_InHost(uint8_t ch) {
+  int c;
+
+	if ((c = fifo_Get(&ps2_rp2m_fifo[ch+2])) >= 0) return c; // from rp2m in mist mode
+  if (!mistMode) c = ps2_GetChar(ch); // from host mode ps2 in mist mode
+	return c;
+}
+
+// host to ps2
+void ps2_OutHost(uint8_t ch, uint8_t data) {
+#ifdef USB
+	fifo_Put(hid_ps2_out[ch], data); // to ps2 hid
+#endif
+	if (mistMode) { // to ps2 keyboard
+    ps2_SendChar(ch, data);
+  }
+}
+
+// from device to host
+void ps2_Out(uint8_t ch, uint8_t data) {
+  if (mistMode) {
+		fifo_Put(&mist_ps2_out[ch], data);
+	} else {
+		ps2_SendChar(ch, data);
+	}
+}
+
+// process mist ps2 queues
+void ps2_MistFlush(uint8_t ch) {
+  uint8_t data[16];
+	int c, j=1;
+
+	data[0] = ch; // channel
+  while (j<16 && ((c = fifo_Get(&mist_ps2_out[ch]))) != -1) {
+#ifdef DEBUG_PS2
+    printf("[%02X]", c);
+#endif
+    data[j++] = c;
+  }
+
+	// if there is data to send
+  if (j > 1) {
+#ifdef DEBUG_PS2
+    printf("\n");
+#endif
+    ipc_SendData(IPC_PS2_DATA, data, j);
+  }
+}
+
 void kbd_core() {
+#ifdef USB
+  HID_init();
+#endif
+	// PS2 IO from MiST to/from devices
+  fifo_Init(&ps2_rp2m_fifo[0], ps2_rp2m_buf[0], sizeof ps2_rp2m_buf[0]); // in device
+  fifo_Init(&ps2_rp2m_fifo[1], ps2_rp2m_buf[1], sizeof ps2_rp2m_buf[1]);
+  fifo_Init(&ps2_rp2m_fifo[2], ps2_rp2m_buf[2], sizeof ps2_rp2m_buf[2]); // in host
+  fifo_Init(&ps2_rp2m_fifo[3], ps2_rp2m_buf[3], sizeof ps2_rp2m_buf[3]);
+
+	// PS2 keyboard and mouse channels to MiST core
+  fifo_Init(&mist_ps2_out[0], mist_ps2_out_buf[0], sizeof mist_ps2_out_buf[0]);
+  fifo_Init(&mist_ps2_out[1], mist_ps2_out_buf[1], sizeof mist_ps2_out_buf[1]);
+
   ps2_Init();
   ipc_InitSlave();
+  kbd_Init();
 
-  kbd_InitEx(mistMode);
+  matkbd_in = kbd_GetFifo();
+#ifdef USB
+	hid_ps2_in[0] = HID_getPS2Fifo(0, 0); // from device
+	hid_ps2_in[1] = HID_getPS2Fifo(1, 0); // from device
+	hid_ps2_out[0] = HID_getPS2Fifo(0, 1); // to device
+	hid_ps2_out[1] = HID_getPS2Fifo(1, 1); // to device
+#endif
 
+	int c;
   for(;;) {
     if (previousMistMode != mistMode) {
       jamma_Kill();
       jamma_InitEx(mistMode);
       ps2_EnablePortEx(0, false, mistMode);
       ps2_EnablePortEx(0, true, mistMode);
-      kbd_SetMistMode(mistMode);
+//      ps2_EnablePortEx(1, false, mistMode);
+//      ps2_EnablePortEx(1, true, mistMode);
+//      kbd_SetMistMode(mistMode);
       previousMistMode = mistMode;
     }
 
     kbd_Process();
 
+
+		// handle PS2 multiplexing
+		for (int i=0; i<2; i++) {
+			while ((c = ps2_In(i)) >= 0) {
+				ps2_Out(i, c);
+				printf("In: %02X\n", c);
+			}
+			while ((c = ps2_InHost(i)) >= 0) {
+				ps2_OutHost(i, c);
+				printf("Out: %02X\n", c);
+			}
+			ps2_MistFlush(i);
+		}
+
+		// in MiST mode, pass DB9 joypad changes up to RP2M
     if (mistMode) {
       if (jamma_HasChanged()) {
         uint32_t data = jamma_GetDataAll();
-        ipc_SendData(IPC_UPDATE_JAMMA, &data, sizeof data);
+        ipc_SendData(IPC_UPDATE_JAMMA, (uint8_t *)&data, sizeof data);
         printf("Jamma updated\n");
-      }
-
-      uint8_t data[16];
-      int i = 0, c;
-      while (i<16 && (c = ps2_GetChar(0)) != -1) {
-        data[i++] = c;
-#ifdef DEBUG_PS2
-        printf("[%02X]", c);
-#endif
-      }
-      if (i) {
-#ifdef DEBUG_PS2
-        printf("\n");
-#endif
-        ipc_SendData(IPC_PS2_DATA, data, i);
       }
     }
 
@@ -272,7 +371,7 @@ void kbd_core() {
 }
 #endif
 
-void HID_setMistMode(uint8_t on);
+//void HID_setMistMode(uint8_t on);
 int main()
 {
 #ifdef DEBUG
@@ -294,7 +393,7 @@ int main()
 #endif
 
 #ifdef USB
-  HID_setMistMode(mistMode);
+  //HID_setMistMode(mistMode);
 #endif
 
   sleep_ms(1000); // usb settle delay
@@ -323,7 +422,9 @@ int main()
 
   for(;;) {
 #ifndef USB
-    if (getchar_timeout_us(2) == 'q') break;
+		int c = getchar_timeout_us(2);
+    if (c == 'q') break;
+		if (c == 'm') mistMode = !mistMode;
 #endif
 //     printf("in loop\n");
 #ifdef USB

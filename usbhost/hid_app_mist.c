@@ -196,8 +196,16 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance)
 #endif
 }
 
+void usb_ToPS2(uint8_t modifier, uint8_t keys[6]);
+
 void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len) {
 #ifdef MIST_USB
+
+  uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
+  if ( itf_protocol == HID_ITF_PROTOCOL_KEYBOARD ) {
+    usb_ToPS2(report[0], &report[2]);
+  }
+
   usb_handle_data(dev_addr, report, len);
 #else
   uprintf("tuh_hid_report_received_cb(dev_addr:%d inst:%d)\n", dev_addr, instance);

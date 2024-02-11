@@ -19,20 +19,20 @@
 #include "pio_spi.h"
 #include "sdcard.h"
 #include "ps2.h"
+#include "fifo.h"
 #include "ipc.h"
 #include "kbd.h"
-#include "fifo.h"
 #define DEBUG
 #include "debug.h"
 
 // #define TEST_PS2
-// #define TEST_PS2_HOST
+#define TEST_PS2_HOST
 // #define TEST_IPC
 // #define TEST_SDCARD_SPI
 // #define TEST_FPGA
 // #define TEST_MATRIX
 // #define TEST_FLASH
-#define TEST_USERIO
+// #define TEST_USERIO
 // #define TEST_JAMMA
 
 // KEY ACTION ALLOCATION
@@ -306,6 +306,11 @@ void test_UserIOSPI() {
 #define MIST_SS4    24
 
 
+void ipc_HandleData(uint8_t tag, uint8_t *data, uint16_t len) {
+  printf("ipc_HandleData: tag %02X\n", tag);
+  hexdump(data, len);
+}
+
 void test_UserIOSPI(uint8_t datain) {
   uint8_t data[6];
 // int spi_write_read_blocking (spi_inst_t *spi, const uint8_t *src, uint8_t *dst, size_t len)
@@ -383,9 +388,13 @@ int main()
   printf("Running test\n");
   printf("Running test\n");
   
+//   ipc_InitMaster();
+//   ps2_InitEx(1);
   for(;;) {
-//     int c = getchar_timeout_us(100000);
-    int c = getchar();
+    int c = getchar_timeout_us(10);
+//     ipc_MasterTick();
+
+//     int c = getchar();
     if (forceexit) break;
     if (c == 'q') break;
 //     if (c == 'h') printf("Hello\n");
@@ -462,6 +471,7 @@ int main()
         printf("FPGA: (p)rogram (f)pga init (F)pga reset (C)laim dis(c)laim\n");
         printf("PS2: (k)ps2init sendc(h)ar (e)n ps0 (E)n ps1 (d)isps0 (D)isps1\n");
         printf("IPC: (-)initslave (=)initmaster ([)cmd1 (])cmd2 (')slavetick (#)debug\n");
+        printf("IPC: (;) read fast (:) write 1 byte fast (@) write 1024 bytes fast\n");
         printf("FLASH: (P)rogram (I)pc based program (B)ad crc ipc program\n");
         printf("KBD: (K)bd init (L)kbd process\n");
         printf("USERIO: (u)init (U)close (V)coreid\n");
@@ -471,10 +481,19 @@ int main()
       // PS2
 #if defined(TEST_PS2) || defined(TEST_PS2_HOST)
       case 'k': printf("ps2init\n"); ps2_Init(); break;
+#endif
+#if defined(TEST_PS2)
       case 'e': printf("enable ps2 0\n"); ps2_EnablePort(0, true); break;
       case 'E': printf("enable ps2 1\n"); ps2_EnablePort(1, true); break;
       case 'd': printf("disable ps2 0\n"); ps2_EnablePort(0, false); break;
       case 'D': printf("disable ps2 1\n"); ps2_EnablePort(1, false); break;
+#endif
+
+#if defined(TEST_PS2_HOST)
+      case 'e': printf("enable ps2 0\n"); ps2_EnablePortEx(0, true, true); break;
+      case 'E': printf("enable ps2 1\n"); ps2_EnablePortEx(1, true, true); break;
+      case 'd': printf("disable ps2 0\n"); ps2_EnablePortEx(0, false, true); break;
+      case 'D': printf("disable ps2 1\n"); ps2_EnablePortEx(1, false, true); break;
 #endif
 
 #ifdef TEST_PS2
@@ -503,19 +522,35 @@ int main()
         printf("ipc_Command returns %d\n", ipc_Command(0xed, cmddata, sizeof cmddata));
       }
       break;
+      case '{': {
+        uint8_t cmddata[20];
+        memset(cmddata, 0x55, sizeof cmddata);
+        ipc_SendData(0xed, cmddata, sizeof cmddata);
+        printf("ipc_SendData ED\n");
+      }
+      break;
       case ']': {
         uint8_t cmddata[128];
         memset(cmddata, 0x45, sizeof cmddata);
         printf("ipc_Command returns %d\n", ipc_Command(0x12, cmddata, sizeof cmddata));
       }
       break;
+      case '}': {
+        uint8_t cmddata[128];
+        memset(cmddata, 0x45, sizeof cmddata);
+        ipc_SendData(0x12, cmddata, sizeof cmddata);
+        printf("ipc_SendData 1\n");
+      }
+      break;
       case '\'': {
         printf("int ipc_SlaveTick();\n");
         ipc_SlaveTick();
+        ipc_MasterTick();
         break;
       }
       case ';': {
-        uint8_t len = ipc_Command(IPC_READBACKSIZE, NULL, 0);
+//         uint8_t len = ipc_Command(IPC_READBACKSIZE, NULL, 0);
+        uint8_t len = ipc_ReadBackLen();
         uint8_t readbackdata[256];
 
         printf("ipc_Command returns %d\n", len);
@@ -528,6 +563,14 @@ int main()
       case ':': {
         fifo_t *f = ipc_GetFifo();
         fifo_Put(f, rddata++);
+        printf("put data len %d\n", fifo_Count(f));
+        break;
+      }
+      case '@': {
+        fifo_t *f = ipc_GetFifo();
+        for (i=0; i<1024; i++) {
+          fifo_Put(f, rddata++);
+        }
         printf("put data len %d\n", fifo_Count(f));
         break;
       }

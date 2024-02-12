@@ -480,6 +480,7 @@ void ps2_Poll() {
     debug(("kbd: %08X ", modifier));
 #ifdef DEBUG
     for (int i = 0; i<6; i++) printf("%02X ", kbdkeys[i]);
+    printf("\n");
 #endif
     uint8_t keys[6];
     memcpy(keys, kbdkeys, 6);

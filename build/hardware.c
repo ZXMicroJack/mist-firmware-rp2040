@@ -184,11 +184,13 @@ int GetSPICLK() {
 // user, menu, DIP1, DIP2
 int menu = 0; // TODO remove me
 unsigned char Buttons() {
-  return menu ? 0x04 : 0;
+  return 0;
+  // return menu ? 0x04 : 0;
 }
 
 unsigned char MenuButton() {
-  return menu ? 0x05 : 0;
+  return 0;
+  // return menu ? 0x05 : 0;
 }
 
 unsigned char UserButton() {
@@ -216,6 +218,7 @@ char GetDB9(char index, unsigned char *joy_map) {
   }
   // printf("GetDB9: returns %02X\n", j);
   // *joy_map = j;
+  *joy_map = 0;
   return 1;
 }
 

@@ -107,10 +107,12 @@ void DisableIO() {
 }
 
 void EnableDMode() {
+  // spi_set_format(spi0, 8, SPI_CPOL_1, SPI_CPHA_0, SPI_MSB_FIRST);
   gpio_put(MIST_SS4, 0);
 }
 
 void DisableDMode() {
+  // spi_set_format(spi0, 8, SPI_CPOL_1, SPI_CPHA_1, SPI_MSB_FIRST);
   spi_wait4xfer_end();
   gpio_put(MIST_SS4, 1);
 }

@@ -57,7 +57,7 @@ void __time_critical_func(pio_spi_read8_blocking)(const pio_spi_inst_t *spi, uin
             uint8_t rx = *rxfifo;
             debug(("[rx:%02X]\n", rx));
             
-            *dst++ = rx;
+            if (dst) *dst++ = rx;
             --rx_remain;
         }
     }
@@ -80,7 +80,7 @@ void __time_critical_func(pio_spi_read8_blocking_ex)(const pio_spi_inst_t *spi, 
             debug(("[rx:%02X]\n", rx));
             
             if (rx_remain < len || (rx_remain == len && rx != 0xff)) {
-              *dst++ = rx;
+              if (dst) *dst++ = rx;
               --rx_remain;
             } else {
               ++ tx_remain;

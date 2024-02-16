@@ -28,8 +28,8 @@ int sd_is_sdhc() {
   return is_sdhc;
 }
 
-
 static void sd_set_highspeed(pio_spi_inst_t *spi, int on);
+static int sd_init_card_nosel(pio_spi_inst_t *spi);
 
 static uint8_t sd_spin(pio_spi_inst_t *spi) {
   uint8_t ff = 0xff;
@@ -272,6 +272,9 @@ uint8_t sd_writesector(pio_spi_inst_t *spi, uint32_t lba, uint8_t *data) {
   return timeout > 0;
 }  
 
+// #define SD_NO_CRC
+
+#define debug(a) printf a
 static uint8_t sd_readsector_ll(pio_spi_inst_t *spi, uint32_t lba, uint8_t *sector) {
   uint8_t cmd[] = {0x51, 0x00, 0x05, 0x00, 0x00, 0xff};
   uint8_t buf[1];
@@ -304,19 +307,27 @@ static uint8_t sd_readsector_ll(pio_spi_inst_t *spi, uint32_t lba, uint8_t *sect
     return 1;
   }
   
+#ifdef SD_DIRECT_MODE_GPIO
+  if (!sector) gpio_put(SD_DIRECT_MODE_GPIO, 0);
+#endif
   get_bytes(spi, sector, 512);
   
   uint8_t crc[2];
   get_bytes(spi, crc, sizeof crc);
   sd_select(spi, 1);
+#ifdef SD_DIRECT_MODE_GPIO
+  if (!sector) gpio_put(SD_DIRECT_MODE_GPIO, 0);
+#endif
   
   uint16_t crcw = (crc[0] << 8) | crc[1];
   
-  if (crc16iv(sector, 512, 0) != crcw) {
+#ifndef SD_NO_CRC
+  if (sector != NULL && crc16iv(sector, 512, 0) != crcw) {
     debug(("Read failed crc 3 [%02X %02X] != %04X\n", crc[0], crc[1], crc16iv(sector, 512, 0)));
     hexdump(sector, 512);
     return 1;
   }
+#endif
 
 #ifdef DEBUG
   debug(("crc: %02X%02X\n", crc[0], crc[1]));
@@ -325,6 +336,7 @@ static uint8_t sd_readsector_ll(pio_spi_inst_t *spi, uint32_t lba, uint8_t *sect
   
   return 0;
 }
+#undef debug
 
 #ifdef TEST_RETRIES
 int xretryused = 0;
@@ -334,7 +346,9 @@ int xretry2used = 0;
 uint8_t sd_readsector(pio_spi_inst_t *spi, uint32_t lba, uint8_t *sector) {
   int retries, resets = 3;
   
-	pio_spi_select(spi, 1);
+  printf("SD: lba %08X ");
+
+  pio_spi_select(spi, 1);
   do {
     retries = 10;
     while (sd_readsector_ll(spi, lba, sector) && retries --) {
@@ -346,17 +360,19 @@ uint8_t sd_readsector(pio_spi_inst_t *spi, uint32_t lba, uint8_t *sector) {
   
     if (retries >= 0) {
 			pio_spi_select(spi, 0);
+      printf("\n");
       return 0;
     }
 #ifdef TEST_RETRIES
     xretryused ++;
 #endif
     // 3 retries failed, try to reset card and try again
-    sd_init_card(spi);
+    sd_init_card_nosel(spi);
   } while (resets--);
 
   // failed
 	pio_spi_select(spi, 0);
+  printf(" Failed!\n");
   return 1;
 }
 
@@ -403,9 +419,9 @@ static int sd_init_card_ll(pio_spi_inst_t *spi) {
   return 0;
 }
 
-int sd_init_card(pio_spi_inst_t *spi) {
+
+static int sd_init_card_nosel(pio_spi_inst_t *spi) {
   int timeout = 10;
-  pio_spi_select(spi, 1);
   sd_set_highspeed(spi, 0);
   while (!sd_init_card_ll(spi) && timeout --)
     ;
@@ -414,8 +430,16 @@ int sd_init_card(pio_spi_inst_t *spi) {
     sd_set_highspeed(spi, 1);
   }
   
-  pio_spi_select(spi, 0);
   return timeout > 0 ? 0 : 1;
+}
+
+int sd_init_card(pio_spi_inst_t *spi) {
+  int r;
+  
+  pio_spi_select(spi, 1);
+  r = sd_init_card_nosel(spi);
+  pio_spi_select(spi, 0);
+  return r;
 }
 
 static uint spi_offset = 0;

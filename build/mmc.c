@@ -59,11 +59,36 @@ unsigned char MMC_Init(void) {
 #endif
 }
 
+static uint8_t direct_block[512];
+static uint8_t crc[2] = {0xff, 0xff};
+
 unsigned char MMC_Read(unsigned long lba, unsigned char *pReadBuffer) {
+  printf("MMC_Read: lba %d pReadBuffer %x\n", lba, pReadBuffer);
 #ifndef DEVKIT_DEBUG
+#if 0 /* TODO doesn't work - should remove when other method works */
+  if (pReadBuffer == NULL) {
+    if (!sd_readsector(spi, lba, direct_block)) {
+        uint16_t crcw = crc16iv(direct_block, 512, 0);
+        crc[0] = crcw >> 8;
+        crc[1] = crcw & 0xff;
+
+        EnableDMode();
+        spi_write(direct_block, 512);
+        spi_write(crc, 2);
+        DisableDMode();
+        return 1;
+    }
+  } else {
+    if (!sd_readsector(spi, lba, pReadBuffer)) {
+        return 1;
+    }
+  }
+#else
   if (!sd_readsector(spi, lba, pReadBuffer)) {
       return 1;
   }
+#endif
+
 #endif
   return 0;
 }
@@ -78,14 +103,39 @@ unsigned char MMC_Write(unsigned long lba, const unsigned char *pWriteBuffer) {
 }
 
 unsigned char MMC_ReadMultiple(unsigned long lba, unsigned char *pReadBuffer, unsigned long nBlockCount) {
+  printf("MMC_ReadMultiple: lba %d pReadBuffer %x nBlockCount %d\n", lba, pReadBuffer, nBlockCount);
 #ifndef DEVKIT_DEBUG
+#if 0
     while (nBlockCount--) {
-        if (sd_readsector(spi, lba, pReadBuffer)) {
+        if (pReadBuffer == NULL) {
+          if (sd_readsector(spi, lba, direct_block)) {
             return 0;
+          }
+          
+          uint16_t crcw = crc16iv(direct_block, 512, 0);
+          crc[0] = crcw >> 8;
+          crc[1] = crcw & 0xff;
+
+          EnableDMode();
+          spi_write(direct_block, 512);
+          spi_write(crc, 2);
+          DisableDMode();
+        } else {
+          if (sd_readsector(spi, lba, pReadBuffer)) {
+              return 0;
+          }
+          pReadBuffer += 512;
         }
         lba ++;
-        pReadBuffer += 512;
     }
+#else
+    while (nBlockCount --) {
+      if (sd_readsector(spi, lba, pReadBuffer)) {
+        return 0;
+      }
+      if (pReadBuffer != NULL) pReadBuffer += 512;
+    }
+#endif
     return 1;
 #else
     return 0;

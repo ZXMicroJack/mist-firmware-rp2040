@@ -274,7 +274,7 @@ uint8_t sd_writesector(pio_spi_inst_t *spi, uint32_t lba, uint8_t *data) {
 
 // #define SD_NO_CRC
 
-#define debug(a) printf a
+// #define debug(a) printf a
 static uint8_t sd_readsector_ll(pio_spi_inst_t *spi, uint32_t lba, uint8_t *sector) {
   uint8_t cmd[] = {0x51, 0x00, 0x05, 0x00, 0x00, 0xff};
   uint8_t buf[1];
@@ -314,10 +314,10 @@ static uint8_t sd_readsector_ll(pio_spi_inst_t *spi, uint32_t lba, uint8_t *sect
   
   uint8_t crc[2];
   get_bytes(spi, crc, sizeof crc);
-  sd_select(spi, 1);
 #ifdef SD_DIRECT_MODE_GPIO
-  if (!sector) gpio_put(SD_DIRECT_MODE_GPIO, 0);
+  if (!sector) gpio_put(SD_DIRECT_MODE_GPIO, 1);
 #endif
+  sd_select(spi, 1);
   
   uint16_t crcw = (crc[0] << 8) | crc[1];
   
@@ -336,7 +336,7 @@ static uint8_t sd_readsector_ll(pio_spi_inst_t *spi, uint32_t lba, uint8_t *sect
   
   return 0;
 }
-#undef debug
+// #undef debug
 
 #ifdef TEST_RETRIES
 int xretryused = 0;
@@ -346,7 +346,7 @@ int xretry2used = 0;
 uint8_t sd_readsector(pio_spi_inst_t *spi, uint32_t lba, uint8_t *sector) {
   int retries, resets = 3;
   
-  printf("SD: lba %08X ");
+  debug(("SD: lba %08X ", lba));
 
   pio_spi_select(spi, 1);
   do {
@@ -360,7 +360,7 @@ uint8_t sd_readsector(pio_spi_inst_t *spi, uint32_t lba, uint8_t *sector) {
   
     if (retries >= 0) {
 			pio_spi_select(spi, 0);
-      printf("\n");
+      debug(("\n"));
       return 0;
     }
 #ifdef TEST_RETRIES
@@ -372,7 +372,7 @@ uint8_t sd_readsector(pio_spi_inst_t *spi, uint32_t lba, uint8_t *sector) {
 
   // failed
 	pio_spi_select(spi, 0);
-  printf(" Failed!\n");
+  debug((" Failed!\n"));
   return 1;
 }
 

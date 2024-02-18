@@ -75,12 +75,14 @@ static void ps2_KickTx(ps2_t *ps2, uint8_t data) {
     gpio_put(ps2->gpio_data, 1);
     gpio_set_dir(ps2->gpio_clk, GPIO_OUT);
     gpio_set_dir(ps2->gpio_data, GPIO_OUT);
+
   } else {
     ps2->ps2_data = data | (parity(data) << 8) | 0x200;
     ps2->ps2_states = 11;
     ps2->ps2_state = PS2_TRANSMIT;
 
     // signal sending
+    ps2->lastAction = time_us_64();
     gpio_put(ps2->gpio_data, 0);
     gpio_set_dir(ps2->gpio_data, GPIO_OUT);
   }
@@ -182,7 +184,6 @@ void ps2_SetGPIOListener(void (*cb)(uint gpio, uint32_t events)) {
 }
 
 #define IDLE_RESET_PERIOD_US 4000
-
 static void gpio_handle_host(ps2_t *ps2, uint gpio, uint32_t events) {
   // unstall interface if its out of sync
   uint64_t now = time_us_64();
@@ -190,7 +191,7 @@ static void gpio_handle_host(ps2_t *ps2, uint gpio, uint32_t events) {
     ps2->ps2_state = PS2_IDLE;
   }
   ps2->lastAction = now;
-
+  
   if (events & 0x8) { // rising
     if (gpio == ps2->gpio_clk) {
 

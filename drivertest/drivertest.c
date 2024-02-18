@@ -270,10 +270,14 @@ void keypress(uint8_t ch) {
 }
 
 void keyledon(uint8_t ledstate) {
-//   ps2_SendChar(0, 0xff);
-//   ps2_SendChar(0, 0xed);
-//   sleep_ms(100);
-//   ps2_SendChar(0, ledstate);
+  ps2_SendChar(0, 0xff);
+  ps2_SendChar(0, 0xed);
+  sleep_ms(100);
+  ps2_SendChar(0, ledstate);
+}
+
+void keyreset() {
+  ps2_SendChar(0, 0xff);
 }
 
 // 16  v8_miso \   uart0 tx, SPI0RX
@@ -504,6 +508,7 @@ int main()
 #ifdef TEST_PS2_HOST
       case 'h': keyledon(0x00); break;
       case 'H': keyledon(0x07); break;
+      case 'r': keyreset(); break;
 #endif
 
       // IPC

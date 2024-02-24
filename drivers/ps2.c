@@ -18,6 +18,7 @@ enum {
   PS2_SUPRESS,
   PS2_SIGNALTRANSMIT,
   PS2_TRANSMIT,
+  PS2_TRANSMITKBDETECT,
   PS2_RECEIVE,
   PS2_PAUSE
 };
@@ -42,6 +43,7 @@ typedef struct {
   uint8_t fiforxbuf[64];
   uint8_t hostMode;
   uint64_t lastAction;
+  uint8_t ps2_connected;
 } ps2_t;
 
 ps2_t ps2port[NR_PS2];
@@ -88,6 +90,7 @@ static void ps2_KickTx(ps2_t *ps2, uint8_t data) {
   }
 }
 
+// drive clock and receive data from host
 static bool ps2_timer_callback(struct repeating_timer *t) {
   ps2_t *ps2 = (ps2_t *)t->user_data;
 
@@ -184,9 +187,15 @@ void ps2_SetGPIOListener(void (*cb)(uint gpio, uint32_t events)) {
 }
 
 #define IDLE_RESET_PERIOD_US 4000
+static uint32_t stored_gpios = 0;
 static void gpio_handle_host(ps2_t *ps2, uint gpio, uint32_t events) {
   // unstall interface if its out of sync
-  uint64_t now = time_us_64();
+  uint64_t now;
+  uint8_t data;
+
+  data = (stored_gpios >> ps2->gpio_data) & 1;
+  now = time_us_64();
+
   if ((now - ps2->lastAction) > IDLE_RESET_PERIOD_US) {
     ps2->ps2_state = PS2_IDLE;
   }
@@ -197,22 +206,11 @@ static void gpio_handle_host(ps2_t *ps2, uint gpio, uint32_t events) {
 
       // handle falling clock
       if (ps2->ps2_state == PS2_RECEIVE) {
-        ps2->ps2_data = (ps2->ps2_data >> 1) | (gpio_get(ps2->gpio_data) ? 0x200 : 0);
+        ps2->ps2_data = (ps2->ps2_data >> 1) | (/*gpio_get(ps2->gpio_data)*/ data ? 0x200 : 0);
         ps2->ps2_states --;
         if (!ps2->ps2_states) {
           ps2->ps2_state = PS2_IDLE;
           fifo_Put(&ps2->fifo_rx, ps2->ps2_data & 0xff);
-        }
-      } else if (ps2->ps2_state == PS2_TRANSMIT) {
-        gpio_put(ps2->gpio_data, ps2->ps2_data & 1);
-        ps2->ps2_data >>= 1;
-        ps2->ps2_states --;
-
-        if (!ps2->ps2_states) {
-          gpio_put(ps2->gpio_data, 1);
-          gpio_set_dir(ps2->gpio_data, GPIO_IN);
-          ps2->ps2_state = PS2_IDLE;
-          add_repeating_timer_us(40, ps2_timer_callback_host, ps2, &ps2->ps2timer);
         }
       }
     }
@@ -225,9 +223,35 @@ static void gpio_handle_host(ps2_t *ps2, uint gpio, uint32_t events) {
         ps2->ps2_states = 11;
         ps2->ps2_state = PS2_RECEIVE;
         ps2->ps2_data = 0;
-      }
+      } 
+    } else if (gpio == ps2->gpio_clk) {
+      if (ps2->ps2_state == PS2_TRANSMIT) {
+        gpio_put(ps2->gpio_data, ps2->ps2_data & 1);
+        ps2->ps2_data >>= 1;
+        ps2->ps2_states --;
+
+        if (!ps2->ps2_states) {
+          gpio_put(ps2->gpio_data, 1);
+          gpio_set_dir(ps2->gpio_data, GPIO_IN);
+          ps2->ps2_state = PS2_IDLE;
+          add_repeating_timer_us(40, ps2_timer_callback_host, ps2, &ps2->ps2timer);
+        }
+      }      
     }
   }
+}
+
+static bool ps2_timer_callback_keyboard_timeout(struct repeating_timer *t) {
+  ps2_t *ps2 = (ps2_t *)t->user_data;
+
+  // no keyboard found, drive the clock line
+  if (ps2->ps2_state == PS2_TRANSMITKBDETECT) {
+    // printf("!\n");
+    ps2->ps2_state = PS2_TRANSMIT;
+    gpio_set_dir(ps2->gpio_clk, GPIO_OUT);
+    add_repeating_timer_us(40, ps2_timer_callback, ps2, &ps2->ps2timer);
+  }
+  return false;
 }
 
 static void gpio_handle_normal(ps2_t *ps2, uint gpio, uint32_t events) {
@@ -239,13 +263,19 @@ static void gpio_handle_normal(ps2_t *ps2, uint gpio, uint32_t events) {
     }
   }
 
-  if (events & 0x8) { // fal l
+  if (events & 0x8) { // fall
     if (gpio == ps2->gpio_clk) {
       if (ps2->ps2_state == PS2_SIGNALTRANSMIT) {
-        ps2->ps2_state = PS2_TRANSMIT;
-        ps2->ps2_states = 22;
-        gpio_set_dir(ps2->gpio_clk, GPIO_OUT);
-        add_repeating_timer_us(200, ps2_timer_callback, ps2, &ps2->ps2timer);
+        if (ps2->ps2_connected) {
+          ps2->ps2_state = PS2_TRANSMITKBDETECT;
+          ps2->ps2_states = 22;
+        } else {
+          ps2->ps2_state = PS2_IDLE;
+          ps2->ps2_states = 0;
+        }
+
+        // wait for keyboard
+        add_repeating_timer_us(2000, ps2_timer_callback_keyboard_timeout, ps2, &ps2->ps2timer);
 
       } else if (ps2->ps2_state == PS2_SUPRESS) {
         ps2->ps2_state = PS2_IDLE;
@@ -255,10 +285,17 @@ static void gpio_handle_normal(ps2_t *ps2, uint gpio, uint32_t events) {
 }
 
 static void gpio_callback(uint gpio, uint32_t events) {
+  stored_gpios = gpio_get_all();
   if (gpio_cb) gpio_cb(gpio, events);
   for (int i=0; i<NR_PS2; i++) {
     if (gpio == ps2port[i].gpio_clk || gpio == ps2port[i].gpio_data) {
-      if (ps2port[i].hostMode) {
+      // keyboard is detected - drop out
+      if (ps2port[i].ps2_state == PS2_TRANSMITKBDETECT) {
+        ps2port[i].ps2_connected = true;
+        // printf("?\m");
+        ps2port[i].ps2_state = PS2_IDLE;
+        ps2port[i].ps2_states = 0;
+      } else if (ps2port[i].hostMode) {
         gpio_handle_host(&ps2port[i], gpio, events);
       } else {
         gpio_handle_normal(&ps2port[i], gpio, events);

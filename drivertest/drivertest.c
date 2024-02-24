@@ -29,7 +29,7 @@
 #define TEST_PS2_HOST
 // #define TEST_IPC
 // #define TEST_SDCARD_SPI
-// #define TEST_FPGA
+#define TEST_FPGA
 // #define TEST_MATRIX
 // #define TEST_FLASH
 // #define TEST_USERIO
@@ -274,10 +274,16 @@ void keyledon(uint8_t ledstate) {
   ps2_SendChar(0, 0xed);
   sleep_ms(100);
   ps2_SendChar(0, ledstate);
+
+  ps2_SendChar(1, 0xff);
+  ps2_SendChar(1, 0xed);
+  sleep_ms(100);
+  ps2_SendChar(1, ledstate);
 }
 
 void keyreset() {
   ps2_SendChar(0, 0xff);
+  ps2_SendChar(1, 0xff);
 }
 
 // 16  v8_miso \   uart0 tx, SPI0RX
@@ -582,7 +588,9 @@ int main()
 #endif
       case '#':
         ps2_Debug();
+        printf("\n");
         ipc_Debug();
+        printf("\n");
         break;
 
       // FLASH

@@ -121,7 +121,6 @@ uint8_t reboot = 0;
 uint8_t stop_watchdog = 0;
 
 uint8_t mistMode = 0;
-// uint8_t mistMode = 1;
 uint8_t previousMistMode = 0xff;
 
 struct repeating_timer watchdog_timer;
@@ -182,9 +181,6 @@ uint8_t ipc_GotCommand(uint8_t cmd, uint8_t *data, uint8_t len) {
     case IPC_SETMISTER: {
       mistMode = data[0] == MIST_MODE;
       cookie_Set2(data[0]);
-#ifdef USB
-      //HID_setMistMode(mistMode);
-#endif
       break;
     }
 
@@ -239,29 +235,59 @@ static fifo_t *hid_ps2_out[2];
 static fifo_t mist_ps2_out[2];
 static uint8_t mist_ps2_out_buf[2][64];
 
-// ps2 to host in
-int ps2_In(uint8_t ch) {
-  int c;
 
-	if (ch == 0 && (c = fifo_Get(matkbd_in)) >= 0) return c; // from matrix
-#ifdef USB
-	if ((c = fifo_Get(hid_ps2_in[ch])) >= 0) return c; // from usb
-#endif
-	if ((c = fifo_Get(&ps2_rp2m_fifo[ch])) >= 0) return c; // from rp2m in legacy mode
-  if (mistMode) c = ps2_GetChar(ch); // from host mode ps2 in mist mode
-	return c;
+#ifdef PS2_RESET
+
+#define RESET_TIMEOUT 1000000
+
+static uint64_t last_reset[2] = {0, 0};
+static uint8_t reset_count[2] = {0, 0};
+void ps2_Reset(uint8_t ch) {
+  reset_count[ch] ++;
+  if (reset_count[ch] >= 3) {
+    last_reset[ch] = 0;
+  }
+  ps2_OutHost(ch, 0xff);
+  last_reset[ch] = time_us_64();
 }
 
-// ps2 to host in
+void ps2_ResetDetect(uint8_t ch, int c) {
+  if (last_reset[ch] && (c == 0xfa || c == 0xaa)) last_reset[ch] = 0;
+}
+
+void ps2_ResetDetectTick() {
+  if (last_reset[0]) {
+    uint64_t now = time_us_64();
+    if ((now - last_reset[0]) > RESET_TIMEOUT) {
+      ps2_Reset(0);
+    }
+  }
+}
+#endif
+
+// from:
+//   [MiST]   keyboard command from core
+//   [legacy] PS2 host command from core
 int ps2_InHost(uint8_t ch) {
   int c;
 
-	if ((c = fifo_Get(&ps2_rp2m_fifo[ch+2])) >= 0) return c; // from rp2m in mist mode
-  if (!mistMode) c = ps2_GetChar(ch); // from host mode ps2 in mist mode
-	return c;
+  // from rp2m in mist mode
+  if ((c = fifo_Get(&ps2_rp2m_fifo[ch+2])) < 0 && !mistMode) { 
+    c = ps2_GetChar(ch); // from core in legacy mode.
+  }
+
+#if 0
+#ifdef PS2_RESET
+  ps2_ResetDetect(ch, c);
+#endif
+#endif
+
+  return c;
 }
 
-// host to ps2
+// to:
+//          USB HID as PS2 host command
+//   [MiST] PS2 keyboard as command
 void ps2_OutHost(uint8_t ch, uint8_t data) {
 #ifdef USB
 	fifo_Put(hid_ps2_out[ch], data); // to ps2 hid
@@ -271,7 +297,31 @@ void ps2_OutHost(uint8_t ch, uint8_t data) {
   }
 }
 
-// from device to host
+// from:
+//   matrix keyboard
+//   hid usb keyboard
+//   hid usb keyboard connected to rp2m
+//   [MiST only] PS2 keyboard
+int ps2_In(uint8_t ch) {
+  int c;
+
+	if (ch == 0 && (c = fifo_Get(matkbd_in)) >= 0) return c; // from matrix
+#ifdef USB
+	if ((c = fifo_Get(hid_ps2_in[ch])) >= 0) return c; // from usb
+#endif
+	if ((c = fifo_Get(&ps2_rp2m_fifo[ch])) >= 0) return c; // from rp2m in legacy mode
+  if (mistMode) {
+    c = ps2_GetChar(ch); // from host mode ps2 in mist mode
+  }
+#ifdef PS2_RESET
+    ps2_ResetDetect(ch, c);
+#endif
+    return c;
+}
+
+// to:
+//   [legacy] to core as PS2 scancode
+//   [MiST]   to MiST core as PS2 scancode 
 void ps2_Out(uint8_t ch, uint8_t data) {
   if (mistMode) {
 		fifo_Put(&mist_ps2_out[ch], data);
@@ -320,6 +370,7 @@ void kbd_core() {
   ipc_InitSlave();
   kbd_Init();
 
+
   matkbd_in = kbd_GetFifo();
 #ifdef USB
 	hid_ps2_in[0] = HID_getPS2Fifo(0, 0); // from device
@@ -339,17 +390,28 @@ void kbd_core() {
 //      ps2_EnablePortEx(1, true, mistMode);
 //      kbd_SetMistMode(mistMode);
       previousMistMode = mistMode;
+
+#ifdef PS2_RESET
+      // reset keyboard if in host mode
+      reset_count[0] = 0;
+      ps2_Reset(0);
+#endif
     }
 
     kbd_Process();
 
-
+    // detect and reissue reset if needed
+#ifdef PS2_RESET
+    ps2_ResetDetectTick();
+#endif
 		// handle PS2 multiplexing
 		for (int i=0; i<2; i++) {
+			// input keyboard scancodes
 			while ((c = ps2_In(i)) >= 0) {
 				ps2_Out(i, c);
 				printf("In: %02X\n", c);
 			}
+			// input keyboard commands
 			while ((c = ps2_InHost(i)) >= 0) {
 				ps2_OutHost(i, c);
 				printf("Out: %02X\n", c);
@@ -371,7 +433,6 @@ void kbd_core() {
 }
 #endif
 
-//void HID_setMistMode(uint8_t on);
 int main()
 {
 #ifdef DEBUG
@@ -387,14 +448,8 @@ int main()
   }
 #endif
   // default on
-#if PICO_NO_FLASH
   uint8_t ramCookie = cookie_IsPresent2();
   mistMode = ramCookie == MIST_MODE;
-#endif
-
-#ifdef USB
-  //HID_setMistMode(mistMode);
-#endif
 
   sleep_ms(1000); // usb settle delay
 

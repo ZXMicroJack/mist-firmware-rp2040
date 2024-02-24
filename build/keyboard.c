@@ -427,6 +427,10 @@ void ps2_Poll() {
     } else {
       ps2_EnablePortEx(0, false, 0);
       ps2_EnablePortEx(0, true, 1);
+#ifndef MB2
+      // reset 
+      ps2_SendChar(0, 0xff);
+#endif
     }
     curr_legacy_mode = legacy_mode;
   }

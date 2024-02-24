@@ -231,14 +231,21 @@ int mist_init() {
 #endif
       if(!mmc_ok) {
 #ifdef USB_STORAGE
-        if(!GetUSBStorageDevices())
+        if(!GetUSBStorageDevices()) {
+#ifdef BOOT_FLASH_ON_ERROR
+          BootFromFlash();
+          return 0;
+#else
           FatalError(ERROR_FILE_NOT_FOUND);
+#endif
+        }
 
         fat_switch_to_usb();  // redirect file io to usb
 #else
         // no file to boot
 #ifdef BOOT_FLASH_ON_ERROR
-        // BootFromFlash();
+        BootFromFlash();
+        return 0;
 #else
         FatalError(ERROR_FILE_NOT_FOUND);
 #endif

@@ -90,14 +90,6 @@ uint8_t kbd_addr = 0;
 uint8_t kbd_inst = 0;
 uint8_t leds = 0;
 
-#if 0 // TODO not sure this is needed
-static uint8_t mistMode = 1;
-
-void HID_setMistMode(uint8_t on) {
-  mistMode = on;
-}
-#endif
-
 static fifo_t ps2d_fifo[2];
 static uint8_t ps2d_fifo_buf[2][64];
 

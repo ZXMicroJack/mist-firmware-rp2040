@@ -16,7 +16,7 @@
 
 #include "drivers/fpga.h"
 #include "drivers/bitfile.h"
-//#define DEBUG
+// #define DEBUG
 #include "drivers/debug.h"
 
 #define BUFFER_SIZE     16 // PACKETS
@@ -51,6 +51,7 @@ static uint8_t read_next_block(void *ud, uint8_t *data) {
 
   if (br > cf->size) {
     cf->error = 0;
+    f_close(&cf->file);
     return 0;
   }
   cf->size -= br;
@@ -213,7 +214,6 @@ unsigned char ConfigureFpgaEx(const char *bitfile, uint8_t fatal, uint8_t reset)
 #endif
   fpga_claim(false);
 
-  f_close(&cf.file);
 // #endif
 //   sleep_ms(2000);
 

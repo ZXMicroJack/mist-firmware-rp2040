@@ -228,6 +228,10 @@ uint8_t ipc_GotCommand(uint8_t cmd, uint8_t *data, uint8_t len) {
   }
 }
 
+
+// #define PS2_RETRY_RESET
+#define PS2_RESET
+
 #ifdef MATRIX_KEYBOARD
 static fifo_t *matkbd_in;
 static fifo_t *hid_ps2_in[2];
@@ -236,9 +240,9 @@ static fifo_t mist_ps2_out[2];
 static uint8_t mist_ps2_out_buf[2][64];
 
 
-#ifdef PS2_RESET
+#ifdef PS2_RETRY_RESET
 
-#define RESET_TIMEOUT 1000000
+#define RESET_TIMEOUT 2000000
 
 static uint64_t last_reset[2] = {0, 0};
 static uint8_t reset_count[2] = {0, 0};
@@ -277,7 +281,7 @@ int ps2_InHost(uint8_t ch) {
   }
 
 #if 0
-#ifdef PS2_RESET
+#ifdef PS2_RETRY_RESET
   ps2_ResetDetect(ch, c);
 #endif
 #endif
@@ -313,7 +317,7 @@ int ps2_In(uint8_t ch) {
   if (mistMode) {
     c = ps2_GetChar(ch); // from host mode ps2 in mist mode
   }
-#ifdef PS2_RESET
+#ifdef PS2_RETRY_RESET
     ps2_ResetDetect(ch, c);
 #endif
     return c;
@@ -391,17 +395,19 @@ void kbd_core() {
 //      kbd_SetMistMode(mistMode);
       previousMistMode = mistMode;
 
-#ifdef PS2_RESET
+#ifdef PS2_RETRY_RESET
       // reset keyboard if in host mode
       reset_count[0] = 0;
       ps2_Reset(0);
+#elif defined(PS2_RESET)
+      ps2_OutHost(0, 0xff);
 #endif
     }
 
     kbd_Process();
 
     // detect and reissue reset if needed
-#ifdef PS2_RESET
+#ifdef PS2_RETRY_RESET
     ps2_ResetDetectTick();
 #endif
 		// handle PS2 multiplexing

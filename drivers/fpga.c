@@ -73,6 +73,14 @@ int fpga_claim(uint8_t claim) {
   return 0;
 }
 
+void fpga_holdreset() {
+#ifndef ALTERA_FPGA
+  gpio_init(GPIO_FPGA_RESET);
+  gpio_set_dir(GPIO_FPGA_RESET, GPIO_OUT);
+  gpio_put(GPIO_FPGA_RESET, 0);
+#endif
+}
+
 int fpga_reset() {
 #ifdef ALTERA_FPGA
   uint64_t timeout;

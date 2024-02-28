@@ -14,5 +14,6 @@ void fpga_load_bitfile(void *_spi, int lba, char *fn);
 void fpga_boot_from_flash();
 int fpga_detect_error();
 void fpga_detect_init();
+void fpga_holdreset();
 
 #endif

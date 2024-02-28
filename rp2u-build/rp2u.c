@@ -457,7 +457,7 @@ int main()
   uint8_t ramCookie = cookie_IsPresent2();
   mistMode = ramCookie == MIST_MODE;
 
-  sleep_ms(1000); // usb settle delay
+  // sleep_ms(1000); // usb settle delay
 
   cookie_Reset();
   watchdog_enable(4000, true);

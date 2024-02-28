@@ -21,12 +21,21 @@ enum {
   PS2_TRANSMITKBDETECT,
   PS2_RECEIVE,
   PS2_PAUSE
+#ifdef USE_PREAMBLE
+  ,PS2_TRANSMITPREAMBLE
+#endif
 };
 
 #define NR_PS2  2
 #define PS2_GUARDTIME PS2_RX_STATES
 #define PS2_PAUSETIME (1000)
 #define PS2_RX_STATES 23
+
+#ifdef USE_PREAMBLE
+#define PREAMBLE_TIMER_US	100
+#define PREAMBLE_TIME_US	10000
+#define PREAMBLE_PERIODS	(PREAMBLE_TIME_US / PREAMBLE_TIMER_US)
+#endif
 
 typedef struct {
   int ps2_state;
@@ -44,6 +53,9 @@ typedef struct {
   uint8_t hostMode;
   uint64_t lastAction;
   uint8_t ps2_connected;
+#ifdef USE_PREAMBLE
+  uint8_t preamble_count;
+#endif
 } ps2_t;
 
 ps2_t ps2port[NR_PS2];
@@ -61,6 +73,9 @@ static uint8_t parity(uint8_t d) {
   return (d & 1) ^ 1;
 }
 
+#ifdef USE_PREAMBLE
+static bool ps2_timer_callback_preamble(struct repeating_timer *t);
+#endif
 
 static void ps2_KickTx(ps2_t *ps2, uint8_t data) {
   if (!ps2->hostMode) {
@@ -81,12 +96,25 @@ static void ps2_KickTx(ps2_t *ps2, uint8_t data) {
   } else {
     ps2->ps2_data = data | (parity(data) << 8) | 0x200;
     ps2->ps2_states = 11;
+#ifdef USE_PREAMBLE
+    ps2->ps2_state = PS2_TRANSMITPREAMBLE;
+    ps2->preamble_count = PREAMBLE_PERIODS;
+#else
     ps2->ps2_state = PS2_TRANSMIT;
+#endif
 
-    // signal sending
     ps2->lastAction = time_us_64();
+#ifdef USE_PREAMBLE
+    // inhibit keyboard
+    gpio_put(ps2->gpio_clk, 0);
+    gpio_set_dir(ps2->gpio_clk, GPIO_OUT);
+
+    add_repeating_timer_us(PREAMBLE_TIMER_US, ps2_timer_callback_preamble, ps2, &ps2->ps2timer);
+#else
+    // signal sending
     gpio_put(ps2->gpio_data, 0);
     gpio_set_dir(ps2->gpio_data, GPIO_OUT);
+#endif
   }
 }
 
@@ -253,6 +281,28 @@ static bool ps2_timer_callback_keyboard_timeout(struct repeating_timer *t) {
   }
   return false;
 }
+
+#ifdef USE_PREAMBLE
+static bool ps2_timer_callback_preamble(struct repeating_timer *t) {
+  ps2_t *ps2 = (ps2_t *)t->user_data;
+
+  if (ps2->ps2_state != PS2_TRANSMITPREAMBLE) return false;
+
+  gpio_put(ps2->gpio_data, 0);
+  gpio_set_dir(ps2->gpio_data, GPIO_OUT);
+  ps2->lastAction = time_us_64();  
+  ps2->preamble_count--;
+
+  if (!ps2->preamble_count) {
+    gpio_put(ps2->gpio_clk, 1);
+    gpio_set_dir(ps2->gpio_clk, GPIO_IN);
+    ps2->ps2_state = PS2_TRANSMIT;
+    return false;
+  }
+
+  return true;
+}
+#endif
 
 static void gpio_handle_normal(ps2_t *ps2, uint gpio, uint32_t events) {
   if (events & 0x4) { // fall

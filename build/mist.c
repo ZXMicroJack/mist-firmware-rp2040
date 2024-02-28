@@ -433,6 +433,9 @@ static bool watchdog_Callback(struct repeating_timer *t) {
 
 
 int main() {
+  // hold FPGA in reset until we decide what to do with it - (ZXTRES only)
+  fpga_holdreset();
+
   stdio_init_all();
 
 #ifdef MB2

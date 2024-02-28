@@ -1,5 +1,5 @@
-#define VERSION_MAJOR	1
-#define VERSION_MINOR	3
+#define VERSION_MAJOR	2
+#define VERSION_MINOR	2
 #if 0
-setversion 01 03
+setversion 02 02
 #endif

@@ -309,6 +309,10 @@ int mist_init() {
 #if defined(XILINX) && !defined(USBFAKE)
     midi_init();
 #endif
+
+#ifdef PICOSYNTH
+    picosynth_Init();
+#endif
     set_legacy_mode(user_io_core_type() == CORE_TYPE_UNKNOWN ? LEGACY_MODE : MIST_MODE);
     return 0;
 }
@@ -464,6 +468,7 @@ void midi_loop() {
     readable -= thisread;
     
     thisread = midi_get(uartbuff, thisread);
+
 #if 0 // disabled for debug
     printf("MidiIn: ");
     for (int i=0; i<thisread; i++) {
@@ -471,11 +476,13 @@ void midi_loop() {
     }
     printf("\n");
 #endif
+#ifndef PICOSYNTH
     for (int i=0; i<thisread; i++) {
       wtsynth_Sysex(uartbuff[i]);
     }
-    // TODO MJ when midi installed, remove the above
-    // wtsynth_HandleMidiBlock(uartbuff, thisread);
+#else
+    wtsynth_HandleMidiBlock(uartbuff, thisread);
+#endif
   }
 }
 #endif

@@ -16,6 +16,10 @@ set(CMAKE_BUILD_TYPE "Debug")
 # Initialize the SDK
 pico_sdk_init()
 
+# picosynth
+add_library(picosynth STATIC IMPORTED)
+set_target_properties(picosynth PROPERTIES IMPORTED_LOCATION ../picosynth/libpicosynth.a)
+
 include(example_auto_set_url.cmake)
 
 # Build project
@@ -115,6 +119,17 @@ set(mistfirmwareusb_src
   ../mist-firmware/usb/usbdebug.c
   #../mist-firmware/usb/pl2303.c
 )
+
+set(picosynth_src
+  picosynth.c
+  ../drivers/audio_i2s.c )
+
+set(picosynth_lib
+  pico_audio
+  hardware_i2c 
+  picosynth
+)
+
 
 # mist library
 add_library(mistfirmware STATIC ${mistfirmware_src})
@@ -390,6 +405,7 @@ add_executable(mistmb2xilinx
   ${driver_mb2_src}
   ${main_src}
   ${usb_src}
+  ${picosynth_src}
   )
 
 # mistfirmwareusbxilinx
@@ -400,13 +416,16 @@ target_link_libraries(mistmb2xilinx
   hardware_spi 
   hardware_pio 
   hardware_flash 
-  hardware_i2c 
+  hardware_dma
+  ${picosynth_lib}
   # pico_multicore)
   pico_multicore tinyusb_host tinyusb_board)
 target_include_directories(mistmb2xilinx PUBLIC ../usbhost)
+target_include_directories(mistmb2xilinx PUBLIC ../picosynth)
 add_compile_options(-O2)
 pico_generate_pio_header(mistmb2xilinx ../drivers/fpga.pio)
 pico_generate_pio_header(mistmb2xilinx ../drivers/spi.pio)
+pico_generate_pio_header(mistmb2xilinx ../drivers/audio_i2s.pio)
 pico_enable_stdio_usb(mistmb2xilinx 0)
 # pico_enable_stdio_usb(mistmb2xilinx 1)
 pico_enable_stdio_uart(mistmb2xilinx 0)
@@ -427,6 +446,7 @@ target_compile_options(mistmb2xilinx PUBLIC
   "-DUSB_STORAGE"
   "-DUSB_DEBUG_OFF"
   "-DBOOT_FLASH_ON_ERROR"
+  "-DPICOSYNTH"
 )
 
 ####################################################################################

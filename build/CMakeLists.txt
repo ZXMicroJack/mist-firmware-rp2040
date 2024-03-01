@@ -8,7 +8,7 @@ include(pico_extras_import.cmake)
 project(pico_examples C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DIPC_MASTER -DPICO_XOSC_STARTUP_DELAY_MULTIPLIER=64 -DNR_PS2=2 -fsigned-char -DSD_DIRECT_MODE_GPIO=22")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DIPC_MASTER -DPICO_XOSC_STARTUP_DELAY_MULTIPLIER=64 -DNR_PS2=2 -fsigned-char -DSD_DIRECT_MODE_GPIO=22 -DUSE_8BA -DSAMPLE_RATE=22050 -DSAMPLE_LEN=512 -DPICO_AUDIO_I2S_DATA_PIN=4 -DPICO_AUDIO_I2S_CLOCK_PIN_BASE=2 -DVE_STEPS=64 -DLFO_STEPS=64 -DNONAME")
 
 set(PICO_EXAMPLES_PATH ${PROJECT_SOURCE_DIR})
 set(CMAKE_BUILD_TYPE "Debug")
@@ -125,6 +125,7 @@ set(picosynth_src
   ../drivers/audio_i2s.c )
 
 set(picosynth_lib
+  hardware_dma
   pico_audio
   hardware_i2c 
   picosynth
@@ -239,11 +240,21 @@ target_compile_options(mistusbfake PUBLIC
 add_executable(mistxilinx
   ${driver_src}
   ${main_src}
+  ${picosynth_src}
   )
   # ${usb_src}
 
-target_link_libraries(mistxilinx pico_stdlib mistfirmwarexilinx hardware_spi hardware_pio hardware_flash hardware_i2c)
+target_link_libraries(mistxilinx 
+  pico_stdlib 
+  mistfirmwarexilinx 
+  hardware_spi 
+  hardware_pio 
+  hardware_flash 
+  pico_multicore 
+  ${picosynth_lib}
+  hardware_i2c)
 # target_include_directories(mistxilinx PUBLIC ../usbhost)
+target_include_directories(mistxilinx PUBLIC ../picosynth)
 add_compile_options(-O2)
 pico_generate_pio_header(mistxilinx ../drivers/fpga.pio)
 pico_generate_pio_header(mistxilinx ../drivers/spi.pio)
@@ -276,11 +287,23 @@ target_compile_options(mistxilinx PUBLIC
 add_executable(mistusbxilinx
   ${driver_src}
   ${main_src}
+  ${picosynth_src}
   ${usb_src}
   )
 
-target_link_libraries(mistusbxilinx pico_stdlib mistfirmwareusbxilinx hardware_spi hardware_pio hardware_flash hardware_i2c tinyusb_host tinyusb_board)
+target_link_libraries(mistusbxilinx 
+  pico_stdlib 
+  mistfirmwareusbxilinx 
+  hardware_spi 
+  hardware_pio 
+  hardware_flash 
+  hardware_i2c 
+  pico_multicore 
+  ${picosynth_lib}
+  tinyusb_host 
+  tinyusb_board)
 target_include_directories(mistusbxilinx PUBLIC ../usbhost)
+target_include_directories(mistusbxilinx PUBLIC ../picosynth)
 add_compile_options(-O2)
 pico_generate_pio_header(mistusbxilinx ../drivers/fpga.pio)
 pico_generate_pio_header(mistusbxilinx ../drivers/spi.pio)
@@ -305,6 +328,7 @@ target_compile_options(mistusbxilinx PUBLIC
   #"-DDEVKIT_DEBUG"
   "-DUSB_DEBUG_OFF"
   "-DMIST_ROOT=\"/MIST\""
+  "-DPICOSYNTH"
 #  "-DALTERA_FPGA"
 )
 
@@ -347,6 +371,7 @@ target_compile_options(mistusb PUBLIC
 add_executable(mistmb2xilinxram
   ${driver_mb2_src}
   ${main_src}
+  ${picosynth_src}
   # ${usb_src}
   )
 
@@ -365,6 +390,7 @@ target_link_libraries(mistmb2xilinxram
   hardware_spi 
   hardware_pio 
   # hardware_flash 
+  ${picosynth_lib}
   hardware_i2c
   pico_multicore)
   # pico_multicore tinyusb_host tinyusb_board)
@@ -376,6 +402,8 @@ pico_enable_stdio_usb(mistmb2xilinxram 1)
 # USB
 # target_include_directories(mistmb2xilinxram PUBLIC ../usbhost)
 # pico_enable_stdio_usb(mistmb2xilinxram 0)
+
+target_include_directories(mistmb2xilinxram PUBLIC ../picosynth)
 
 pico_enable_stdio_uart(mistmb2xilinxram 0)
 pico_add_extra_outputs(mistmb2xilinxram)
@@ -390,6 +418,7 @@ target_compile_options(mistmb2xilinxram PUBLIC
   "-DIPC_MASTER"
   "-DUSB_DEBUG_OFF"
   "-DBOOT_FLASH_ON_ERROR"
+  "-DPICOSYNTH"
   # "-DMB2USB"
 
   # USB
@@ -416,7 +445,6 @@ target_link_libraries(mistmb2xilinx
   hardware_spi 
   hardware_pio 
   hardware_flash 
-  hardware_dma
   ${picosynth_lib}
   # pico_multicore)
   pico_multicore tinyusb_host tinyusb_board)
@@ -439,11 +467,11 @@ target_compile_options(mistmb2xilinx PUBLIC
   "-DXILINX"
   "-DUSB"
   "-DMIST_USB"
+  "-DUSB_STORAGE"
   "-DMB2"
   "-DBUFFER_FPGA"
   # "-DMB2USB"
   "-DIPC_MASTER"
-  "-DUSB_STORAGE"
   "-DUSB_DEBUG_OFF"
   "-DBOOT_FLASH_ON_ERROR"
   "-DPICOSYNTH"

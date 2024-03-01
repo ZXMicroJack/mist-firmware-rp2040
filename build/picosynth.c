@@ -25,7 +25,7 @@ uint8_t *SOUNDFONT_POS = (uint8_t *)RP2M_SOUNDFONT_POS;
 uint8_t *SOUNDFONT2_POS = (uint8_t *)RP2M_SOUNDFONT2_POS;
 int nrbuffs = 0;
 
-struct audio_buffer_pool *init_audio() {
+static struct audio_buffer_pool *init_audio() {
 
     static audio_format_t audio_format = {
             .format = AUDIO_BUFFER_FORMAT_PCM_S16,
@@ -35,7 +35,7 @@ struct audio_buffer_pool *init_audio() {
 
     static struct audio_buffer_format producer_format = {
             .format = &audio_format,
-            .sample_stride = 2
+            .sample_stride = 4
     };
 
     struct audio_buffer_pool *producer_pool = audio_new_producer_pool(&producer_format, 3,
@@ -61,18 +61,26 @@ struct audio_buffer_pool *init_audio() {
 }
 
 
-void audio_core() {
-  struct audio_buffer_pool *ap = init_audio();
-  
-  for(;;) {
-    // read and process audio data
-    struct audio_buffer *buffer = take_audio_buffer(ap, true);
-    int16_t *samples = (int16_t *) buffer->buffer->bytes;
-    wtsynth_GetAudioPacket(samples);
-    buffer->sample_count = buffer->max_sample_count>>1;
-    give_audio_buffer(ap, buffer);
-    nrbuffs++;
+static void audio_core() {
+ 
+  int ret = wtsynth_Init();
+  if (ret < 0) {
+    LUTS_POS = (uint8_t *)RP2M_LUTS2_POS;
+    ret = wtsynth_Init();
   }
+
+  if (!ret) {
+    struct audio_buffer_pool *ap = init_audio();
+    for(;;) {
+      // read and process audio data
+      struct audio_buffer *buffer = take_audio_buffer(ap, true);
+      int16_t *samples = (int16_t *) buffer->buffer->bytes;
+      wtsynth_GetAudioPacket(samples);
+      buffer->sample_count = buffer->max_sample_count>>1;
+      give_audio_buffer(ap, buffer);
+      nrbuffs++;
+    }
+ }
 }
 
 void wtsynth_ActiveState(uint8_t active) {
@@ -82,14 +90,6 @@ void wtsynth_SetBar(uint8_t chan, uint8_t level) {
 }
 
 void picosynth_Init() {
-  int ret = wtsynth_Init();
-  if (ret < 0) {
-    LUTS_POS = (uint8_t *)RP2M_LUTS2_POS;
-    ret = wtsynth_Init();
-  }
-
-  if (!ret) {
-    multicore_reset_core1();
-    multicore_launch_core1(audio_core);
-  }
+  multicore_reset_core1();
+  multicore_launch_core1(audio_core);
 }

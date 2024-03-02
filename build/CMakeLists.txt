@@ -371,7 +371,7 @@ target_compile_options(mistusb PUBLIC
 add_executable(mistmb2xilinxram
   ${driver_mb2_src}
   ${main_src}
-  ${picosynth_src}
+  # ${picosynth_src}
   # ${usb_src}
   )
 
@@ -390,7 +390,7 @@ target_link_libraries(mistmb2xilinxram
   hardware_spi 
   hardware_pio 
   # hardware_flash 
-  ${picosynth_lib}
+  # ${picosynth_lib}
   hardware_i2c
   pico_multicore)
   # pico_multicore tinyusb_host tinyusb_board)
@@ -418,7 +418,7 @@ target_compile_options(mistmb2xilinxram PUBLIC
   "-DIPC_MASTER"
   "-DUSB_DEBUG_OFF"
   "-DBOOT_FLASH_ON_ERROR"
-  "-DPICOSYNTH"
+  # "-DPICOSYNTH"
   # "-DMB2USB"
 
   # USB

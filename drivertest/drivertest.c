@@ -286,6 +286,10 @@ void keyreset() {
   ps2_SendChar(1, 0xff);
 }
 
+void mouseenable(uint8_t ch) {
+  ps2_SendChar(ch, 0xf4);
+}
+
 // 16  v8_miso \   uart0 tx, SPI0RX
 // 17  w9_mosi |-- sdcard high level / uart0 rx, SPI0CSN
 // 18  w7_sck  |   SPI0SCK
@@ -504,6 +508,8 @@ int main()
       case 'E': printf("enable ps2 1\n"); ps2_EnablePortEx(1, true, true); break;
       case 'd': printf("disable ps2 0\n"); ps2_EnablePortEx(0, false, true); break;
       case 'D': printf("disable ps2 1\n"); ps2_EnablePortEx(1, false, true); break;
+      case 'm': printf("enable mouse 0\n"); mouseenable(0); break;
+      case 'M': printf("enable mouse 1\n"); mouseenable(1); break;
 #endif
 
 #ifdef TEST_PS2

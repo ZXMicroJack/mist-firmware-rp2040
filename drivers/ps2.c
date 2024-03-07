@@ -36,10 +36,9 @@ enum {
 // #define PREAMBLE_TIMER_US	100
 
 #ifdef USE_PREAMBLE
-#define PREAMBLE_TIMER_US	100
-#define PREAMBLE_TIME_US	10000
+#define PREAMBLE_TIMER_US	20
+#define PREAMBLE_TIME_US	1000
 #define PREAMBLE_PERIODS	(PREAMBLE_TIME_US / PREAMBLE_TIMER_US)
-#define PREAMBLE_HALF     (PREAMBLE_PERIODS / 2)
 #endif
 
 typedef struct {
@@ -316,12 +315,12 @@ static bool ps2_timer_callback_preamble(struct repeating_timer *t) {
   ps2->lastAction = time_us_64();  
   ps2->preamble_count--;
 
-  if (ps2->preamble_count == PREAMBLE_HALF) {
+  if (ps2->preamble_count == 1) {
     gpio_put(ps2->gpio_clk, 1);
     gpio_set_dir(ps2->gpio_clk, GPIO_IN);
   }
 
-  if (ps2->preamble_count == (PREAMBLE_HALF-1)) {
+  if (ps2->preamble_count == 0) {
     ps2->ps2_state = PS2_TRANSMIT;
     return false;
   }

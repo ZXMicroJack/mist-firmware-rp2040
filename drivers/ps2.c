@@ -240,6 +240,11 @@ static void gpio_handle_host(ps2_t *ps2, uint gpio, uint32_t events) {
           ps2->ps2_state = PS2_IDLE;
           fifo_Put(&ps2->fifo_rx, ps2->ps2_data & 0xff);
         }
+      } else if (ps2->ps2_state == PS2_TRANSMIT) {
+        if (!ps2->ps2_states) {
+          ps2->ps2_state = PS2_IDLE;
+          add_repeating_timer_us(40, ps2_timer_callback_host, ps2, &ps2->ps2timer);
+        }
       }
     }
   }
@@ -258,11 +263,13 @@ static void gpio_handle_host(ps2_t *ps2, uint gpio, uint32_t events) {
         ps2->ps2_data >>= 1;
         ps2->ps2_states --;
 
+        // if (ps2->ps2_states == 1) {
+        //   gpio_put(ps2->gpio_data, 1);
+        //   gpio_set_dir(ps2->gpio_data, GPIO_IN);
+        // }
         if (!ps2->ps2_states) {
           gpio_put(ps2->gpio_data, 1);
           gpio_set_dir(ps2->gpio_data, GPIO_IN);
-          ps2->ps2_state = PS2_IDLE;
-          add_repeating_timer_us(40, ps2_timer_callback_host, ps2, &ps2->ps2timer);
         }
       }      
     }
@@ -501,6 +508,7 @@ int ps2_GetChar(uint8_t ch) {
 
 #if 1
 #define DEBUG
+#define debug(a) printf a
 #ifdef DEBUG
 void ps2_Debug() {
   debug(("ps2port[0].ps2_states = %d .ps2_state = %d\n", ps2port[0].ps2_states, ps2port[0].ps2_state));

@@ -37,7 +37,7 @@ enum {
 
 #ifdef USE_PREAMBLE
 #define PREAMBLE_TIMER_US	20
-#define PREAMBLE_TIME_US	1000
+#define PREAMBLE_TIME_US	1500
 #define PREAMBLE_PERIODS	(PREAMBLE_TIME_US / PREAMBLE_TIMER_US)
 #endif
 
@@ -79,14 +79,14 @@ static uint8_t parity(uint8_t d) {
 
 #ifdef USE_PREAMBLE
 static bool ps2_timer_callback_preamble(struct repeating_timer *t);
-#endif
-
+#else
 static bool ps2_timer_callback_raise_clock(struct repeating_timer *t) {
   ps2_t *ps2 = (ps2_t *)t->user_data;
   gpio_put(ps2->gpio_clk, 1);
   gpio_set_dir(ps2->gpio_clk, GPIO_IN);
   return true;
 }
+#endif
 
 static void ps2_KickTx(ps2_t *ps2, uint8_t data) {
   if (!ps2->hostMode) {

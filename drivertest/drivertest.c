@@ -406,6 +406,12 @@ int main()
 //   ps2_InitEx(1);
   for(;;) {
     int c = getchar_timeout_us(10);
+
+#if defined(TEST_PS2_HOST) || defined(TEST_PS2)
+    ps2_HealthCheck();
+    ps2_DebugQueues();
+#endif
+
 //     ipc_MasterTick();
 
 //     int c = getchar();

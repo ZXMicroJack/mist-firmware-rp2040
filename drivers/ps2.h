@@ -9,5 +9,7 @@ void ps2_EnablePort(uint8_t ch, bool enabled);
 int ps2_GetChar(uint8_t ch);
 void ps2_InsertChar(uint8_t ch, uint8_t data);
 void ps2_SetGPIOListener(void (*cb)(uint gpio, uint32_t events));
+void ps2_HealthCheck();
+void ps2_DebugQueues();
 
 #endif

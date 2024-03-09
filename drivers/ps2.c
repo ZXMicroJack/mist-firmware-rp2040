@@ -229,20 +229,21 @@ void ps2_SetGPIOListener(void (*cb)(uint gpio, uint32_t events)) {
   gpio_cb = cb;
 }
 
-#define IDLE_RESET_PERIOD_US 4000
+#define IDLE_RESET_PERIOD_US 8000
 static uint32_t stored_gpios = 0;
 static void gpio_handle_host(ps2_t *ps2, uint gpio, uint32_t events) {
   // unstall interface if its out of sync
   uint64_t now;
   uint8_t data;
 
-  data = (stored_gpios >> ps2->gpio_data) & 1;
-  now = time_us_64();
+  ps2->lastAction = time_us_64();
 
-  if ((now - ps2->lastAction) > IDLE_RESET_PERIOD_US) {
-    ps2->ps2_state = PS2_IDLE;
-  }
-  ps2->lastAction = now;
+  data = (stored_gpios >> ps2->gpio_data) & 1;
+  // now = time_us_64();
+
+  // if ((now - ps2->lastAction) > IDLE_RESET_PERIOD_US) {
+  //   ps2->ps2_state = PS2_IDLE;
+  // }
   
   if (events & 0x8) { // rising
     if (gpio == ps2->gpio_clk) {
@@ -312,7 +313,6 @@ static bool ps2_timer_callback_preamble(struct repeating_timer *t) {
 
   gpio_put(ps2->gpio_data, 0);
   gpio_set_dir(ps2->gpio_data, GPIO_OUT);
-  ps2->lastAction = time_us_64();  
   ps2->preamble_count--;
 
   if (ps2->preamble_count == 1) {
@@ -531,19 +531,41 @@ int ps2_GetChar(uint8_t ch) {
   return fifo_Get(&ps2port[ch].fifo_rx);
 }
 
+void ps2_HealthCheck() {
+#if 1
+  uint64_t now = time_us_64();
+  for (int i=0; i<NR_PS2; i++) {
+    if (ps2port[i].hostMode && (now - ps2port[i].lastAction) > IDLE_RESET_PERIOD_US && ps2port[i].ps2_state != PS2_IDLE) {
+      printf("!\n");
+      ps2port[i].ps2_state = PS2_IDLE;
+      gpio_put(ps2port[i].gpio_clk, 1);
+      gpio_set_dir(ps2port[i].gpio_clk, GPIO_IN);
+      gpio_put(ps2port[i].gpio_data, 1);
+      gpio_set_dir(ps2port[i].gpio_data, GPIO_IN);
+    }
+  }
+#endif
+}
+
 #if 1
 #define DEBUG
 #define debug(a) printf a
 #ifdef DEBUG
-void ps2_Debug() {
-  debug(("ps2port[0].ps2_states = %d .ps2_state = %d\n", ps2port[0].ps2_states, ps2port[0].ps2_state));
-  debug(("ps2port[1].ps2_states = %d .ps2_state = %d\n", ps2port[1].ps2_states, ps2port[1].ps2_state));
+void ps2_DebugQueues() {
+  int n = 0;
   for (int i=0; i<NR_PS2; i++) {
     int ch;
     while ((ch = ps2_GetChar(i)) >= 0) {
       printf("[RX%d:%02X]", i, ch);
+      n++;
     }
   }
+  if (n) printf("\n");
+}
+
+void ps2_Debug() {
+  debug(("ps2port[0].ps2_states = %d .ps2_state = %d\n", ps2port[0].ps2_states, ps2port[0].ps2_state));
+  debug(("ps2port[1].ps2_states = %d .ps2_state = %d\n", ps2port[1].ps2_states, ps2port[1].ps2_state));
 }
 #endif
 #endif

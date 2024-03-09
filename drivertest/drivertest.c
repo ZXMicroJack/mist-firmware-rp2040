@@ -270,12 +270,12 @@ void keypress(uint8_t ch) {
 }
 
 void keyledon(uint8_t ledstate) {
-  ps2_SendChar(0, 0xff);
+  // ps2_SendChar(0, 0xff);
   ps2_SendChar(0, 0xed);
   sleep_ms(100);
   ps2_SendChar(0, ledstate);
 
-  ps2_SendChar(1, 0xff);
+  // ps2_SendChar(1, 0xff);
   ps2_SendChar(1, 0xed);
   sleep_ms(100);
   ps2_SendChar(1, ledstate);

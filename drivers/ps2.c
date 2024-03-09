@@ -209,7 +209,22 @@ void ps2_SetGPIOListener(void (*cb)(uint gpio, uint32_t events)) {
   gpio_cb = cb;
 }
 
-#define IDLE_RESET_PERIOD_US 8000
+
+// due to New Years celebrations at pico-sdk, time_us_64 may not be monotonic rising, messing up
+// measurements of timeout severely, since this is a unsigned value.  This just makes sure it cannot
+// go down.....  Again... happy to discuss.
+uint64_t time_us_64_monotonic() {
+  static uint64_t last = 0;
+  uint64_t now = time_us_64();
+  if (now < last) return last;
+  last = now;
+  return now;
+}
+
+
+
+
+#define IDLE_RESET_PERIOD_US 10000
 static uint32_t stored_gpios = 0;
 static void gpio_handle_host(ps2_t *ps2, uint gpio, uint32_t events) {
   // unstall interface if its out of sync
@@ -521,7 +536,7 @@ void ps2_HealthCheck() {
   for (int i=0; i<NR_PS2; i++) {
     if (ps2port[i].hostMode) {
       /* if receive is stalled due to missing a clock transition, then return it to normal */
-      if (ps2port[i].ps2_state == PS2_RECEIVE && (now - ps2port[i].lastAction) > IDLE_RESET_PERIOD_US) {
+      if (ps2port[i].ps2_state == PS2_RECEIVE && (ps2port[i].lastAction < now) && (now - ps2port[i].lastAction) > IDLE_RESET_PERIOD_US) {
         printf("!\n");
         ps2port[i].ps2_state = PS2_IDLE;
         gpio_put(ps2port[i].gpio_clk, 1);

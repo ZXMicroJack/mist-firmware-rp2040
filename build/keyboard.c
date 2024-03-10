@@ -492,6 +492,10 @@ void ps2_Poll() {
     // user_io_kbd(modifier, kbdkeys, UIO_PRIORITY_KEYBOARD, 0, 0);
   }
 
+#ifndef MB2
+  ps2_HealthCheck();
+#endif
+
   // void user_io_kbd(unsigned char m, unsigned char *k, uint8_t priority, unsigned short vid, unsigned short pid);
   // m = modifier, k = buffer of 6 keycodes; priority, vid = 0, pid = 0
 

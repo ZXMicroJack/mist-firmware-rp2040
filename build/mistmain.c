@@ -493,8 +493,20 @@ int mist_loop() {
   midi_loop();
 #endif
 
+#ifndef USBFAKE
+  if (fpga_ResetButtonState()) {
+#ifdef MB2
+    stop_watchdog = 1;
+#endif
+    watchdog_enable(1, 1);
+  }
+#endif
+
     cdc_control_poll();
     storage_control_poll();
+    if (fpga_ResetButtonState()) {
+
+    }
 
     if (check_core_at && time_us_64() > check_core_at) {
       user_io_detect_core_type();

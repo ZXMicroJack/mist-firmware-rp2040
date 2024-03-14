@@ -368,6 +368,8 @@ void sysex_Process() {
   switch(sysex_buffer[0]) {
     case CMD_RESET: {
 #ifdef MB2
+      uint8_t data = 0x55;
+      ipc_Command(IPC_REBOOT, &data, sizeof data);
       stop_watchdog = 1;
 #endif
       watchdog_enable(1, 1);
@@ -504,9 +506,6 @@ int mist_loop() {
 
     cdc_control_poll();
     storage_control_poll();
-    if (fpga_ResetButtonState()) {
-
-    }
 
     if (check_core_at && time_us_64() > check_core_at) {
       user_io_detect_core_type();

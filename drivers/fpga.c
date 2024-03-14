@@ -168,8 +168,8 @@ int fpga_reset() {
   
   gpio_init(GPIO_FPGA_INITB);
   gpio_init(GPIO_FPGA_RESET);
-  reset_button_readable = 1;
 #endif
+  reset_button_readable = 1;
   return 0;
 }
 

@@ -160,6 +160,9 @@ uint8_t ipc_GotCommand(uint8_t cmd, uint8_t *data, uint8_t len) {
       return 'u';
     case IPC_REBOOT:
       reboot = data[0];
+      if (data[0] != 0xaa) {
+	stop_watchdog = 1;
+      }
       return 0x00;
 
     case IPC_BOOTSTRAP:

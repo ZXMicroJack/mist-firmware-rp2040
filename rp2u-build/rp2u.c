@@ -317,6 +317,9 @@ void ps2_MistFlush(uint8_t ch) {
   }
 }
 
+uint64_t mouse_enable_at = 0;
+#define MOUSE_POST_RESET_ENABLE   1000000
+
 void kbd_core() {
 #ifdef USB
   HID_init();
@@ -351,13 +354,22 @@ void kbd_core() {
       jamma_InitEx(mistMode);
       ps2_EnablePortEx(0, false, mistMode);
       ps2_EnablePortEx(0, true, mistMode);
-//      ps2_EnablePortEx(1, false, mistMode);
-//      ps2_EnablePortEx(1, true, mistMode);
-//      kbd_SetMistMode(mistMode);
+      ps2_EnablePortEx(1, false, mistMode);
+      ps2_EnablePortEx(1, true, mistMode);
       previousMistMode = mistMode;
 
       /* reset the ps2 keyboard */
       ps2_OutHost(0, 0xff);
+
+      /* reset the ps2 mouse */
+      ps2_OutHost(1, 0xff);
+      mouse_enable_at = time_us_64() + MOUSE_POST_RESET_ENABLE;
+    }
+
+    /* issue mouse enable */
+    if (mouse_enable_at != 0 && time_us_64() > mouse_enable_at) {
+      ps2_OutHost(1, 0xf4);
+      mouse_enable_at = 0;
     }
 
     kbd_Process();
@@ -367,12 +379,16 @@ void kbd_core() {
 			// input keyboard scancodes
 			while ((c = ps2_In(i)) >= 0) {
 				ps2_Out(i, c);
-				printf("In: %02X\n", c);
+#ifdef DEBUG_PS2
+				printf("In[%d]: %02X\n", i, c);
+#endif
 			}
 			// input keyboard commands
 			while ((c = ps2_InHost(i)) >= 0) {
 				ps2_OutHost(i, c);
-				printf("Out: %02X\n", c);
+#ifdef DEBUG_PS2
+				printf("Out[%d]: %02X\n", i, c);
+#endif
 			}
 			ps2_MistFlush(i);
 		}

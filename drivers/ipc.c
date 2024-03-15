@@ -23,7 +23,7 @@
 #include "fifo.h"
 #include "ipc.h"
 #include "pins.h"
-// #define DEBUG
+#define DEBUG
 #include "debug.h"
 
 /*                                 USB          MIDI
@@ -117,7 +117,7 @@ static void i2c0_irq_handler(i2c_inst_t *i2c, i2c_slave_event_t event) {
         i2c_write_byte_raw(i2c, cnt > 255 ? 255 : cnt);
       } else if (cmdbuff[0] == IPC_READBACKDATA) {
         i2c_write_byte_raw(i2c, fifo_Get(&readback_fifo));
-        if (readback_fifo.c == 0) gpio_put(GPIO_RP2U_BCDATAREADY, 0); // no more data
+        if (fifo_Count(&readback_fifo) == 0) gpio_put(GPIO_RP2U_BCDATAREADY, 0); // no more data
       } else {
         i2c_write_byte_raw(i2c, response);
       }
@@ -323,9 +323,11 @@ void ipc_MasterTick() {
   int wantlen, thisread;
   
   readable = ipc_ReadBackLen();
+  // printf("ipc_ReadBackLen returns %d\n", readable);
 
   while (readable) {
-    if (readable == 0xff) return;
+    printf("ipc_ReadBackLen returns %d\n", readable);
+    // if (readable == 0xff) return;
     if (pos >= 5) {
       pktlen = (pkt[3] << 8) | pkt[4];
       wantlen = pktlen - pos;

@@ -2,7 +2,7 @@
 #define _FIFO_H
 
 typedef struct {
-  uint16_t l, r, m, c;
+  uint16_t l, r, m; //, c;
   uint8_t *buf;
 } fifo_t;
 

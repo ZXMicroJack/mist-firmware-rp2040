@@ -333,6 +333,10 @@ static int isExtended(uint8_t data) {
 
 static uint8_t curr_legacy_mode = DEFAULT_MODE;
 
+static int mousex = 0, mousey = 0, mouseb = 0;
+static int mouseindex = -1;
+static char mousereport[3];
+
 void usb_ToPS2(uint8_t modifier, uint8_t keys[6]) {
   static int firsttime = 1;
   uint32_t newpressed[8] = {0,0,0,0,0,0,0,0};
@@ -424,9 +428,13 @@ void ps2_Poll() {
     if (legacy_mode == LEGACY_MODE) {
       ps2_EnablePortEx(0, false, 1);
       ps2_EnablePortEx(0, true, 0);
+      ps2_EnablePortEx(1, false, 1);
+      ps2_EnablePortEx(1, true, 0);
     } else {
       ps2_EnablePortEx(0, false, 0);
       ps2_EnablePortEx(0, true, 1);
+      ps2_EnablePortEx(1, false, 1);
+      ps2_EnablePortEx(1, true, 0);
 #ifndef MB2
       // reset 
       ps2_SendChar(0, 0xff);
@@ -491,6 +499,42 @@ void ps2_Poll() {
     user_io_kbd(modifier, keys, UIO_PRIORITY_KEYBOARD, 0, 0);
     // user_io_kbd(modifier, kbdkeys, UIO_PRIORITY_KEYBOARD, 0, 0);
   }
+
+  /* scan mouse messages */
+  while ((k = ps2_GetChar(1)) >= 0) {
+    if (mouseindex == -1) {
+      // find bit that is always set
+      if (k & 0x08) {
+        mousereport[0] = k;
+        mouseindex = 1;
+      }
+    } else {
+      mousereport[mouseindex++] = k;
+      /* sync bit lost reset sync */
+      if ((mousereport[0] & 0x08) != 0x08 )
+        mouseindex = -1;
+      else if (mouseindex >= 3) {
+        /* got full report process */
+        mouseindex = 0;
+        debug(("mouse x %d y %d b %x\n", mousereport[1], mousereport[2], mousereport[0] & 7));
+
+        user_io_mouse(0, mousereport[0] & 7, mousereport[1], -mousereport[2], 0);
+
+          // (mousereport[0]&0x10) ? (-mousereport[1]) : mousereport[1],
+          // (mousereport[0]&0x20) ? (-mousereport[2]) : mousereport[2], 0);
+
+      // uint8_t s = (report[0] & 7) + 8;
+      // uint8_t x = report[1] & 0x7f;
+      // uint8_t y = report[2] & 0x7f;
+      // uint8_t z = report[3] & 7;
+
+
+
+      }
+    }
+  }
+
+
 
 #ifndef MB2
   ps2_HealthCheck();

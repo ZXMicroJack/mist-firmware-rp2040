@@ -41,6 +41,9 @@ void hid_app_task() {}
 static fifo_t kbdfifo;
 static uint8_t kbdfifo_buf[64];
 
+static fifo_t mousefifo;
+static uint8_t mousefifo_buf[64];
+
 
 #ifdef CORE2_IPC_TICKS
 static void ipc_core() {
@@ -52,19 +55,20 @@ static void ipc_core() {
 #endif
 
 int ps2_GetChar(uint8_t ch) {
-  return fifo_Get(&kbdfifo);
+  return ch == 0 ? fifo_Get(&kbdfifo) : fifo_Get(&mousefifo);
 }
 
 static uint8_t ipc_started = 0;
 void ps2_Init() {
   fifo_Init(&kbdfifo, kbdfifo_buf, sizeof kbdfifo_buf);
+  fifo_Init(&mousefifo, mousefifo_buf, sizeof mousefifo_buf);
 
   if (!ipc_started) {
 #ifdef CORE2_IPC_TICKS
     multicore_reset_core1();
     multicore_launch_core1(ipc_core);
 #else
-  ipc_InitMaster();
+    ipc_InitMaster();
 #endif
     ipc_started = 1;
   }
@@ -150,13 +154,17 @@ void ipc_HandleData(uint8_t tag, uint8_t *data, uint16_t len) {
       break;
 
     case IPC_PS2_DATA: {
-	debug(("IPC_PS2_DATA\n"));
-	hexdump(data, len);
+      debug(("IPC_PS2_DATA\n"));
+      hexdump(data, len);
 			if (data[0] == 0) {
       	for (int i=1; i<len; i++) {
         	fifo_Put(&kbdfifo, data[i]);
       	}
-			}
+			} else {
+      	for (int i=1; i<len; i++) {
+        	fifo_Put(&mousefifo, data[i]);
+      	}
+      }
 
       break;
     }

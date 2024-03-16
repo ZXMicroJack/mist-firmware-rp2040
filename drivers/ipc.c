@@ -23,7 +23,7 @@
 #include "fifo.h"
 #include "ipc.h"
 #include "pins.h"
-#define DEBUG
+// #define DEBUG
 #include "debug.h"
 
 /*                                 USB          MIDI
@@ -326,7 +326,7 @@ void ipc_MasterTick() {
   // printf("ipc_ReadBackLen returns %d\n", readable);
 
   while (readable) {
-    printf("ipc_ReadBackLen returns %d\n", readable);
+    // printf("ipc_ReadBackLen returns %d\n", readable);
     // if (readable == 0xff) return;
     if (pos >= 5) {
       pktlen = (pkt[3] << 8) | pkt[4];

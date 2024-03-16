@@ -28,6 +28,7 @@
 #include "pins.h"
 // #define printf uprintf
 // #define DEBUG
+// #define DEBUG_PS2
 #include "debug.h"
 
 #ifdef USB
@@ -318,7 +319,66 @@ void ps2_MistFlush(uint8_t ch) {
 }
 
 uint64_t mouse_enable_at = 0;
+uint64_t mouse_last_report = 0;
 #define MOUSE_POST_RESET_ENABLE   1000000
+#define MOUSE_REPORT_PERIOD       25000
+
+int mouseindex = -1;
+int mousereport[3];
+int mousestandoff = 0;
+
+char to_8bit_signed(int n) {
+  return n > 127 ? 127 :
+         n < -128 ? -128 :
+         n;
+}
+
+void mouse_filter(uint8_t k) {
+  if (mousestandoff) {
+    ps2_Out(1, k);
+    mousestandoff --;
+    mouse_last_report = 0;
+    return;
+  }
+
+  /* scan mouse messages */
+  if (mouseindex == -1) {
+    // find bit that is always set
+    if (k & 0x08) {
+      mousereport[0] = k;
+      mouseindex = 1;
+    }
+  } else {
+    if (mouseindex == 0)
+      mousereport[mouseindex++] = k;
+    else
+      mousereport[mouseindex++] += (int8_t)k;
+
+    /* sync bit lost reset sync */
+    if ((mousereport[0] & 0x08) != 0x08 ) {
+      mouseindex = -1;
+      mousereport[0] = mousereport[1] = mousereport[2] = 0;
+    } else if (mouseindex >= 3) {
+      /* got full report process */
+      mouseindex = 0;
+
+      uint64_t now = time_us_64();
+      if (mouse_last_report == 0 || now > (mouse_last_report + MOUSE_REPORT_PERIOD))
+      {
+        ps2_Out(1, mousereport[0]);
+        ps2_Out(1, to_8bit_signed(mousereport[1]));
+        ps2_Out(1, to_8bit_signed(mousereport[2]));
+
+#ifdef DEBUG_MOUSE
+        printf("mouse %02X %02X %02X\n", mousereport[0], mousereport[1], mousereport[2]);
+#endif
+        mousereport[0] = mousereport[1] = mousereport[2] = 0;
+        mouse_last_report = now;
+      }
+    }
+  }
+}
+
 
 void kbd_core() {
 #ifdef USB
@@ -364,12 +424,14 @@ void kbd_core() {
       /* reset the ps2 mouse */
       ps2_OutHost(1, 0xff);
       mouse_enable_at = time_us_64() + MOUSE_POST_RESET_ENABLE;
+      mousestandoff = 10;
     }
 
     /* issue mouse enable */
     if (mouse_enable_at != 0 && time_us_64() > mouse_enable_at) {
       ps2_OutHost(1, 0xf4);
       mouse_enable_at = 0;
+      mousestandoff = 10;
     }
 
     kbd_Process();
@@ -377,12 +439,21 @@ void kbd_core() {
 		// handle PS2 multiplexing
 		for (int i=0; i<2; i++) {
 			// input keyboard scancodes
-			while ((c = ps2_In(i)) >= 0) {
-				ps2_Out(i, c);
+      if (i == 1) { // is a mouse
+        while ((c = ps2_In(i)) >= 0) {
+          mouse_filter(c);
 #ifdef DEBUG_PS2
-				printf("In[%d]: %02X\n", i, c);
+          printf("In[%d]: %02X\n", i, c);
 #endif
-			}
+        }
+      } else {
+        while ((c = ps2_In(i)) >= 0) {
+          ps2_Out(i, c);
+#ifdef DEBUG_PS2
+          printf("In[%d]: %02X\n", i, c);
+#endif
+        }
+      }
 			// input keyboard commands
 			while ((c = ps2_InHost(i)) >= 0) {
 				ps2_OutHost(i, c);

@@ -237,6 +237,8 @@ uint8_t sd_writesector(pio_spi_inst_t *spi, uint32_t lba, uint8_t *data) {
   uint8_t crc[] = {0xff, 0xff, 0xff};
   uint8_t buf[1];
 
+  hexdump(data, 512);
+
   if (!is_sdhc) lba <<= 9;
 
   cmd[2] = (lba >> 24);
@@ -269,7 +271,7 @@ uint8_t sd_writesector(pio_spi_inst_t *spi, uint32_t lba, uint8_t *data) {
   
   sd_select(spi, 1);
 	pio_spi_select(spi, 0);
-  return timeout > 0;
+  return timeout > 0 ? 0 : 1;
 }  
 
 // #define SD_NO_CRC

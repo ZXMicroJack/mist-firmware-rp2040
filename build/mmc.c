@@ -42,7 +42,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "drivers/pio_spi.h"
 #include "drivers/sdcard.h"
-//#define DEBUG
+// #define DEBUG
 #include "drivers/debug.h"
 
 
@@ -73,6 +73,7 @@ unsigned char MMC_Read(unsigned long lba, unsigned char *pReadBuffer) {
 }
 
 unsigned char MMC_Write(unsigned long lba, const unsigned char *pWriteBuffer) {
+  debug(("MMC_Write: lba %d pReadBuffer %x\n", lba, pWriteBuffer));
 #ifndef DEVKIT_DEBUG
   if (!sd_writesector(spi, lba, pWriteBuffer)) {
       return 1;
@@ -98,6 +99,7 @@ unsigned char MMC_ReadMultiple(unsigned long lba, unsigned char *pReadBuffer, un
 }
 
 unsigned char MMC_WriteMultiple(unsigned long lba, const unsigned char *pWriteBuffer, unsigned long nBlockCount) {
+  debug(("MMC_WriteMultiple: lba %d pReadBuffer %x nBlockCount %d\n", lba, pWriteBuffer, nBlockCount));
 #ifndef DEVKIT_DEBUG
     while (nBlockCount--) {
         if (sd_writesector(spi, lba, pWriteBuffer)) {

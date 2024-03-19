@@ -338,6 +338,8 @@ static int mouseindex = -1;
 static char mousereport[3];
 
 void usb_ToPS2(uint8_t modifier, uint8_t keys[6]) {
+  if (curr_legacy_mode != LEGACY_MODE) return;
+
   static int firsttime = 1;
   uint32_t newpressed[8] = {0,0,0,0,0,0,0,0};
 
@@ -396,13 +398,14 @@ void usb_ToPS2(uint8_t modifier, uint8_t keys[6]) {
         ps2[nrps2++] = 0xf0;
         ps2[nrps2++] = mod2ps2[i];
       }
+      m >>= 1;
   }
   prev_modifier = modifier;
 
 #ifdef MB2
   if (nrps2 > 1) ipc_Command(IPC_SENDPS2, ps2, nrps2);
 #else
-  if (nrps2 > 1 && curr_legacy_mode == LEGACY_MODE) {
+  if (nrps2 > 1) {
     for (int i=1; i<nrps2; i++) {
       ps2_SendChar(0, ps2[i]);
     }
@@ -410,17 +413,52 @@ void usb_ToPS2(uint8_t modifier, uint8_t keys[6]) {
 #endif
 }
 
+void usb_ToPS2Mouse(uint8_t report[], uint16_t len) {
+  if (curr_legacy_mode != LEGACY_MODE) return;
+  
+#if 1
+  if (len >= 3) {
+      uint8_t ps2[4];
+      ps2[0] = 1;
+      ps2[1] = (report[0] & 7) | 0x08;
+      // ps2[2] = report[1] & 0x7f; // x
+      // ps2[3] = report[2] & 0x7f; // y
+      ps2[2] = report[1]; // x
+      ps2[3] = -report[2]; // y
+
+#if 0
+      if (report[1] & 0x80) {
+        ps2[1] |= 0x10;
+        ps2[2] |= 0x80;
+      }
+
+      if (report[2] & 0x80) {
+        ps2[2] = 0x80 - ps2[2];
+      } else if (report[2]) {
+        ps2[1] |= 0x20;
+        ps2[2] = ~ps2[2] + 1;
+      }
+#endif
+
+#ifdef MB2
+      ipc_Command(IPC_SENDPS2, ps2, 4);
+#else
+      for (int i=1; i<4; i++) {
+        ps2_SendChar(1, ps2[i]);
+      }
+#endif
+  }
+#endif
+}
+
+
 void ps2_Poll() {
   int k;
-
-  // printf("ps2_Poll\n");
 
   if (firsttime) {
     modifier = 0;
     memset(kbdkeys, 0, sizeof kbdkeys);
     ps2_Init();
-    // ps2_EnablePort(0, true);
-    // ps2_EnablePortEx(0, true, 1);
     firsttime = 0;
   }
 
@@ -436,7 +474,7 @@ void ps2_Poll() {
       ps2_EnablePortEx(1, false, 1);
       ps2_EnablePortEx(1, true, 0);
 #ifndef MB2
-      // reset 
+      // reset
       ps2_SendChar(0, 0xff);
 #endif
     }
@@ -497,7 +535,6 @@ void ps2_Poll() {
     uint8_t keys[6];
     memcpy(keys, kbdkeys, 6);
     user_io_kbd(modifier, keys, UIO_PRIORITY_KEYBOARD, 0, 0);
-    // user_io_kbd(modifier, kbdkeys, UIO_PRIORITY_KEYBOARD, 0, 0);
   }
 
   /* scan mouse messages */
@@ -519,22 +556,9 @@ void ps2_Poll() {
         debug(("mouse x %d y %d b %x\n", mousereport[1], mousereport[2], mousereport[0] & 7));
 
         user_io_mouse(0, mousereport[0] & 7, mousereport[1], -mousereport[2], 0);
-
-          // (mousereport[0]&0x10) ? (-mousereport[1]) : mousereport[1],
-          // (mousereport[0]&0x20) ? (-mousereport[2]) : mousereport[2], 0);
-
-      // uint8_t s = (report[0] & 7) + 8;
-      // uint8_t x = report[1] & 0x7f;
-      // uint8_t y = report[2] & 0x7f;
-      // uint8_t z = report[3] & 7;
-
-
-
       }
     }
   }
-
-
 
 #ifndef MB2
   ps2_HealthCheck();

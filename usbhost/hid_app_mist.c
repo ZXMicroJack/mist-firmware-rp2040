@@ -197,6 +197,7 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance)
 }
 
 void usb_ToPS2(uint8_t modifier, uint8_t keys[6]);
+void usb_ToPS2Mouse(uint8_t report[], uint16_t len);
 
 void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len) {
 #ifdef MIST_USB
@@ -204,8 +205,10 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
   uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
   if ( itf_protocol == HID_ITF_PROTOCOL_KEYBOARD ) {
     usb_ToPS2(report[0], &report[2]);
+  } else if (itf_protocol == HID_ITF_PROTOCOL_MOUSE ) {
+    usb_ToPS2Mouse(report, len);
   }
-
+  
   usb_handle_data(dev_addr, report, len);
 #else
   uprintf("tuh_hid_report_received_cb(dev_addr:%d inst:%d)\n", dev_addr, instance);

@@ -217,8 +217,8 @@ char GetDB9(char index, unsigned char *joy_map) {
     mask >>= 1;
   }
   // printf("GetDB9: returns %02X\n", j);
-  // *joy_map = j;
-  *joy_map = 0;
+  *joy_map = j;
+  // *joy_map = 0;
   return 1;
 }
 

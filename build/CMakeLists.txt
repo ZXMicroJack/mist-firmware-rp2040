@@ -172,8 +172,9 @@ target_compile_options(mistfirmwareusb PUBLIC
 
 ####################################################################################
 # Main build RAM test build for functionality Xilinx ZXTres
-# set(testarch xilinx)
-# set(archdefs "-DXILINX")
+set(testarch xilinx)
+set(archdefs "-DXILINX")
+#set(archdefs   "-DALTERA_FPGA" "-DQMTECH")
 
 ####################################################################################
 # Main build RAM test build for functionality Xilinx ZXTres
@@ -200,8 +201,6 @@ target_compile_options(mistram PUBLIC
   ${archdefs}
   "-DJAMMADB9"
   #"-DTEST_BUILD"
-  "-DALTERA_FPGA"
-  "-DQMTECH"
 )
 
 

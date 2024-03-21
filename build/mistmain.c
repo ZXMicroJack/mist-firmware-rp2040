@@ -125,6 +125,8 @@ void set_legacy_mode(uint8_t mode) {
 #ifdef MB2
     ipc_Command(IPC_SETMISTER, &mode, sizeof mode);
 #else
+    jamma_Kill();
+    jamma_InitEx(mode == MIST_MODE);
 #endif
   }
   legacy_mode = mode;
@@ -305,7 +307,7 @@ int mist_init() {
     }
 
     usb_dev_open();
-    jamma_Init();
+    jamma_InitEx(1);
 #if defined(XILINX) && !defined(USBFAKE)
     midi_init();
 #endif

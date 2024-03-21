@@ -211,13 +211,27 @@ char GetDB9(char index, unsigned char *joy_map) {
   uint8_t ndx = 0;
   char j = 0;
 
+#if 0
+  if (d == 0xff) {
+    // DB9 is not reflected - report no movement
+    *joy_map = 0;
+    return 0;
+  }
+#endif
+
   while (mask) {
     if (d & mask) j |= joylut[ndx];
     ndx++;
     mask >>= 1;
   }
-  // printf("GetDB9: returns %02X\n", j);
-  *joy_map = j;
+
+  static uint8_t lastdb9[2];
+  if (lastdb9[index] != d) {
+    printf("GetDB9: d = %02X returns %02X\n", d, j);
+    lastdb9[index] = d;
+  }
+  
+  *joy_map = d == 0xff ? 0 : j;
   // *joy_map = 0;
   return 1;
 }

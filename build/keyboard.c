@@ -452,6 +452,12 @@ void usb_ToPS2Mouse(uint8_t report[], uint16_t len) {
 }
 
 
+#ifndef MB2
+uint64_t mouse_enable_at = 0;
+int mousestandoff = 0;
+#define MOUSE_POST_RESET_ENABLE   1000000
+#endif
+
 void ps2_Poll() {
   int k;
 
@@ -471,15 +477,26 @@ void ps2_Poll() {
     } else {
       ps2_EnablePortEx(0, false, 0);
       ps2_EnablePortEx(0, true, 1);
-      ps2_EnablePortEx(1, false, 1);
-      ps2_EnablePortEx(1, true, 0);
+      ps2_EnablePortEx(1, false, 0);
+      ps2_EnablePortEx(1, true, 1);
 #ifndef MB2
       // reset
       ps2_SendChar(0, 0xff);
+      ps2_SendChar(1, 0xff);
+      mouse_enable_at = time_us_64() + MOUSE_POST_RESET_ENABLE;
 #endif
     }
     curr_legacy_mode = legacy_mode;
   }
+
+#ifndef MB2
+  /* issue mouse enable */
+  if (mouse_enable_at != 0 && time_us_64() > mouse_enable_at) {
+    ps2_SendChar(1, 0xf4);
+    mouse_enable_at = 0;
+    mousestandoff = 10;
+  }
+#endif
 
 #if defined(MB2) && !defined(CORE2_IPC_TICKS)
   ipc_MasterTick();
@@ -487,7 +504,7 @@ void ps2_Poll() {
 
   int changed = 0;
   while ((k = ps2_GetChar(0)) >= 0) {
-	  debug(("[%02X]\n", k));
+	  debug(("[K%02X]\n", k));
     if (k == 0xe0) {
       ps2ext = 1;
     } else if (k == 0xf0) {
@@ -539,6 +556,11 @@ void ps2_Poll() {
 
   /* scan mouse messages */
   while ((k = ps2_GetChar(1)) >= 0) {
+	  debug(("[M%02X]\n", k));
+#ifndef MB2
+    if (mousestandoff) mousestandoff --;
+    else 
+#endif
     if (mouseindex == -1) {
       // find bit that is always set
       if (k & 0x08) {
@@ -563,7 +585,6 @@ void ps2_Poll() {
 #ifndef MB2
   ps2_HealthCheck();
 #endif
-
   // void user_io_kbd(unsigned char m, unsigned char *k, uint8_t priority, unsigned short vid, unsigned short pid);
   // m = modifier, k = buffer of 6 keycodes; priority, vid = 0, pid = 0
 

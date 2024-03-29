@@ -142,6 +142,8 @@
 #define GPIO_IPCS_I2C_DAT   24
 #endif
 
+#define GPIO_DEBUG_TX_PIN   23
+
 // RP2USB
 
 // Keyboard matrix - row0-8, column 0-5
@@ -220,5 +222,22 @@
 #define RP2M_LUTS2_POS        0x10060000
 #define RP2M_SOUNDFONT_POS    0x100a0000
 #define RP2M_SOUNDFONT2_POS   0x10200000
+
+/* SM / PIO allocation */
+#define FPGA_PIO  pio0
+#define FPGA_SM   0
+
+// NOTE - PIO number not changed on PIO not changed from this, but is here for reference sake
+#define AUDIO_I2S_PIO pio0
+#define AUDIO_I2S_SM 2
+
+#define JAMMA_PIO pio0
+#define JAMMA_SM 2
+
+#define SDCARD_PIO pio0
+#define SDCARD_SM 1
+
+#define DEBUG_PIO pio0
+#define DEBUG_SM 4
 
 #endif

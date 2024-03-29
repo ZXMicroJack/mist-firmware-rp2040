@@ -17,8 +17,8 @@
 uint16_t reload_data = 0x0000;
 uint8_t joydata[2];
 
-static PIO jamma_pio = pio0;
-static unsigned jamma_sm = 2;
+static PIO jamma_pio = JAMMA_PIO;
+static unsigned jamma_sm = JAMMA_SM;
 static uint jamma_offset;
 
 static void gpio_callback(uint gpio, uint32_t events) {

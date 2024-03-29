@@ -46,7 +46,7 @@ static struct audio_buffer_pool *init_audio() {
             .data_pin = PICO_AUDIO_I2S_DATA_PIN,
             .clock_pin_base = PICO_AUDIO_I2S_CLOCK_PIN_BASE,
             .dma_channel = 0,
-            .pio_sm = 2,
+            .pio_sm = AUDIO_I2S_SM,
     };
 
     output_format = audio_i2s_setupx(&audio_format, &config);

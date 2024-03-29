@@ -26,8 +26,8 @@
 
 uint8_t inited = 0;
 
-PIO fpga_pio = pio0;
-unsigned fpga_sm = 0;
+PIO fpga_pio = FPGA_PIO;
+unsigned fpga_sm = FPGA_SM;
 
 static uint8_t reset_button_readable = 1;
 

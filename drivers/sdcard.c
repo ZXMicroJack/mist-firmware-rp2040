@@ -455,8 +455,8 @@ void sd_hw_kill(pio_spi_inst_t *spi) {
 }
 
 static pio_spi_inst_t spi = {
-    .pio = pio0,
-    .sm = 1,
+    .pio = SDCARD_PIO,
+    .sm = SDCARD_SM,
     .cs_pin = PICO_DEFAULT_SPI_CSN_PIN,
     .sck_pin = PICO_DEFAULT_SPI_SCK_PIN,
     .mosi_pin = PICO_DEFAULT_SPI_TX_PIN,

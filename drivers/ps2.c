@@ -308,13 +308,13 @@ void ps2_Init() {
   memset(&ps2port, 0x00, sizeof ps2port);
   ps2port[0].gpio_clk = GPIO_PS2_CLK;
   ps2port[0].gpio_data = GPIO_PS2_DATA;
+  ps2port[0].channel = 0;
   ps2port[1].gpio_clk = GPIO_PS2_CLK2;
   ps2port[1].gpio_data = GPIO_PS2_DATA2;
-  ps2port[0].channel = 0;
   ps2port[1].channel = 1;
   fifo_Init(&ps2port[0].fifo, ps2port[0].fifobuf, sizeof ps2port[0].fifobuf);
-  fifo_Init(&ps2port[1].fifo, ps2port[1].fifobuf, sizeof ps2port[1].fifobuf);
   fifo_Init(&ps2port[0].fifo_rx, ps2port[0].fiforxbuf, sizeof ps2port[0].fiforxbuf);
+  fifo_Init(&ps2port[1].fifo, ps2port[1].fifobuf, sizeof ps2port[1].fifobuf);
   fifo_Init(&ps2port[1].fifo_rx, ps2port[0].fiforxbuf, sizeof ps2port[0].fiforxbuf);
   
   for (int i=0; i<sizeof lut; i++) {
@@ -414,3 +414,114 @@ void ps2_Debug() {
   printf("ps2port[1].ps2_states = %d .ps2_state = %d\n", ps2port[1].ps2_states, ps2port[1].ps2_state);
 }
 #endif
+
+
+/*************************************************************************************************************/
+// NEW PS2 using PIO
+
+#include "hardware/pio.h"
+
+#undef GPIO_PS2_CLK
+#undef GPIO_PS2_DATA
+#define GPIO_PS2_CLK      0
+#define GPIO_PS2_DATA     1
+
+void ps2_InitX();
+void ps2_SendCharX(uint8_t ch, uint8_t data);
+void ps2_EnablePortExX(uint8_t ch, bool enabled, uint8_t hostMode);
+int ps2_GetCharX(uint8_t ch);
+void ps2_InsertCharX(uint8_t ch, uint8_t data);
+void ps2_HealthCheckX();
+void ps2_DebugQueuesX();
+
+#include "ps2.pio.h"
+
+
+// static inline void ps2_program_init(PIO pio, uint sm, uint offset, uint pin_clk)
+// #define PS2HOST_PIO pio0
+// #define PS2HOST_SM 5
+
+// #define GPIO_PS2_CLK      11
+// #define GPIO_PS2_DATA     12
+// #define GPIO_PS2_CLK2     14
+// #define GPIO_PS2_DATA2    15
+
+// #define GPIO_PS2_CLK      11
+// #define GPIO_PS2_DATA     12
+
+static PIO ps2host_pio = PS2HOST_PIO;
+static uint ps2host_sm = PS2HOST_SM;
+
+    // GPIO_PS2_CLK,
+    // GPIO_PS2_CLK2,
+    // GPIO_PS2_DATA,
+    // GPIO_PS2_DATA2
+
+
+void ps2_InitX() {
+  static int started = 0;
+  if (started) return;
+// static inline void ps2_program_init(PIO pio, uint sm, uint offset, uint pin_clk)
+  uint offset = pio_add_program(ps2host_pio, &ps2_program);
+  ps2_program_init(ps2host_pio, ps2host_sm, offset, GPIO_PS2_CLK);
+  started = 1;
+}
+
+void ps2_SendCharX(uint8_t ch, uint8_t data) {
+
+}
+
+void ps2_EnablePortExX(uint8_t ch, bool enabled, uint8_t hostMode) {
+
+}
+
+int ps2_GetCharX(uint8_t ch) {
+  return -1;
+}
+
+void ps2_InsertCharX(uint8_t ch, uint8_t data) {
+
+}
+
+void ps2_HealthCheckX() {
+
+}
+
+//003ffd55
+//0000 0000 0011 1111 1111 1101 0101 0101
+//0000 0000 0011 11   11   10   00   00
+
+static int decode(uint32_t x) {
+  uint32_t val = 0;
+  for (int i=0; i<11; i++) {
+    val = (val>>1) | ((x&2) << 10);
+    x >>= 2;
+  }
+  return (val >> 2) & 0xff;
+}
+
+static int readPs2(PIO pio, uint sm) {
+  int c = -1;
+  if (!pio_sm_is_rx_fifo_empty(ps2host_pio, ps2host_sm)) {
+    uint32_t x = pio_sm_get_blocking(ps2host_pio, ps2host_sm);
+    c = decode(x);
+    printf("fifo: %08x (%08x)\n", x, c);
+  }
+  return c;
+}
+
+void ps2_DebugQueuesX() {
+  int c, r = 0;
+
+  while ((c = readPs2(ps2host_pio, ps2host_sm)) >= 0) {
+    r ++;
+    printf("[%02X]", c);
+  }
+  if (r) printf("\n");
+  // if (!pio_sm_is_rx_fifo_empty(ps2host_pio, ps2host_sm)) {
+  //   uint32_t x = pio_sm_get_blocking(ps2host_pio, ps2host_sm);
+  //   printf("fifo: %08x (%08x)\n", x, decode(x));
+  // }
+  
+//  / pio_sm_put_blocking(pio, sm, (uint32_t)c);
+}

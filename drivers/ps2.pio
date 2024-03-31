@@ -1,0 +1,96 @@
+.program ps2
+.side_set 2 opt
+
+; An 8n1 UART transmit program.
+; OUT pin 0 and side-set pin 0 are both mapped to UART TX pin.
+
+; clk = ^^
+; dat = ^_
+; out -> dat
+; in -> dat
+; side -> clk, dat (pindir)
+; set -> clk data
+
+idleps2:
+  nop side 0b00             ; both as input
+;  jmp pin,idleps2_not_input ; data pin 1, goto next stage 
+  jmp readps2               ; data pin 0, data input pending
+;idleps2_not_input:
+;  jmp !osre,sendps2         ; data ready to send in fifo
+;  jmp idleps2               ; otherwise loop around and check again
+
+sendps2:
+  pull                      ; get data from queue
+  set pins,0b10 side 0b00   ; set data to 1, clock to 0, both output
+
+  set x,15                  ; hold low for 15 cycles of something
+holdclklow:
+  jmp x--,holdclklow
+
+  set pins,0b00 side 0b00   ; set data to 0, clock to 0, both output
+  set pins,0b01 side 0b10   ; set data to 0, clock to 1, clock input  - wait for clocks
+  wait 1 pin 0              ; wait for clock to go low
+                            ; NOTE: if no ps2 connected, then need something external to come to the rescue
+
+  set x,15                  ; 15 bits - need to trim
+bitloop_sendps2:
+  out pins,1                 ; output 1 bit to data pin
+  wait 0 pin 0              ; clock goes low
+  wait 1 pin 0              ; clock goes high
+  jmp x--,bitloop_sendps2
+
+  wait 0 pin 1              ; wait for data acknowledge
+
+  set x,15 side 0b11        ; set to input again
+guardtime_loop:             ; implement guard time
+  jmp x--,guardtime_loop
+  jmp idleps2
+
+readps2:
+  set x,10                  ; bit count = 11 for the moment
+readps2_bitloop:
+  wait 0 pin 0              ; clock goes low
+  wait 1 pin 0              ; clock goes high
+  in pins,2                 ; sample pins
+  jmp x--,readps2_bitloop
+  in null 10
+  push
+  jmp idleps2
+
+% c-sdk {
+#include "hardware/clocks.h"
+
+static inline void ps2_program_init(PIO pio, uint sm, uint offset, uint pin_clk) {
+    // Tell PIO to initially drive output-high on the selected pin, then map PIO
+    // onto that pin with the IO muxes.
+    pio_gpio_init(pio, pin_clk);
+    pio_gpio_init(pio, pin_clk+1); // data
+
+    pio_sm_config c = ps2_program_get_default_config(offset);
+
+    // OUT shifts to right, no autopull
+    sm_config_set_out_shift(&c, false, false, 32);
+
+    // We are mapping both OUT and side-set to the same pin, because sometimes
+    // we need to assert user data onto the pin (with OUT) and sometimes
+    // assert constant values (start/stop bit)
+    sm_config_set_set_pins(&c, pin_clk, 2);
+    sm_config_set_out_pins(&c, pin_clk+1, 1);
+    sm_config_set_in_pins(&c, pin_clk);
+    sm_config_set_sideset_pins(&c, pin_clk);
+    sm_config_set_sideset(&c, 2, true, true); // side set affects pin dir instead
+    sm_config_set_jmp_pin(&c, pin_clk+1);
+
+    // SM transmits 1 bit per 8 execution cycles.
+    float div = (float)clock_get_hz(clk_sys) / (100000);
+    sm_config_set_clkdiv(&c, div);
+
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+}
+
+static inline void ps2_program_putc(PIO pio, uint sm, char c) {
+    pio_sm_put_blocking(pio, sm, (uint32_t)c);
+}
+
+%}

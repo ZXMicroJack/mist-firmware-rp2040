@@ -12,4 +12,12 @@ void ps2_SetGPIOListener(void (*cb)(uint gpio, uint32_t events));
 void ps2_HealthCheck();
 void ps2_DebugQueues();
 
+void ps2_InitX();
+void ps2_SendCharX(uint8_t ch, uint8_t data);
+void ps2_EnablePortExX(uint8_t ch, bool enabled, uint8_t hostMode);
+int ps2_GetCharX(uint8_t ch);
+void ps2_InsertCharX(uint8_t ch, uint8_t data);
+void ps2_HealthCheckX();
+void ps2_DebugQueuesX();
+
 #endif

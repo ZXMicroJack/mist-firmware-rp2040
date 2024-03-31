@@ -237,7 +237,10 @@
 #define SDCARD_PIO pio0
 #define SDCARD_SM 1
 
-#define DEBUG_PIO pio0
-#define DEBUG_SM 4
+#define DEBUG_PIO pio1
+#define DEBUG_SM 1
+
+#define PS2HOST_PIO pio1
+#define PS2HOST_SM 2
 
 #endif

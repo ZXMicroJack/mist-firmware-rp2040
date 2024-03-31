@@ -144,6 +144,7 @@ fifo_t *kbd_GetFifo() {
 }
 
 //TODO MJ remove this
+#if 0
 static void ps2_SendCharX(uint8_t ch, uint8_t data) {
   fifo_Put(&ps2_fifo, data);
 #if 0
@@ -154,8 +155,9 @@ static void ps2_SendCharX(uint8_t ch, uint8_t data) {
   }
 #endif
 }
+#endif
 
-#define ps2_SendChar ps2_SendCharX
+#define ps2_SendChar(c,x) fifo_Put(&ps2_fifo, x);
 
 static void send_key_raw(uint16_t key, uint8_t pressed) {
   if (!key || key == NADA) return;

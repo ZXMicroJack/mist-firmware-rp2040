@@ -25,7 +25,7 @@
 #define DEBUG
 #include "debug.h"
 
-// #define TEST_PS2
+#define TEST_PS2
 // #define TEST_PS2_HOST
 // #define TEST_IPC
 // #define TEST_SDCARD_SPI
@@ -33,7 +33,7 @@
 // #define TEST_MATRIX
 // #define TEST_FLASH
 // #define TEST_USERIO
-#define TEST_JAMMA
+// #define TEST_JAMMA
 
 // KEY ACTION ALLOCATION
 // aAgGHjJlMNoOqQrRTuUVwWxXyYzZ
@@ -390,6 +390,7 @@ int main()
 #endif
 #ifdef TEST_PS2
   ps2_Init();
+  ps2_InitX();
   ps2_EnablePort(0, true);
 #endif
 //   ps2_SendChar(0, 0x7e);
@@ -410,6 +411,7 @@ int main()
 #if defined(TEST_PS2_HOST) || defined(TEST_PS2)
     ps2_HealthCheck();
     ps2_DebugQueues();
+    ps2_DebugQueuesX();
 #endif
 
 //     ipc_MasterTick();

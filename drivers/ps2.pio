@@ -12,36 +12,37 @@
 ; set -> clk data
 
 idleps2:
+  pull ifempty
   nop side 0b00             ; both as input
-;  jmp pin,idleps2_not_input ; data pin 1, goto next stage 
+  jmp pin,idleps2_not_input ; data pin 1, goto next stage 
   jmp readps2               ; data pin 0, data input pending
-;idleps2_not_input:
-;  jmp !osre,sendps2         ; data ready to send in fifo
-;  jmp idleps2               ; otherwise loop around and check again
+idleps2_not_input:
+  jmp !osre,sendps2         ; data ready to send in fifo
+  jmp idleps2               ; otherwise loop around and check again
 
 sendps2:
   pull                      ; get data from queue
-  set pins,0b10 side 0b00   ; set data to 1, clock to 0, both output
+  set pins,0b10 side 0b11   ; set data to 1, clock to 0, both output
 
   set x,15                  ; hold low for 15 cycles of something
 holdclklow:
   jmp x--,holdclklow
 
-  set pins,0b00 side 0b00   ; set data to 0, clock to 0, both output
+  set pins,0b00 side 0b11   ; set data to 0, clock to 0, both output
   set pins,0b01 side 0b10   ; set data to 0, clock to 1, clock input  - wait for clocks
-  wait 1 pin 0              ; wait for clock to go low
+  wait 0 pin 0              ; wait for clock to go low
                             ; NOTE: if no ps2 connected, then need something external to come to the rescue
 
-  set x,15                  ; 15 bits - need to trim
+  set x,15 side 0b00        ; 15 bits - need to trim
 bitloop_sendps2:
-  out pins,1                 ; output 1 bit to data pin
+  out pins,1                ; output 1 bit to data pin
   wait 0 pin 0              ; clock goes low
   wait 1 pin 0              ; clock goes high
   jmp x--,bitloop_sendps2
 
   wait 0 pin 1              ; wait for data acknowledge
 
-  set x,15 side 0b11        ; set to input again
+  set x,15 side 0b00        ; set to input again
 guardtime_loop:             ; implement guard time
   jmp x--,guardtime_loop
   jmp idleps2

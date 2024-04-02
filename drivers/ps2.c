@@ -467,10 +467,6 @@ void ps2_InitX() {
   started = 1;
 }
 
-void ps2_SendCharX(uint8_t ch, uint8_t data) {
-
-}
-
 void ps2_EnablePortExX(uint8_t ch, bool enabled, uint8_t hostMode) {
 
 }
@@ -510,6 +506,10 @@ static int readPs2(PIO pio, uint sm) {
   return c;
 }
 
+static void writePs2(PIO pio, uint sm, uint8_t data) {
+  pio_sm_put_blocking(ps2host_pio, ps2host_sm, (data << 1) | (parity(data) << 9) | 0x400);
+}
+
 void ps2_DebugQueuesX() {
   int c, r = 0;
 
@@ -525,3 +525,8 @@ void ps2_DebugQueuesX() {
   
 //  / pio_sm_put_blocking(pio, sm, (uint32_t)c);
 }
+
+void ps2_SendCharX(uint8_t ch, uint8_t data) {
+  writePs2(ps2host_pio, ps2host_sm, data);
+}
+

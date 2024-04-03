@@ -1,5 +1,5 @@
 .program ps2
-.side_set 2 opt
+;.side_set 2 opt pindirs
 
 ; An 8n1 UART transmit program.
 ; OUT pin 0 and side-set pin 0 are both mapped to UART TX pin.
@@ -12,38 +12,48 @@
 ; set -> clk data
 
 idleps2:
-;  pull ifempty
+  pull noblock
 ;  set pins 0b11             ; output 11
-  nop side 0b00             ; both as input
-;  jmp !osre,sendps2         ; data ready to send in fifo
-  jmp pin,idleps2_not_input ; data pin 1, goto next stage 
+  ;nop side 0b00             ; both as input
+  set pindirs 0b00
+  jmp !osre,next         ; data ready to send in fifo
+  jmp sendps2
+next:
+  jmp pin,idleps2 ; data pin 1, goto next stage 
   jmp readps2               ; data pin 0, data input pending
-idleps2_not_input:
-  jmp idleps2               ; otherwise loop around and check again
+;idleps2_not_input:
+;  jmp idleps2               ; otherwise loop around and check again
 
 sendps2:
 ;  pull                      ; get data from queue
-  set pins,0b10 side 0b11   ; set data to 1, clock to 0, both output
+;  set pins,0b10 side 0b11   ; set data to 1, clock to 0, both output
+  set pins,0b10
+  set pindirs,0b11
 
   set x,15                  ; hold low for 15 cycles of something
 holdclklow:
-  jmp x--,holdclklow
+  jmp x--,holdclklow [31]
 
-  set pins,0b00 side 0b11   ; set data to 0, clock to 0, both output
-  set pins,0b01 side 0b10   ; set data to 0, clock to 1, clock input  - wait for clocks
+
+  set pindirs,0b11
+  set pins,0b00   ; set data to 0, clock to 0, both output
+  set pindirs,0b10
+  set pins,0b01 ; side 0b10   ; set data to 0, clock to 1, clock input  - wait for clocks
   wait 0 pin 0              ; wait for clock to go low
                             ; NOTE: if no ps2 connected, then need something external to come to the rescue
 
-  set x,15 side 0b10        ; 15 bits - need to trim
+  set x,10 ;side 0b10        ; 15 bits - need to trim
 bitloop_sendps2:
   out pins,1                ; output 1 bit to data pin
   wait 0 pin 0              ; clock goes low
   wait 1 pin 0              ; clock goes high
   jmp x--,bitloop_sendps2
 
-;  wait 0 pin 1              ; wait for data acknowledge
+  set pindirs,0b01
+  wait 0 pin 1              ; wait for data acknowledge
 
-  set x,15 side 0b00        ; set to input again
+;  set pindirs,0b11
+  set x,15 ;side 0b00        ; set to input again
 guardtime_loop:             ; implement guard time
   jmp x--,guardtime_loop
   jmp idleps2
@@ -79,8 +89,8 @@ static inline void ps2_program_init(PIO pio, uint sm, uint offset, uint pin_clk)
     sm_config_set_set_pins(&c, pin_clk, 2);
     sm_config_set_out_pins(&c, pin_clk+1, 1);
     sm_config_set_in_pins(&c, pin_clk);
-    sm_config_set_sideset_pins(&c, pin_clk);
-    sm_config_set_sideset(&c, 2, true, true); // side set affects pin dir instead
+//    sm_config_set_sideset_pins(&c, pin_clk);
+//    sm_config_set_sideset(&c, 2, true, true); // side set affects pin dir instead
     sm_config_set_jmp_pin(&c, pin_clk+1);
 
     // SM transmits 1 bit per 8 execution cycles.

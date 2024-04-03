@@ -549,7 +549,14 @@ void ps2_DebugQueuesX() {
     r ++;
     printf("[%02X]", c);
   }
-  if (r) printf("\n");
+  if (r) {
+    printf("\n");
+    printf("TXe %d TXf %d RXe %d RXf %d\n", 
+    pio_sm_is_tx_fifo_empty(ps2host_pio, ps2host_sm),
+    pio_sm_is_tx_fifo_full(ps2host_pio, ps2host_sm),
+    pio_sm_is_rx_fifo_empty(ps2host_pio, ps2host_sm),
+    pio_sm_is_rx_fifo_full(ps2host_pio, ps2host_sm));
+  }
   // if (!pio_sm_is_rx_fifo_empty(ps2host_pio, ps2host_sm)) {
   //   uint32_t x = pio_sm_get_blocking(ps2host_pio, ps2host_sm);
   //   printf("fifo: %08x (%08x)\n", x, decode(x));

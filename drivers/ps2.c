@@ -535,7 +535,8 @@ static int readPs2(PIO pio, uint sm) {
 
 static void writePs2(PIO pio, uint sm, uint8_t data) {
   if (!pio_sm_is_tx_fifo_full(ps2host_pio, ps2host_sm)) {
-    pio_sm_put_blocking(ps2host_pio, ps2host_sm, (data << 1) | (parity(data) << 9) | 0x400);
+    // pio_sm_put_blocking(ps2host_pio, ps2host_sm, (data << 1) | (parity(data) << 9) | 0x400);
+    pio_sm_put_blocking(ps2host_pio, ps2host_sm, data | (parity(data) << 8) | 0x200);
     printf("Sent data %02X\n", data);
   } else {
     printf("Couldn't send data %02X\n", data);

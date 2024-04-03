@@ -390,7 +390,7 @@ int main()
 #endif
 #ifdef TEST_PS2
   ps2_Init();
-  ps2_InitX();
+  // ps2_InitX();
   ps2_EnablePort(0, true);
 #endif
 //   ps2_SendChar(0, 0x7e);
@@ -525,7 +525,7 @@ int main()
       case 'H': keypress(0x58); break;
 #endif
 
-      case 'r': ps2_SendCharX(0, 0xff); break;
+      // case 'r': ps2_SendCharX(0, 0xff); break;
 
 #ifdef TEST_PS2_HOST
       case 'h': keyledon(0x00); break;

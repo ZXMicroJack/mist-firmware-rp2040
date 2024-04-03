@@ -13,6 +13,8 @@
 // #define DEBUG
 #include "debug.h"
 
+#if 0
+
 enum {
   PS2_IDLE,
   PS2_SUPRESS,
@@ -414,17 +416,29 @@ void ps2_Debug() {
   printf("ps2port[1].ps2_states = %d .ps2_state = %d\n", ps2port[1].ps2_states, ps2port[1].ps2_state);
 }
 #endif
-
+#endif
 
 /*************************************************************************************************************/
 // NEW PS2 using PIO
 
 #include "hardware/pio.h"
 
-#undef GPIO_PS2_CLK
-#undef GPIO_PS2_DATA
-#define GPIO_PS2_CLK      0
-#define GPIO_PS2_DATA     1
+// #undef GPIO_PS2_CLK
+// #undef GPIO_PS2_DATA
+// #define GPIO_PS2_CLK      0
+// #define GPIO_PS2_DATA     1
+
+void ps2_DebugQueuesX() {
+}
+
+#define ps2_InitX ps2_Init
+#define ps2_SendCharX ps2_SendChar
+#define ps2_EnablePortExX ps2_EnablePortEx
+#define ps2_GetCharX ps2_GetChar
+#define ps2_InsertCharX ps2_InsertChar
+#define ps2_HealthCheckX ps2_HealthCheck
+#define ps2_DebugQueuesX ps2_DebugQueues
+
 
 void ps2_InitX();
 void ps2_SendCharX(uint8_t ch, uint8_t data);
@@ -487,6 +501,19 @@ void ps2_HealthCheckX() {
 //0000 0000 0011 1111 1111 1101 0101 0101
 //0000 0000 0011 11   11   10   00   00
 
+/* calculate odd parity */
+static uint8_t parity(uint8_t d) {
+#if 0 /* keeping this here as a reminder that no-one is immune to stupidity */
+//   d ^= d << 4;
+//   d ^= d << 2;
+//   d ^= d << 1;
+#endif
+  d ^= d >> 4;
+  d ^= d >> 2;
+  d ^= d >> 1;
+  return (d & 1) ^ 1;
+}
+
 static int decode(uint32_t x) {
   uint32_t val = 0;
   for (int i=0; i<11; i++) {
@@ -535,3 +562,8 @@ void ps2_SendCharX(uint8_t ch, uint8_t data) {
   writePs2(ps2host_pio, ps2host_sm, data);
 }
 
+void ps2_EnablePort(uint8_t ch, bool enabled) {
+  ps2_EnablePortEx(ch, enabled, 0);
+}
+
+void ps2_Debug() {}

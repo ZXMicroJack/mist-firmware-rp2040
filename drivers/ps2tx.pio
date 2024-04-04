@@ -1,0 +1,78 @@
+.program ps2tx
+.side_set 1 opt
+
+; An 8n1 UART transmit program.
+; OUT pin 0 and side-set pin 0 are both mapped to UART TX pin.
+
+; clk = ^^
+; dat = ^_
+; out -> dat
+; in -> dat
+; side -> clk, dat (pindir)
+; set -> clk data
+
+idleps2:
+  set pindirs 0b00
+
+  mov x, status             ; tx fifo < 1
+  jmp !x, sendps2           ; if data is in fifo, then send
+
+;  jmp pin,idleps2           ; data pin 1, goto next stage 
+;  jmp readps2               ; data pin 0, data input pending
+  jmp idleps2
+
+sendps2:
+  pull noblock               ; pull data from tx queue
+  set x,10
+  set pins,0b11
+  set pindirs,0b11 side 1
+bitloop_sendps2:
+  out pins,1 side 0 [7];
+  nop side 1 [7];
+  jmp x-- bitloop_sendps2;
+
+  set pindirs,0b00
+
+  out null,21               ; empty output register
+
+  set x,15
+guardloop:
+  jmp x--, guardloop [7]
+
+  jmp idleps2
+
+readps2:
+  set x,10                  ; bit count = 11 for the moment
+readps2_bitloop:
+  in pins,1 side 0 [7]                 ; sample pins
+  nop side 1 [7];             ; clock goes high
+  jmp x--,readps2_bitloop
+  in null 21
+  push
+  jmp idleps2
+
+% c-sdk {
+#include "hardware/clocks.h"
+
+static inline void ps2tx_program_init(PIO pio, uint sm, uint offset, uint pin_clk) {
+    pio_gpio_init(pio, pin_clk);
+    pio_gpio_init(pio, pin_clk+1); // data
+
+    pio_sm_config c = ps2tx_program_get_default_config(offset);
+
+    sm_config_set_set_pins(&c, pin_clk, 2);
+    sm_config_set_out_pins(&c, pin_clk+1, 1);
+    sm_config_set_in_pins(&c, pin_clk);
+    sm_config_set_sideset_pins(&c, pin_clk);
+    sm_config_set_jmp_pin(&c, pin_clk+1);
+
+    sm_config_set_mov_status(&c, STATUS_TX_LESSTHAN, 1);
+
+    float div = (float)clock_get_hz(clk_sys) / (200000);
+    sm_config_set_clkdiv(&c, div);
+
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+}
+
+%}

@@ -449,7 +449,7 @@ void ps2_HealthCheckX();
 void ps2_DebugQueuesX();
 
 #include "ps2.pio.h"
-
+#include "ps2tx.pio.h"
 
 // static inline void ps2_program_init(PIO pio, uint sm, uint offset, uint pin_clk)
 // #define PS2HOST_PIO pio0
@@ -465,37 +465,15 @@ void ps2_DebugQueuesX();
 
 static PIO ps2host_pio = PS2HOST_PIO;
 static uint ps2host_sm = PS2HOST_SM;
+static int hostMode = -1;
+static uint ps2_offset;
+
 
     // GPIO_PS2_CLK,
     // GPIO_PS2_CLK2,
     // GPIO_PS2_DATA,
     // GPIO_PS2_DATA2
 
-
-void ps2_InitX() {
-  static int started = 0;
-  if (started) return;
-// static inline void ps2_program_init(PIO pio, uint sm, uint offset, uint pin_clk)
-  uint offset = pio_add_program(ps2host_pio, &ps2_program);
-  ps2_program_init(ps2host_pio, ps2host_sm, offset, GPIO_PS2_CLK);
-  started = 1;
-}
-
-void ps2_EnablePortExX(uint8_t ch, bool enabled, uint8_t hostMode) {
-
-}
-
-int ps2_GetCharX(uint8_t ch) {
-  return -1;
-}
-
-void ps2_InsertCharX(uint8_t ch, uint8_t data) {
-
-}
-
-void ps2_HealthCheckX() {
-
-}
 
 //003ffd55
 //0000 0000 0011 1111 1111 1101 0101 0101
@@ -523,6 +501,7 @@ static int decode(uint32_t x) {
   return (val >> 2) & 0xff;
 }
 
+
 static int readPs2(PIO pio, uint sm) {
   int c = -1;
   if (!pio_sm_is_rx_fifo_empty(ps2host_pio, ps2host_sm)) {
@@ -535,12 +514,57 @@ static int readPs2(PIO pio, uint sm) {
 
 static void writePs2(PIO pio, uint sm, uint8_t data) {
   if (!pio_sm_is_tx_fifo_full(ps2host_pio, ps2host_sm)) {
-    // pio_sm_put_blocking(ps2host_pio, ps2host_sm, (data << 1) | (parity(data) << 9) | 0x400);
-    pio_sm_put_blocking(ps2host_pio, ps2host_sm, data | (parity(data) << 8) | 0x200);
+    if (hostMode) {
+      pio_sm_put_blocking(ps2host_pio, ps2host_sm, data | (parity(data) << 8) | 0x200);
+    } else {
+      pio_sm_put_blocking(ps2host_pio, ps2host_sm, (data << 1) | (parity(data) << 9) | 0x400);
+    }
     printf("Sent data %02X\n", data);
   } else {
     printf("Couldn't send data %02X\n", data);
   }
+}
+
+void ps2_InitX() {
+  static int started = 0;
+  if (started) return;
+
+  started = 1;
+}
+
+void ps2_EnablePortExX(uint8_t ch, bool enabled, uint8_t _hostMode) {
+  if (enabled) {
+    if (_hostMode != hostMode) {
+      if (_hostMode ) {
+        ps2_offset = pio_add_program(ps2host_pio, &ps2_program);
+        ps2_program_init(ps2host_pio, ps2host_sm, ps2_offset, GPIO_PS2_CLK);
+      } else {
+        ps2_offset = pio_add_program(ps2host_pio, &ps2tx_program);
+        ps2tx_program_init(ps2host_pio, ps2host_sm, ps2_offset, GPIO_PS2_CLK);
+      }
+      hostMode = _hostMode;
+    }
+  } else {
+    pio_sm_set_enabled(ps2host_pio, ps2host_sm, false);
+    pio_remove_program(ps2host_pio, hostMode ? &ps2_program : &ps2tx_program, ps2_offset);
+    hostMode = -1;
+  }
+}
+
+int ps2_GetCharX(uint8_t ch) {
+  return -1;
+}
+
+void ps2_InsertCharX(uint8_t ch, uint8_t data) {
+
+}
+
+void ps2_SendCharX(uint8_t ch, uint8_t data) {
+  writePs2(ps2host_pio, ps2host_sm, data);
+}
+
+void ps2_HealthCheckX() {
+
 }
 
 void ps2_DebugQueuesX() {
@@ -564,10 +588,6 @@ void ps2_DebugQueuesX() {
   // }
   
 //  / pio_sm_put_blocking(pio, sm, (uint32_t)c);
-}
-
-void ps2_SendCharX(uint8_t ch, uint8_t data) {
-  writePs2(ps2host_pio, ps2host_sm, data);
 }
 
 void ps2_EnablePort(uint8_t ch, bool enabled) {

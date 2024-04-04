@@ -525,7 +525,13 @@ int main()
       case 'H': keypress(0x58); break;
 #endif
 
-      case 'r': ps2_SendChar(0, 0xff); break;
+      // case 'r': ps2_SendChar(0, 0xff); break;
+      case 'r': 
+        ps2_SendChar(0, 0x76);
+        sleep_ms(100);
+        ps2_SendChar(0, 0xf0);
+        ps2_SendChar(0, 0x76);
+        break;
 
 #ifdef TEST_PS2_HOST
       case 'h': keyledon(0x00); break;

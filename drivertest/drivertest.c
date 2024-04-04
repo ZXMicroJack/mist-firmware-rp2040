@@ -532,6 +532,19 @@ int main()
         ps2_SendChar(0, 0xf0);
         ps2_SendChar(0, 0x76);
         break;
+        
+      case 'R': 
+        ps2_SendChar(0, 0x14);
+        ps2_SendChar(0, 0x11);
+        ps2_SendChar(0, 0x66);
+        sleep_ms(100);
+        ps2_SendChar(0, 0xf0);
+        ps2_SendChar(0, 0x14);
+        ps2_SendChar(0, 0xf0);
+        ps2_SendChar(0, 0x11);
+        ps2_SendChar(0, 0xf0);
+        ps2_SendChar(0, 0x66);
+        break;
 
 #ifdef TEST_PS2_HOST
       case 'h': keyledon(0x00); break;

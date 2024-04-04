@@ -14,25 +14,17 @@
 idleps2:
   set pindirs 0b00
 
-  mov x, status               ; tx fifo < 1
-  jmp !x, sendps2
+  mov x, status             ; tx fifo < 1
+  jmp !x, sendps2           ; if data is in fifo, then send
 
-;  pull noblock
-;  set pins 0b11             ; output 11
-  ;nop side 0b00             ; both as input
-;  jmp !osre,sendps2         ; data ready to send in fifo
-  jmp pin,idleps2 ; data pin 1, goto next stage 
+  jmp pin,idleps2           ; data pin 1, goto next stage 
   jmp readps2               ; data pin 0, data input pending
-;idleps2_not_input:
-;  jmp idleps2               ; otherwise loop around and check again
 
 sendps2:
-;  pull                      ; get data from queue
-;  set pins,0b10 side 0b11   ; set data to 1, clock to 0, both output
-;  set pins,0b10
   pull noblock               ; pull data from tx queue
   set pindirs,0b11 side 0b10
 
+  ; hold clk low for a long time
   set y,7
 holdclklow:
   set x,15                  ; hold low for 15 cycles of something
@@ -53,16 +45,11 @@ bitloop_sendps2:
   jmp x--,bitloop_sendps2
   out null,22               ; empty output register
 
-  set pindirs,0b00
-;  wait 0 pin 1              ; wait for data acknowledge
+  set pindirs,0b00          ; set to input and clock in data ack
   wait 0 pin 0              ; clock goes low
   wait 1 pin 0              ; clock goes high
 
-;  set pindirs,0b11
-;  set x,15 ;side 0b00        ; set to input again
-;guardtime_loop:             ; implement guard time
-;  jmp x--,guardtime_loop
-  jmp idleps2
+  jmp idleps2               ; back to idle
 
 readps2:
   set x,10                  ; bit count = 11 for the moment
@@ -79,38 +66,24 @@ readps2_bitloop:
 #include "hardware/clocks.h"
 
 static inline void ps2_program_init(PIO pio, uint sm, uint offset, uint pin_clk) {
-    // Tell PIO to initially drive output-high on the selected pin, then map PIO
-    // onto that pin with the IO muxes.
     pio_gpio_init(pio, pin_clk);
     pio_gpio_init(pio, pin_clk+1); // data
 
     pio_sm_config c = ps2_program_get_default_config(offset);
 
-    // OUT shifts to right, no autopull
-    //sm_config_set_out_shift(&c, false, false, 32);
-
-    // We are mapping both OUT and side-set to the same pin, because sometimes
-    // we need to assert user data onto the pin (with OUT) and sometimes
-    // assert constant values (start/stop bit)
     sm_config_set_set_pins(&c, pin_clk, 2);
     sm_config_set_out_pins(&c, pin_clk+1, 1);
     sm_config_set_in_pins(&c, pin_clk);
     sm_config_set_sideset_pins(&c, pin_clk);
-    //sm_config_set_sideset(&c, 2, true, true); // side set affects pin dir instead
     sm_config_set_jmp_pin(&c, pin_clk+1);
 
     sm_config_set_mov_status(&c, STATUS_TX_LESSTHAN, 1);
 
-    // SM transmits 1 bit per 8 execution cycles.
     float div = (float)clock_get_hz(clk_sys) / (1000000);
     sm_config_set_clkdiv(&c, div);
 
     pio_sm_init(pio, sm, offset, &c);
     pio_sm_set_enabled(pio, sm, true);
-}
-
-static inline void ps2_program_putc(PIO pio, uint sm, char c) {
-    pio_sm_put_blocking(pio, sm, (uint32_t)c);
 }
 
 %}

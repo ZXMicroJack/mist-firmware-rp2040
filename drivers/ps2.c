@@ -13,8 +13,9 @@
 // #define DEBUG
 #include "debug.h"
 
-#if 0
+// #define OLDPS2
 
+#ifdef OLDPS2
 enum {
   PS2_IDLE,
   PS2_SUPRESS,
@@ -416,68 +417,32 @@ void ps2_Debug() {
   printf("ps2port[1].ps2_states = %d .ps2_state = %d\n", ps2port[1].ps2_states, ps2port[1].ps2_state);
 }
 #endif
-#endif
+#else
 
 /*************************************************************************************************************/
 // NEW PS2 using PIO
 
 #include "hardware/pio.h"
 
-// #undef GPIO_PS2_CLK
-// #undef GPIO_PS2_DATA
-// #define GPIO_PS2_CLK      0
-// #define GPIO_PS2_DATA     1
-
-void ps2_DebugQueuesX() {
-}
-
-#define ps2_InitX ps2_Init
-#define ps2_SendCharX ps2_SendChar
-#define ps2_EnablePortExX ps2_EnablePortEx
-#define ps2_GetCharX ps2_GetChar
-#define ps2_InsertCharX ps2_InsertChar
-#define ps2_HealthCheckX ps2_HealthCheck
-#define ps2_DebugQueuesX ps2_DebugQueues
-
-
-void ps2_InitX();
-void ps2_SendCharX(uint8_t ch, uint8_t data);
-void ps2_EnablePortExX(uint8_t ch, bool enabled, uint8_t hostMode);
-int ps2_GetCharX(uint8_t ch);
-void ps2_InsertCharX(uint8_t ch, uint8_t data);
-void ps2_HealthCheckX();
-void ps2_DebugQueuesX();
-
 #include "ps2.pio.h"
 #include "ps2tx.pio.h"
 
-// static inline void ps2_program_init(PIO pio, uint sm, uint offset, uint pin_clk)
-// #define PS2HOST_PIO pio0
-// #define PS2HOST_SM 5
-
-// #define GPIO_PS2_CLK      11
-// #define GPIO_PS2_DATA     12
-// #define GPIO_PS2_CLK2     14
-// #define GPIO_PS2_DATA2    15
-
-// #define GPIO_PS2_CLK      11
-// #define GPIO_PS2_DATA     12
-
 static PIO ps2host_pio = PS2HOST_PIO;
-static uint ps2host_sm = PS2HOST_SM;
-static int hostMode = -1;
-static uint ps2_offset;
+// static int hostMode = -1;
 
+#define NR_PS2  2
 
-    // GPIO_PS2_CLK,
-    // GPIO_PS2_CLK2,
-    // GPIO_PS2_DATA,
-    // GPIO_PS2_DATA2
+typedef struct {
+  fifo_t fifo;
+  uint8_t fifobuf[64];
+  fifo_t fifo_rx;
+  uint8_t fiforxbuf[64];
+  int hostMode;
+  uint sm;
+  uint offset;
+} ps2_t;
 
-
-//003ffd55
-//0000 0000 0011 1111 1111 1101 0101 0101
-//0000 0000 0011 11   11   10   00   00
+ps2_t ps2port[NR_PS2];
 
 /* calculate odd parity */
 static uint8_t parity(uint8_t d) {
@@ -504,20 +469,20 @@ static int decode(uint32_t x) {
 
 static int readPs2(PIO pio, uint sm) {
   int c = -1;
-  if (!pio_sm_is_rx_fifo_empty(ps2host_pio, ps2host_sm)) {
-    uint32_t x = pio_sm_get_blocking(ps2host_pio, ps2host_sm);
+  if (!pio_sm_is_rx_fifo_empty(pio, sm)) {
+    uint32_t x = pio_sm_get_blocking(pio, sm);
     c = decode(x);
     printf("fifo: %08x (%08x)\n", x, c);
   }
   return c;
 }
 
-static void writePs2(PIO pio, uint sm, uint8_t data) {
-  if (!pio_sm_is_tx_fifo_full(ps2host_pio, ps2host_sm)) {
+static void writePs2(PIO pio, uint sm, uint8_t data, int hostMode) {
+  if (!pio_sm_is_tx_fifo_full(pio, sm)) {
     if (hostMode) {
-      pio_sm_put_blocking(ps2host_pio, ps2host_sm, data | (parity(data) << 8) | 0x200);
+      pio_sm_put_blocking(pio, sm, data | (parity(data) << 8) | 0x200);
     } else {
-      pio_sm_put_blocking(ps2host_pio, ps2host_sm, (data << 1) | (parity(data) << 9) | 0x400);
+      pio_sm_put_blocking(pio, sm, (data << 1) | (parity(data) << 9) | 0x400);
     }
     printf("Sent data %02X\n", data);
   } else {
@@ -525,69 +490,112 @@ static void writePs2(PIO pio, uint sm, uint8_t data) {
   }
 }
 
-void ps2_InitX() {
+#ifdef PIOINTS
+static int nrints = 0;
+static void pio_callback() {
+  uint32_t _data;
+  pio_interrupt_clear (ps2host_pio, 0);
+
+  int c;
+  int ch = 0;
+
+  while ((c = readPs2(ps2host_pio, ps2host_sm)) >= 0) {
+    fifo_Put(&ps2port[ch].fifo_rx, c);
+  }
+
+  while (!pio_sm_is_tx_fifo_full(ps2host_pio, ps2host_sm) && (c = fifo_Get(&ps2port[ch].fifo)) >= 0) {
+    writePs2(ps2host_pio, ps2host_sm, c);
+  }
+
+  nrints++;
+}
+
+#define PS2_PIO_IRQ   PIO0_IRQ_1
+#endif
+
+void ps2_Init() {
   static int started = 0;
   if (started) return;
 
+  fifo_Init(&ps2port[0].fifo, ps2port[0].fifobuf, sizeof ps2port[0].fifobuf);
+  fifo_Init(&ps2port[0].fifo_rx, ps2port[0].fiforxbuf, sizeof ps2port[0].fiforxbuf);
+  fifo_Init(&ps2port[1].fifo, ps2port[1].fifobuf, sizeof ps2port[1].fifobuf);
+  fifo_Init(&ps2port[1].fifo_rx, ps2port[1].fiforxbuf, sizeof ps2port[1].fiforxbuf);
+  ps2port[0].sm = PS2HOST_SM;
+  ps2port[1].sm = PS2HOST2_SM;
+  ps2port[0].hostMode = -1;
+  ps2port[1].hostMode = -1;
+
+#ifdef PIOINTS
+  irq_set_exclusive_handler (PS2_PIO_IRQ, pio_callback);
+  pio_set_irq0_source_enabled(ps2host_pio, ps2host_sm, true);
+  irq_set_enabled (PS2_PIO_IRQ, true);
+#endif
   started = 1;
 }
 
-void ps2_EnablePortExX(uint8_t ch, bool enabled, uint8_t _hostMode) {
+void ps2_EnablePortEx(uint8_t ch, bool enabled, uint8_t _hostMode) {
   if (enabled) {
-    if (_hostMode != hostMode) {
+    if (_hostMode != ps2port[ch].hostMode) {
+      int gpio_base = ch == 0 ? GPIO_PS2_CLK : GPIO_PS2_CLK2;
       if (_hostMode ) {
-        ps2_offset = pio_add_program(ps2host_pio, &ps2_program);
-        ps2_program_init(ps2host_pio, ps2host_sm, ps2_offset, GPIO_PS2_CLK);
+        ps2port[ch].offset = pio_add_program(ps2host_pio, &ps2_program);
+        ps2_program_init(ps2host_pio, ps2port[ch].sm, ps2port[ch].offset, gpio_base);
       } else {
-        ps2_offset = pio_add_program(ps2host_pio, &ps2tx_program);
-        ps2tx_program_init(ps2host_pio, ps2host_sm, ps2_offset, GPIO_PS2_CLK);
+        ps2port[ch].offset = pio_add_program(ps2host_pio, &ps2tx_program);
+        ps2tx_program_init(ps2host_pio, ps2port[ch].sm, ps2port[ch].offset, gpio_base);
       }
-      hostMode = _hostMode;
+      ps2port[ch].hostMode = _hostMode;
     }
   } else {
-    pio_sm_set_enabled(ps2host_pio, ps2host_sm, false);
-    pio_remove_program(ps2host_pio, hostMode ? &ps2_program : &ps2tx_program, ps2_offset);
-    hostMode = -1;
+    pio_sm_set_enabled(ps2host_pio, ps2port[ch].sm, false);
+    pio_remove_program(ps2host_pio, ps2port[ch].hostMode ? &ps2_program : &ps2tx_program, ps2port[ch].offset);
+    ps2port[ch].hostMode = -1;
   }
 }
 
-int ps2_GetCharX(uint8_t ch) {
-  return -1;
+int ps2_GetChar(uint8_t ch) {
+  return fifo_Get(&ps2port[ch].fifo_rx);
 }
 
-void ps2_InsertCharX(uint8_t ch, uint8_t data) {
-
+void ps2_InsertChar(uint8_t ch, uint8_t data) {
+  fifo_Put(&ps2port[ch].fifo, data);
 }
 
-void ps2_SendCharX(uint8_t ch, uint8_t data) {
-  writePs2(ps2host_pio, ps2host_sm, data);
+void ps2_SendChar(uint8_t ch, uint8_t data) {
+  fifo_Put(&ps2port[ch].fifo, data);
+  ps2_HealthCheck();
 }
 
-void ps2_HealthCheckX() {
+void ps2_HealthCheck() {
+  int c;
+  int ch = 0;
 
-}
+  for (int ch = 0; ch < NR_PS2; ch ++) {
+    while ((c = readPs2(ps2host_pio, ps2port[ch].sm)) >= 0) {
+      fifo_Put(&ps2port[ch].fifo_rx, c);
+    }
 
-void ps2_DebugQueuesX() {
-  int c, r = 0;
-
-  while ((c = readPs2(ps2host_pio, ps2host_sm)) >= 0) {
-    r ++;
-    printf("[%02X]", c);
+    while (!pio_sm_is_tx_fifo_full(ps2host_pio, ps2port[ch].sm) && (c = fifo_Get(&ps2port[ch].fifo)) >= 0) {
+      writePs2(ps2host_pio, ps2port[ch].sm, c, ps2port[ch].hostMode);
+    }
   }
-  if (r) {
-    printf("\n");
-    printf("TXe %d TXf %d RXe %d RXf %d\n", 
-    pio_sm_is_tx_fifo_empty(ps2host_pio, ps2host_sm),
-    pio_sm_is_tx_fifo_full(ps2host_pio, ps2host_sm),
-    pio_sm_is_rx_fifo_empty(ps2host_pio, ps2host_sm),
-    pio_sm_is_rx_fifo_full(ps2host_pio, ps2host_sm));
+}
+
+
+void ps2_DebugQueues() {
+  int n = 0;
+  for (int i=0; i<NR_PS2; i++) {
+    int ch;
+    while ((ch = ps2_GetChar(i)) >= 0) {
+      printf("[RX%d:%02X]", i, ch);
+      n++;
+    }
   }
-  // if (!pio_sm_is_rx_fifo_empty(ps2host_pio, ps2host_sm)) {
-  //   uint32_t x = pio_sm_get_blocking(ps2host_pio, ps2host_sm);
-  //   printf("fifo: %08x (%08x)\n", x, decode(x));
-  // }
-  
-//  / pio_sm_put_blocking(pio, sm, (uint32_t)c);
+  if (n) printf("\n");
+#ifdef PIOINTS
+  if (nrints) { printf("nrints = %d\n", nrints); nrints = 0; }
+#endif
 }
 
 void ps2_EnablePort(uint8_t ch, bool enabled) {
@@ -595,3 +603,4 @@ void ps2_EnablePort(uint8_t ch, bool enabled) {
 }
 
 void ps2_Debug() {}
+#endif

@@ -242,5 +242,6 @@
 
 #define PS2HOST_PIO pio1
 #define PS2HOST_SM 2
+#define PS2HOST2_SM 3
 
 #endif

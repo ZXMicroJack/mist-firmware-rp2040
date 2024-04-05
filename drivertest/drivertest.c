@@ -25,8 +25,8 @@
 #define DEBUG
 #include "debug.h"
 
-#define TEST_PS2
-// #define TEST_PS2_HOST
+// #define TEST_PS2
+#define TEST_PS2_HOST
 // #define TEST_IPC
 // #define TEST_SDCARD_SPI
 // #define TEST_FPGA
@@ -390,7 +390,6 @@ int main()
 #endif
 #ifdef TEST_PS2
   ps2_Init();
-  // ps2_InitX();
   ps2_EnablePort(0, true);
 #endif
 //   ps2_SendChar(0, 0x7e);
@@ -411,7 +410,7 @@ int main()
 #if defined(TEST_PS2_HOST) || defined(TEST_PS2)
     ps2_HealthCheck();
     ps2_DebugQueues();
-    ps2_DebugQueuesX();
+    // ps2_DebugQueuesX();
 #endif
 
 //     ipc_MasterTick();
@@ -523,9 +522,6 @@ int main()
 #ifdef TEST_PS2
       case 'h': keypress(0x7e); break;
       case 'H': keypress(0x58); break;
-#endif
-
-      // case 'r': ps2_SendChar(0, 0xff); break;
       case 'r': 
         ps2_SendChar(0, 0x76);
         sleep_ms(100);
@@ -545,11 +541,13 @@ int main()
         ps2_SendChar(0, 0xf0);
         ps2_SendChar(0, 0x66);
         break;
+#endif
 
 #ifdef TEST_PS2_HOST
       case 'h': keyledon(0x00); break;
       case 'H': keyledon(0x07); break;
       case 'r': keyreset(); break;
+      case 'x': ps2_SendChar(0, 0xaa); break;
 #endif
 
       // IPC

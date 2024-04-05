@@ -39,8 +39,8 @@ holdclklow1:
 
   set x,9 ;side 0b10        ; 15 bits - need to trim
 bitloop_sendps2:
-  out pins,1                ; output 1 bit to data pin
   wait 0 pin 0              ; clock goes low
+  out pins,1                ; output 1 bit to data pin
   wait 1 pin 0              ; clock goes high
   jmp x--,bitloop_sendps2
   out null,22               ; empty output register

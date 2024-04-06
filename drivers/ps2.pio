@@ -18,7 +18,19 @@ idleps2:
   jmp !x, sendps2           ; if data is in fifo, then send
 
   jmp pin,idleps2           ; data pin 1, goto next stage 
-  jmp readps2               ; data pin 0, data input pending
+;  jmp readps2               ; data pin 0, data input pending
+
+readps2:
+  set x,10                  ; bit count = 11 for the moment
+readps2_bitloop:
+  wait 0 pin 0              ; clock goes low
+  in pins,2                 ; sample pins
+  wait 1 pin 0              ; clock goes high
+  jmp x--,readps2_bitloop
+  in null 10
+;  push
+  jmp idleps2
+
 
 sendps2:
   pull noblock               ; pull data from tx queue
@@ -51,17 +63,6 @@ bitloop_sendps2:
 
   jmp idleps2               ; back to idle
 
-readps2:
-  set x,10                  ; bit count = 11 for the moment
-readps2_bitloop:
-  wait 0 pin 0              ; clock goes low
-  in pins,2                 ; sample pins
-  wait 1 pin 0              ; clock goes high
-  jmp x--,readps2_bitloop
-  in null 10
-  push
-  jmp idleps2
-
 % c-sdk {
 #include "hardware/clocks.h"
 
@@ -76,6 +77,9 @@ static inline void ps2_program_init(PIO pio, uint sm, uint offset, uint pin_clk)
     sm_config_set_in_pins(&c, pin_clk);
     sm_config_set_sideset_pins(&c, pin_clk);
     sm_config_set_jmp_pin(&c, pin_clk+1);
+
+    sm_config_set_out_shift(&c, true, false, 32);
+    sm_config_set_in_shift(&c, true, true, 32);
 
     sm_config_set_mov_status(&c, STATUS_TX_LESSTHAN, 1);
 

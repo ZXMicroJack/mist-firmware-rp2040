@@ -331,7 +331,6 @@ target_compile_options(mistusbxilinx PUBLIC
   #"-DDEVKIT_DEBUG"
   "-DUSB_DEBUG_OFF"
   "-DMIST_ROOT=\"/MIST\""
-  "-DNO_JAMMA"
 #  "-DPICOSYNTH"
 #  "-DALTERA_FPGA"
 )

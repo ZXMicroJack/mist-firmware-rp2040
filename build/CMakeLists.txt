@@ -8,7 +8,7 @@ include(pico_extras_import.cmake)
 project(pico_examples C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DIPC_MASTER -DPICO_XOSC_STARTUP_DELAY_MULTIPLIER=64 -DNR_PS2=2 -fsigned-char -DSD_DIRECT_MODE_GPIO=22 -DUSE_8BA -DSAMPLE_RATE=22050 -DSAMPLE_LEN=512 -DPICO_AUDIO_I2S_DATA_PIN=4 -DPICO_AUDIO_I2S_CLOCK_PIN_BASE=2 -DVE_STEPS=64 -DLFO_STEPS=64 -DNONAME")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DIPC_MASTER -DPICO_XOSC_STARTUP_DELAY_MULTIPLIER=64 -DNR_PS2=2 -fsigned-char -DSD_DIRECT_MODE_GPIO=22 -DUSE_8BA -DSAMPLE_RATE=22050 -DSAMPLE_LEN=512 -DPICO_AUDIO_I2S_DATA_PIN=4 -DPICO_AUDIO_I2S_CLOCK_PIN_BASE=2 -DVE_STEPS=64 -DLFO_STEPS=64 -DNONAME -DPICO_AUDIO_I2S_PIO=1")
 
 set(PICO_EXAMPLES_PATH ${PROJECT_SOURCE_DIR})
 set(CMAKE_BUILD_TYPE "Debug")
@@ -206,33 +206,33 @@ target_compile_options(mistram PUBLIC
 
 ####################################################################################
 # RAM build - for testing USB interface to USB host module.
-add_executable(mistusbfake
-  ${driver_src}
-  ${main_src}
-  )
+# add_executable(mistusbfake
+#   ${driver_src}
+#   ${main_src}
+#   )
 
-target_link_libraries(mistusbfake pico_stdlib mistfirmwareusb${testarch} hardware_spi hardware_pio)
-add_compile_options(-O2)
-pico_generate_pio_header(mistusbfake ../drivers/fpga.pio)
-pico_generate_pio_header(mistusbfake ../drivers/spi.pio)
-pico_generate_pio_header(mistusbfake ../drivers/jamma.pio)
-pico_generate_pio_header(mistusbfake ../drivers/jammadb9.pio)
-pico_enable_stdio_usb(mistusbfake 1)
-pico_enable_stdio_uart(mistusbfake 0)
-pico_add_extra_outputs(mistusbfake)
-example_auto_set_url(mistusbfake)
-pico_set_binary_type(mistusbfake no_flash)
-target_compile_options(mistusbfake PUBLIC
-  "-DVDATE=\"\""
-  "-Dhexdump=driver_hexdump"
-  "-DPS2HOST"
-  ${archdefs}
-  "-DJAMMADB9"
-  "-DUSB"
-  "-DUSBFAKE"
-  "-DTEST_BUILD"
-  "-DALTERA_FPGA"
-)
+# target_link_libraries(mistusbfake pico_stdlib mistfirmwareusb${testarch} hardware_spi hardware_pio)
+# add_compile_options(-O2)
+# pico_generate_pio_header(mistusbfake ../drivers/fpga.pio)
+# pico_generate_pio_header(mistusbfake ../drivers/spi.pio)
+# pico_generate_pio_header(mistusbfake ../drivers/jamma.pio)
+# pico_generate_pio_header(mistusbfake ../drivers/jammadb9.pio)
+# pico_enable_stdio_usb(mistusbfake 1)
+# pico_enable_stdio_uart(mistusbfake 0)
+# pico_add_extra_outputs(mistusbfake)
+# example_auto_set_url(mistusbfake)
+# pico_set_binary_type(mistusbfake no_flash)
+# target_compile_options(mistusbfake PUBLIC
+#   "-DVDATE=\"\""
+#   "-Dhexdump=driver_hexdump"
+#   "-DPS2HOST"
+#   ${archdefs}
+#   "-DJAMMADB9"
+#   "-DUSB"
+#   "-DUSBFAKE"
+#   "-DTEST_BUILD"
+#   "-DALTERA_FPGA"
+# )
 
 ####################################################################################
 # FLASH build - release binary for Xilinx ZXTres board -with single CPU middleboard.
@@ -327,7 +327,8 @@ target_compile_options(mistusbxilinx PUBLIC
   #"-DDEVKIT_DEBUG"
   "-DUSB_DEBUG_OFF"
   "-DMIST_ROOT=\"/MIST\""
-  "-DPICOSYNTH"
+  "-DNO_JAMMA"
+#  "-DPICOSYNTH"
 #  "-DALTERA_FPGA"
 )
 

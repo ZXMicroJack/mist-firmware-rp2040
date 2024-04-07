@@ -58,8 +58,9 @@ static void pio_callback() {
 }
 
 static uint8_t inited = 0;
-  
+
 void jamma_InitDB9() {
+#ifndef NO_JAMMA
   debug(("jamma_Init: DB9 mode\n"));
   if (inited) return;
   gpio_init(GPIO_RP2U_XLOAD);
@@ -75,13 +76,15 @@ void jamma_InitDB9() {
   jammadb9_program_init(jamma_pio, jamma_sm, jamma_offset, GPIO_RP2U_XLOAD, GPIO_RP2U_XDATA);
   pio_sm_clear_fifos(jamma_pio, jamma_sm);
 
-  irq_set_exclusive_handler (PIO0_IRQ_0, pio_callback);
+  irq_set_exclusive_handler (JAMMA_PIO_IRQ, pio_callback);
   pio_set_irq0_source_enabled(jamma_pio, jamma_sm, true);
-  irq_set_enabled (PIO0_IRQ_0, true);
+  irq_set_enabled (JAMMA_PIO_IRQ, true);
   inited = 2;
+#endif
 }
 
 void jamma_InitUSB() {
+#ifndef NO_JAMMA
   debug(("jamma_Init: USB mode\n"));
   if (inited) return;
   gpio_init(GPIO_RP2U_XLOAD);
@@ -103,9 +106,11 @@ void jamma_InitUSB() {
   pio_sm_put_blocking(jamma_pio, jamma_sm, reload_data);
   pio_interrupt_clear (jamma_pio, 0);
   inited = 1;
+#endif
 }
 
 void jamma_Kill() {
+#ifndef NO_JAMMA
   if (!inited) return;
   // disable interrupts
   gpio_set_irq_enabled(GPIO_RP2U_XLOAD, GPIO_IRQ_EDGE_FALL, false);
@@ -127,6 +132,7 @@ void jamma_Kill() {
   }
 
   inited = 0;
+#endif
 }
 
 void jamma_Init() {

@@ -228,7 +228,7 @@
 #define FPGA_SM   0
 
 // NOTE - PIO number not changed on PIO not changed from this, but is here for reference sake
-#define AUDIO_I2S_PIO pio0
+#define AUDIO_I2S_PIO pio1
 #define AUDIO_I2S_SM 2
 
 #define JAMMA_PIO pio0
@@ -237,11 +237,46 @@
 #define SDCARD_PIO pio0
 #define SDCARD_SM 1
 
-#define DEBUG_PIO pio1
-#define DEBUG_SM 1
+#define DEBUG_PIO pio0
+#define DEBUG_SM 3
 
-#define PS2HOST_PIO pio1
+#define PS2HOST_PIO pio0
 #define PS2HOST_SM 2
 #define PS2HOST2_SM 3
+#define JAMMA_PIO_IRQ   PIO0_IRQ_0
+
+
+/*
+
+Planned PIOs
+------------
+pio1      - 32
+====        ==
+ps2       - 30 | *1
+ps2tx     - 27 | *1
+spi       - 2
+
+pio0      - 41
+====        ==
+audio_i2s - 20
+jammadb9  - 12 | *2
+jamma     - 6  | *2
+fpga      - 5
+debug     - 4
+
+current PIOs
+------------
+pio1      - 32
+ps2       - 30 | *1
+ps2tx     - 27 | *1
+debug     - 4
+
+pio0      - 39
+spi       - 2
+audio_i2s - 20
+jammadb9  - 12 | *2
+jamma     - 6  | *2
+fpga      - 5
+*/
 
 #endif

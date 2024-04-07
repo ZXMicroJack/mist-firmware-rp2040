@@ -13,7 +13,7 @@
 // #define DEBUG
 #include "debug.h"
 
-// #define OLDPS2
+#define OLDPS2
 
 #ifdef OLDPS2
 enum {

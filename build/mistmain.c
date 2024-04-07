@@ -307,7 +307,10 @@ int mist_init() {
     }
 
     usb_dev_open();
+#ifndef MB2
     jamma_InitEx(1);
+#endif
+
 #if defined(XILINX) && !defined(USBFAKE)
     midi_init();
 #endif

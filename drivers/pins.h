@@ -223,27 +223,42 @@
 #define RP2M_SOUNDFONT_POS    0x100a0000
 #define RP2M_SOUNDFONT2_POS   0x10200000
 
+
+
 /* SM / PIO allocation */
-#define FPGA_PIO  pio0
-#define FPGA_SM   0
+#define FPGA_PIO            pio1
+#define FPGA_SM             0
+#define FPGA_OFFSET         AUDIO_I2S_INSTR
+#define FPGA_INSTR          5
+
+#define JAMMA_PIO           pio1
+#define JAMMA_SM            2
+#define JAMMA_OFFSET        AUDIO_I2S_INSTR
+#define JAMMA_INSTR         12
+#define JAMMA_PIO_IRQ       PIO1_IRQ_0
 
 // NOTE - PIO number not changed on PIO not changed from this, but is here for reference sake
-#define AUDIO_I2S_PIO pio1
-#define AUDIO_I2S_SM 2
+#define AUDIO_I2S_PIO       pio1
+#define AUDIO_I2S_SM        2
+#define AUDIO_I2S_OFFSET    0
+#define AUDIO_I2S_INSTR     20
 
-#define JAMMA_PIO pio0
-#define JAMMA_SM 2
-
-#define SDCARD_PIO pio0
-#define SDCARD_SM 1
 
 #define DEBUG_PIO pio0
 #define DEBUG_SM 3
 
 #define PS2HOST_PIO pio0
+#define PS2HOST_OFFSET  0
 #define PS2HOST_SM 2
 #define PS2HOST2_SM 3
-#define JAMMA_PIO_IRQ   PIO0_IRQ_0
+#define PS2HOST_INSTR 30
+
+#define SDCARD_PIO pio0
+#define SDCARD_SM 1
+#define SDCARD_OFFSET  30
+
+
+
 
 
 /*

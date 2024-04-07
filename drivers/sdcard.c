@@ -479,7 +479,12 @@ pio_spi_inst_t *sd_hw_init() {
 
   if (firsttime) {
     firsttime = 0;
+#ifdef SDCARD_OFFSET
+   pio_add_program_at_offset(spi.pio, &spi_cpha0_program, SDCARD_OFFSET);
+   spi_offset = SDCARD_OFFSET;
+#else
     spi_offset = pio_add_program(spi.pio, &spi_cpha0_program);
+#endif
     printf("Loaded program at %d\n", spi_offset);
   }
 

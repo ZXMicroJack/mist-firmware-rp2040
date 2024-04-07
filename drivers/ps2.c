@@ -13,7 +13,7 @@
 // #define DEBUG
 #include "debug.h"
 
-#define OLDPS2
+// #define OLDPS2
 
 #ifdef OLDPS2
 enum {
@@ -399,6 +399,10 @@ void ps2_HealthCheck() {
   }
 }
 
+void ps2_SwitchMode(int hostMode) {
+  // does nothing in the old world
+}
+
 #ifdef TESTBUILD
 void ps2_DebugQueues() {
   int n = 0;
@@ -437,9 +441,9 @@ typedef struct {
   uint8_t fifobuf[64];
   fifo_t fifo_rx;
   uint8_t fiforxbuf[64];
-  int hostMode;
+  // int hostMode;
   uint sm;
-  uint offset;
+  // uint offset;
 } ps2_t;
 
 ps2_t ps2port[NR_PS2];
@@ -523,8 +527,8 @@ void ps2_Init() {
   fifo_Init(&ps2port[1].fifo_rx, ps2port[1].fiforxbuf, sizeof ps2port[1].fiforxbuf);
   ps2port[0].sm = PS2HOST_SM;
   ps2port[1].sm = PS2HOST2_SM;
-  ps2port[0].hostMode = -1;
-  ps2port[1].hostMode = -1;
+  // ps2port[0].hostMode = -1;
+  // ps2port[1].hostMode = -1;
 
 #ifdef PIOINTS
   irq_set_exclusive_handler (PS2_PIO_IRQ, pio_callback);
@@ -534,7 +538,44 @@ void ps2_Init() {
   started = 1;
 }
 
+static int hostMode = -1;
+static uint ps2_offset = 0;
+void ps2_SwitchMode(int _hostMode) {
+  if (_hostMode != hostMode) {
+    if (hostMode >= 0) {
+      pio_sm_set_enabled(ps2host_pio, ps2port[0].sm, false);
+      pio_sm_set_enabled(ps2host_pio, ps2port[1].sm, false);
+      pio_remove_program(ps2host_pio, hostMode ? &ps2_program : &ps2tx_program, ps2_offset);
+    }
+
+#ifdef PS2_OFFSET
+    if (_hostMode ) {
+      ps2_offset = pio_add_program(ps2host_pio, &ps2_program);
+    } else {
+      ps2_offset = pio_add_program(ps2host_pio, &ps2tx_program);
+    }
+#else
+    ps2_offset = PS2HOST_OFFSET;
+    if (_hostMode ) {
+      pio_add_program_at_offset(ps2host_pio, &ps2_program, PS2HOST_OFFSET);
+    } else {
+      pio_add_program_at_offset(ps2host_pio, &ps2tx_program, PS2HOST_OFFSET);
+    }
+#endif
+    if (_hostMode ) {
+      ps2_program_init(ps2host_pio, ps2port[0].sm, ps2_offset, GPIO_PS2_CLK);
+      ps2_program_init(ps2host_pio, ps2port[1].sm, ps2_offset, GPIO_PS2_CLK2);
+    } else {
+      ps2tx_program_init(ps2host_pio, ps2port[0].sm, ps2_offset, GPIO_PS2_CLK);
+      ps2tx_program_init(ps2host_pio, ps2port[1].sm, ps2_offset, GPIO_PS2_CLK2);
+    }
+
+    hostMode = _hostMode;
+  }
+}
+
 void ps2_EnablePortEx(uint8_t ch, bool enabled, uint8_t _hostMode) {
+#if 0
   if (enabled) {
     if (_hostMode != ps2port[ch].hostMode) {
       int gpio_base = ch == 0 ? GPIO_PS2_CLK : GPIO_PS2_CLK2;
@@ -552,6 +593,7 @@ void ps2_EnablePortEx(uint8_t ch, bool enabled, uint8_t _hostMode) {
     pio_remove_program(ps2host_pio, ps2port[ch].hostMode ? &ps2_program : &ps2tx_program, ps2port[ch].offset);
     ps2port[ch].hostMode = -1;
   }
+#endif
 }
 
 int ps2_GetChar(uint8_t ch) {
@@ -571,13 +613,15 @@ void ps2_HealthCheck() {
   int c;
   int ch = 0;
 
-  for (int ch = 0; ch < NR_PS2; ch ++) {
-    while ((c = readPs2(ps2host_pio, ps2port[ch].sm)) >= 0) {
-      fifo_Put(&ps2port[ch].fifo_rx, c);
-    }
+  if (hostMode) {
+    for (int ch = 0; ch < NR_PS2; ch ++) {
+      while ((c = readPs2(ps2host_pio, ps2port[ch].sm)) >= 0) {
+        fifo_Put(&ps2port[ch].fifo_rx, c);
+      }
 
-    while (!pio_sm_is_tx_fifo_full(ps2host_pio, ps2port[ch].sm) && (c = fifo_Get(&ps2port[ch].fifo)) >= 0) {
-      writePs2(ps2host_pio, ps2port[ch].sm, c, ps2port[ch].hostMode);
+      while (!pio_sm_is_tx_fifo_full(ps2host_pio, ps2port[ch].sm) && (c = fifo_Get(&ps2port[ch].fifo)) >= 0) {
+        writePs2(ps2host_pio, ps2port[ch].sm, c, hostMode);
+      }
     }
   }
 }

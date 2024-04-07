@@ -58,10 +58,16 @@ int fpga_initialise() {
   gpio_put(GPIO_FPGA_RESET, 1);
 #endif
 
+#ifdef MB2
+#ifdef FPGA_OFFSET
+  pio_add_program_at_offset(fpga_pio, &fpga_program, FPGA_OFFSET);
+  fpga_program_init(fpga_pio, fpga_sm, FPGA_OFFSET, 0);
+#else
   uint offset = pio_add_program(fpga_pio, &fpga_program);
-
   fpga_program_init(fpga_pio, fpga_sm, offset, 0);
+#endif
   pio_sm_clear_fifos(fpga_pio, fpga_sm);
+#endif
   inited = 1;
 
   return 0;
@@ -241,6 +247,13 @@ int fpga_configure(void *user_data, uint8_t (*next_block)(void *, uint8_t *), ui
   len = assumelength;
 #endif
 
+#ifndef MB2
+  jamma_Kill();
+  pio_add_program_at_offset(fpga_pio, &fpga_program, FPGA_OFFSET);
+  fpga_program_init(fpga_pio, fpga_sm, FPGA_OFFSET, 0);
+  pio_sm_clear_fifos(fpga_pio, fpga_sm);
+#endif
+
   debug(("fpga_status: done %u nstatus %u\n", gpio_get(GPIO_FPGA_CONF_DONE), gpio_get(GPIO_FPGA_NSTATUS)));
   fpga_program_enable(fpga_pio, fpga_sm, 0, true);
 
@@ -302,7 +315,11 @@ int fpga_configure(void *user_data, uint8_t (*next_block)(void *, uint8_t *), ui
 
   pio_sm_set_enabled(fpga_pio, fpga_sm, false);
   fpga_program_enable(fpga_pio, fpga_sm, 0, false);
-  
+
+#ifndef MB2
+  pio_remove_program(fpga_pio, &fpga_program, FPGA_OFFSET);
+#endif
+
 #ifdef ALTERA_FPGA
   debug(("fpga_configure: crc %08X %d\n", crc, gpio_get(GPIO_FPGA_CONF_DONE)));
 #else

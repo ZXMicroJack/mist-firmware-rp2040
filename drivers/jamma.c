@@ -11,6 +11,8 @@
 // #define DEBUG
 #include "debug.h"
 
+
+
 #include "jammadb9.pio.h"
 #include "jamma.pio.h"
 
@@ -72,8 +74,14 @@ void jamma_InitDB9() {
   gpio_init(GPIO_RP2U_XDATA);
   gpio_set_dir(GPIO_RP2U_XDATA, GPIO_IN);
 
+#ifdef JAMMA_OFFSET
+  pio_add_program_at_offset(jamma_pio, &jammadb9_program, JAMMA_OFFSET);
+  jamma_offset = JAMMA_OFFSET;
+#else
   jamma_offset = pio_add_program(jamma_pio, &jammadb9_program);
+#endif
   jammadb9_program_init(jamma_pio, jamma_sm, jamma_offset, GPIO_RP2U_XLOAD, GPIO_RP2U_XDATA);
+
   pio_sm_clear_fifos(jamma_pio, jamma_sm);
 
   irq_set_exclusive_handler (JAMMA_PIO_IRQ, pio_callback);
@@ -96,13 +104,23 @@ void jamma_InitUSB() {
   gpio_init(GPIO_RP2U_XDATA);
   gpio_set_dir(GPIO_RP2U_XDATA, GPIO_OUT);
 
+#ifdef JAMMA_OFFSET
+  pio_add_program_at_offset(jamma_pio, &jamma_program, JAMMA_OFFSET);
+  jamma_offset = JAMMA_OFFSET;
+#else
   jamma_offset = pio_add_program(jamma_pio, &jamma_program);
+#endif
   jamma_program_init(jamma_pio, jamma_sm, jamma_offset, GPIO_RP2U_XDATA);
   pio_sm_clear_fifos(jamma_pio, jamma_sm);
   
-  
+#ifdef OLD_PS2
   ps2_SetGPIOListener(gpio_callback);
+#else
+  gpio_set_irq_callback(gpio_callback);
+  irq_set_enabled(IO_IRQ_BANK0, true);
+#endif
   gpio_set_irq_enabled(GPIO_RP2U_XLOAD, GPIO_IRQ_EDGE_FALL, true);
+
   pio_sm_put_blocking(jamma_pio, jamma_sm, reload_data);
   pio_interrupt_clear (jamma_pio, 0);
   inited = 1;
@@ -117,8 +135,11 @@ void jamma_Kill() {
   pio_set_irq0_source_enabled(jamma_pio, jamma_sm, false);
 
   // remove handlers
-  // irq_set_exclusive_handler (PIO0_IRQ_0, NULL);
+#ifdef OLD_PS2
   ps2_SetGPIOListener(NULL);
+#else
+  irq_set_exclusive_handler (PIO0_IRQ_0, NULL);
+#endif
 
   // shutdown sm
   pio_sm_set_enabled(jamma_pio, jamma_sm, false);

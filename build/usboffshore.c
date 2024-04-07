@@ -74,8 +74,9 @@ void ps2_Init() {
   }
 }
 void ps2_EnablePort(uint8_t ch, bool enabled) {}
-
 void ps2_EnablePortEx(uint8_t ch, bool enabled, uint8_t hostMode) {}
+void ps2_SwitchMode(int hostMode) {}
+
 
 #ifdef MB2USB
 uint8_t tuh_descriptor_get_device_sync(uint8_t dev_addr, uint8_t *dd, uint16_t len) {

@@ -55,7 +55,12 @@ const audio_format_t *audio_i2s_setupx(const audio_format_t *intended_audio_form
     uint8_t sm = shared_state.pio_sm = config->pio_sm;
     pio_sm_claim(audio_pio, sm);
 
+#ifdef AUDIO_I2S_OFFSET
+   pio_add_program_at_offset(audio_pio, &audio_i2s_program, AUDIO_I2S_OFFSET);
+   uint offset = AUDIO_I2S_OFFSET;
+#else
     uint offset = pio_add_program(audio_pio, &audio_i2s_program);
+#endif
 
     audio_i2s_program_init(audio_pio, sm, offset, config->data_pin, config->clock_pin_base);
 

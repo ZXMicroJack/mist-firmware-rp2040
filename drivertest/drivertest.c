@@ -391,6 +391,7 @@ int main()
 #ifdef TEST_PS2
   ps2_Init();
   ps2_EnablePort(0, true);
+  ps2_SwitchMode(0);
 #endif
 //   ps2_SendChar(0, 0x7e);
 //   ps2_SendChar(0, 0xf0);
@@ -504,17 +505,17 @@ int main()
       case 'k': printf("ps2init\n"); ps2_Init(); break;
 #endif
 #if defined(TEST_PS2)
-      case 'e': printf("enable ps2 0\n"); ps2_EnablePort(0, true); break;
-      case 'E': printf("enable ps2 1\n"); ps2_EnablePort(1, true); break;
-      case 'd': printf("disable ps2 0\n"); ps2_EnablePort(0, false); break;
-      case 'D': printf("disable ps2 1\n"); ps2_EnablePort(1, false); break;
+      case 'e': printf("enable ps2 0\n"); ps2_EnablePort(0, true); ps2_SwitchMode(0); break;
+      case 'E': printf("enable ps2 1\n"); ps2_EnablePort(1, true); ps2_SwitchMode(0); break;
+      case 'd': printf("disable ps2 0\n"); ps2_EnablePort(0, false); ps2_SwitchMode(0); break;
+      case 'D': printf("disable ps2 1\n"); ps2_EnablePort(1, false); ps2_SwitchMode(0); break;
 #endif
 
 #if defined(TEST_PS2_HOST)
-      case 'e': printf("enable ps2 0\n"); ps2_EnablePortEx(0, true, true); break;
-      case 'E': printf("enable ps2 1\n"); ps2_EnablePortEx(1, true, true); break;
-      case 'd': printf("disable ps2 0\n"); ps2_EnablePortEx(0, false, true); break;
-      case 'D': printf("disable ps2 1\n"); ps2_EnablePortEx(1, false, true); break;
+      case 'e': printf("enable ps2 0\n"); ps2_EnablePortEx(0, true, true); ps2_SwitchMode(1); break;
+      case 'E': printf("enable ps2 1\n"); ps2_EnablePortEx(1, true, true); ps2_SwitchMode(1); break;
+      case 'd': printf("disable ps2 0\n"); ps2_EnablePortEx(0, false, true); ps2_SwitchMode(1); break;
+      case 'D': printf("disable ps2 1\n"); ps2_EnablePortEx(1, false, true); ps2_SwitchMode(1); break;
       case 'm': printf("enable mouse 0\n"); mouseenable(0); break;
       case 'M': printf("enable mouse 1\n"); mouseenable(1); break;
 #endif

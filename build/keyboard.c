@@ -474,11 +474,13 @@ void ps2_Poll() {
       ps2_EnablePortEx(0, true, 0);
       ps2_EnablePortEx(1, false, 1);
       ps2_EnablePortEx(1, true, 0);
+      ps2_SwitchMode(0);
     } else {
       ps2_EnablePortEx(0, false, 0);
       ps2_EnablePortEx(0, true, 1);
       ps2_EnablePortEx(1, false, 0);
       ps2_EnablePortEx(1, true, 1);
+      ps2_SwitchMode(1);
 #ifndef MB2
       // reset
       ps2_SendChar(0, 0xff);

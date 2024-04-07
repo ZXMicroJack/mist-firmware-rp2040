@@ -25,8 +25,8 @@
 #define DEBUG
 #include "debug.h"
 
-// #define TEST_PS2
-#define TEST_PS2_HOST
+#define TEST_PS2
+// #define TEST_PS2_HOST
 // #define TEST_IPC
 // #define TEST_SDCARD_SPI
 // #define TEST_FPGA

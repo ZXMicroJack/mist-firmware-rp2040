@@ -17,9 +17,9 @@ idleps2:
   mov x, status             ; tx fifo < 1
   jmp !x, sendps2           ; if data is in fifo, then send
 
-  jmp pin,idleps2           ; data pin 1, goto next stage 
-  jmp readps2               ; data pin 0, data input pending
-;  jmp idleps2
+;  jmp pin,idleps2           ; data pin 1, goto next stage 
+;  jmp readps2               ; data pin 0, data input pending
+  jmp idleps2
 
 sendps2:
   pull noblock               ; pull data from tx queue

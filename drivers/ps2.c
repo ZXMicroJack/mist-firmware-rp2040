@@ -613,7 +613,7 @@ void ps2_HealthCheck() {
   int c;
   int ch = 0;
 
-  if (hostMode) {
+  // if (hostMode) {
     for (int ch = 0; ch < NR_PS2; ch ++) {
       while ((c = readPs2(ps2host_pio, ps2port[ch].sm)) >= 0) {
         fifo_Put(&ps2port[ch].fifo_rx, c);
@@ -623,7 +623,7 @@ void ps2_HealthCheck() {
         writePs2(ps2host_pio, ps2port[ch].sm, c, hostMode);
       }
     }
-  }
+  // }
 }
 
 

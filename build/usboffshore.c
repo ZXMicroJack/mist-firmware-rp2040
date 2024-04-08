@@ -27,7 +27,7 @@ void jamma_Init() {
 }
 
 uint32_t jamma_GetData(uint8_t inst) {
-  uint8_t d = (inst ? (jammaData >> 24) : (jammaData >> 16));
+  uint8_t d = ~(inst ? (jammaData >> 24) : (jammaData >> 16));
   // debug(("jamma_GetData: inst %d returns %02X\n", inst, d));
   return d;
 }

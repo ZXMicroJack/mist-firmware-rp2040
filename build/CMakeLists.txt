@@ -181,10 +181,13 @@ set(archdefs "-DXILINX")
 add_executable(mistram
   ${driver_src}
   ${main_src}
+  ${picosynth_src}
   )
 
-target_link_libraries(mistram pico_stdlib mistfirmware${testarch} hardware_spi hardware_pio)
+target_link_libraries(mistram pico_stdlib mistfirmware${testarch} hardware_spi hardware_pio pico_multicore 
+${picosynth_lib})
 add_compile_options(-O2)
+target_include_directories(mistram PUBLIC ../picosynth)
 pico_generate_pio_header(mistram ../drivers/fpga.pio)
 pico_generate_pio_header(mistram ../drivers/spi.pio)
 pico_generate_pio_header(mistram ../drivers/jamma.pio)
@@ -202,6 +205,7 @@ target_compile_options(mistram PUBLIC
   "-DPS2HOST"
   ${archdefs}
   "-DJAMMADB9"
+  # "-DPICOSYNTH"
   #"-DTEST_BUILD"
 )
 
@@ -261,6 +265,7 @@ pico_generate_pio_header(mistxilinx ../drivers/fpga.pio)
 pico_generate_pio_header(mistxilinx ../drivers/spi.pio)
 pico_generate_pio_header(mistxilinx ../drivers/jamma.pio)
 pico_generate_pio_header(mistxilinx ../drivers/jammadb9.pio)
+pico_generate_pio_header(mistxilinx ../drivers/audio_i2s.pio)
 pico_generate_pio_header(mistxilinx ../drivers/ps2.pio)
 pico_generate_pio_header(mistxilinx ../drivers/ps2tx.pio)
 pico_enable_stdio_usb(mistxilinx 1)
@@ -283,6 +288,7 @@ target_compile_options(mistxilinx PUBLIC
   #"-DDEVKIT_DEBUG"
   "-DUSB_DEBUG_OFF"
 #  "-DALTERA_FPGA"
+  "-DPICOSYNTH"
 )
 
 ####################################################################################
@@ -312,6 +318,9 @@ pico_generate_pio_header(mistusbxilinx ../drivers/fpga.pio)
 pico_generate_pio_header(mistusbxilinx ../drivers/spi.pio)
 pico_generate_pio_header(mistusbxilinx ../drivers/jamma.pio)
 pico_generate_pio_header(mistusbxilinx ../drivers/jammadb9.pio)
+pico_generate_pio_header(mistusbxilinx ../drivers/audio_i2s.pio)
+pico_generate_pio_header(mistusbxilinx ../drivers/ps2.pio)
+pico_generate_pio_header(mistusbxilinx ../drivers/ps2tx.pio)
 pico_enable_stdio_usb(mistusbxilinx 0)
 pico_enable_stdio_uart(mistusbxilinx 0)
 pico_add_extra_outputs(mistusbxilinx)
@@ -331,7 +340,7 @@ target_compile_options(mistusbxilinx PUBLIC
   #"-DDEVKIT_DEBUG"
   "-DUSB_DEBUG_OFF"
   "-DMIST_ROOT=\"/MIST\""
-#  "-DPICOSYNTH"
+  "-DPICOSYNTH"
 #  "-DALTERA_FPGA"
 )
 
@@ -340,16 +349,29 @@ target_compile_options(mistusbxilinx PUBLIC
 add_executable(mistusb
   ${driver_src}
   ${main_src}
+  ${picosynth_src}
   ${usb_src}
   )
 
-target_link_libraries(mistusb pico_stdlib mistfirmwareusb hardware_spi hardware_pio hardware_flash hardware_i2c tinyusb_host tinyusb_board)
+target_link_libraries(mistusb
+  pico_stdlib 
+  mistfirmwareusb 
+  hardware_spi 
+  hardware_pio 
+  hardware_flash 
+  hardware_i2c 
+  pico_multicore
+  ${picosynth_lib}
+  tinyusb_host 
+  tinyusb_board)
 target_include_directories(mistusb PUBLIC ../usbhost)
+target_include_directories(mistusb PUBLIC ../picosynth)
 add_compile_options(-O2)
 pico_generate_pio_header(mistusb ../drivers/fpga.pio)
 pico_generate_pio_header(mistusb ../drivers/spi.pio)
 pico_generate_pio_header(mistusb ../drivers/jamma.pio)
 pico_generate_pio_header(mistusb ../drivers/jammadb9.pio)
+pico_generate_pio_header(mistusb ../drivers/audio_i2s.pio)
 pico_generate_pio_header(mistusb ../drivers/ps2.pio)
 pico_generate_pio_header(mistusb ../drivers/ps2tx.pio)
 pico_enable_stdio_usb(mistusb 0)
@@ -368,7 +390,9 @@ target_compile_options(mistusb PUBLIC
   "-DALTERA_FPGA"
   "-DQMTECH"
   "-DUSB_STORAGE"
+  "-DPICOSYNTH"
   "-DUSB_DEBUG_OFF"
+#  "-DBUFFER_FPGA"
 )
 
 ####################################################################################

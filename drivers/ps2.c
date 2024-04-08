@@ -370,7 +370,7 @@ void ps2_HealthCheck() {
     if (ps2port[i].hostMode) {
       /* if receive is stalled due to missing a clock transition, then return it to normal */
       if (ps2port[i].ps2_state == PS2_RECEIVE && (ps2port[i].lastAction < now) && (now - ps2port[i].lastAction) > IDLE_RESET_PERIOD_US) {
-        printf("!\n");
+        debug(("!\n"));
         ps2port[i].ps2_state = PS2_IDLE;
         gpio_put(ps2port[i].gpio_clk, 1);
         gpio_set_dir(ps2port[i].gpio_clk, GPIO_IN);
@@ -441,12 +441,12 @@ typedef struct {
   uint8_t fifobuf[64];
   fifo_t fifo_rx;
   uint8_t fiforxbuf[64];
-  // int hostMode;
   uint sm;
-  // uint offset;
 } ps2_t;
 
-ps2_t ps2port[NR_PS2];
+static ps2_t ps2port[NR_PS2];
+static int hostMode = -1;
+static uint ps2_offset = 0;
 
 /* calculate odd parity */
 static uint8_t parity(uint8_t d) {
@@ -476,7 +476,7 @@ static int readPs2(PIO pio, uint sm) {
   if (!pio_sm_is_rx_fifo_empty(pio, sm)) {
     uint32_t x = pio_sm_get_blocking(pio, sm);
     c = decode(x);
-    printf("fifo: %08x (%08x)\n", x, c);
+    debug(("fifo: %08x (%08x)\n", x, c));
   }
   return c;
 }
@@ -488,9 +488,9 @@ static void writePs2(PIO pio, uint sm, uint8_t data, int hostMode) {
     } else {
       pio_sm_put_blocking(pio, sm, (data << 1) | (parity(data) << 9) | 0x400);
     }
-    printf("Sent data %02X\n", data);
+    debug(("Sent data %02X\n", data));
   } else {
-    printf("Couldn't send data %02X\n", data);
+    debug(("Couldn't send data %02X\n", data));
   }
 }
 
@@ -527,8 +527,6 @@ void ps2_Init() {
   fifo_Init(&ps2port[1].fifo_rx, ps2port[1].fiforxbuf, sizeof ps2port[1].fiforxbuf);
   ps2port[0].sm = PS2HOST_SM;
   ps2port[1].sm = PS2HOST2_SM;
-  // ps2port[0].hostMode = -1;
-  // ps2port[1].hostMode = -1;
 
 #ifdef PIOINTS
   irq_set_exclusive_handler (PS2_PIO_IRQ, pio_callback);
@@ -538,8 +536,6 @@ void ps2_Init() {
   started = 1;
 }
 
-static int hostMode = -1;
-static uint ps2_offset = 0;
 void ps2_SwitchMode(int _hostMode) {
   if (_hostMode != hostMode) {
     if (hostMode >= 0) {
@@ -575,25 +571,6 @@ void ps2_SwitchMode(int _hostMode) {
 }
 
 void ps2_EnablePortEx(uint8_t ch, bool enabled, uint8_t _hostMode) {
-#if 0
-  if (enabled) {
-    if (_hostMode != ps2port[ch].hostMode) {
-      int gpio_base = ch == 0 ? GPIO_PS2_CLK : GPIO_PS2_CLK2;
-      if (_hostMode ) {
-        ps2port[ch].offset = pio_add_program(ps2host_pio, &ps2_program);
-        ps2_program_init(ps2host_pio, ps2port[ch].sm, ps2port[ch].offset, gpio_base);
-      } else {
-        ps2port[ch].offset = pio_add_program(ps2host_pio, &ps2tx_program);
-        ps2tx_program_init(ps2host_pio, ps2port[ch].sm, ps2port[ch].offset, gpio_base);
-      }
-      ps2port[ch].hostMode = _hostMode;
-    }
-  } else {
-    pio_sm_set_enabled(ps2host_pio, ps2port[ch].sm, false);
-    pio_remove_program(ps2host_pio, ps2port[ch].hostMode ? &ps2_program : &ps2tx_program, ps2port[ch].offset);
-    ps2port[ch].hostMode = -1;
-  }
-#endif
 }
 
 int ps2_GetChar(uint8_t ch) {
@@ -613,17 +590,15 @@ void ps2_HealthCheck() {
   int c;
   int ch = 0;
 
-  // if (hostMode) {
-    for (int ch = 0; ch < NR_PS2; ch ++) {
-      while ((c = readPs2(ps2host_pio, ps2port[ch].sm)) >= 0) {
-        fifo_Put(&ps2port[ch].fifo_rx, c);
-      }
-
-      while (!pio_sm_is_tx_fifo_full(ps2host_pio, ps2port[ch].sm) && (c = fifo_Get(&ps2port[ch].fifo)) >= 0) {
-        writePs2(ps2host_pio, ps2port[ch].sm, c, hostMode);
-      }
+  for (int ch = 0; ch < NR_PS2; ch ++) {
+    while ((c = readPs2(ps2host_pio, ps2port[ch].sm)) >= 0) {
+      fifo_Put(&ps2port[ch].fifo_rx, c);
     }
-  // }
+
+    while (!pio_sm_is_tx_fifo_full(ps2host_pio, ps2port[ch].sm) && (c = fifo_Get(&ps2port[ch].fifo)) >= 0) {
+      writePs2(ps2host_pio, ps2port[ch].sm, c, hostMode);
+    }
+  }
 }
 
 
@@ -632,11 +607,13 @@ void ps2_DebugQueues() {
   for (int i=0; i<NR_PS2; i++) {
     int ch;
     while ((ch = ps2_GetChar(i)) >= 0) {
-      printf("[RX%d:%02X]", i, ch);
+      debug(("[RX%d:%02X]", i, ch));
       n++;
     }
   }
-  if (n) printf("\n");
+#ifdef DEBUG
+  if (n) debug(("\n"));
+#endif
 #ifdef PIOINTS
   if (nrints) { printf("nrints = %d\n", nrints); nrints = 0; }
 #endif

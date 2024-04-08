@@ -239,10 +239,9 @@
 
 // NOTE - PIO number not changed on PIO not changed from this, but is here for reference sake
 #define AUDIO_I2S_PIO       pio1
-#define AUDIO_I2S_SM        2
+#define AUDIO_I2S_SM        1
 #define AUDIO_I2S_OFFSET    0
 #define AUDIO_I2S_INSTR     20
-
 
 #define DEBUG_PIO pio0
 #define DEBUG_SM 3

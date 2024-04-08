@@ -416,6 +416,7 @@ void kbd_core() {
       ps2_EnablePortEx(0, true, mistMode);
       ps2_EnablePortEx(1, false, mistMode);
       ps2_EnablePortEx(1, true, mistMode);
+      ps2_SwitchMode(mistMode);
       previousMistMode = mistMode;
 
       /* reset the ps2 keyboard */

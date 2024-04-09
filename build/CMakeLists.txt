@@ -193,6 +193,7 @@ pico_generate_pio_header(mistram ../drivers/spi.pio)
 pico_generate_pio_header(mistram ../drivers/jamma.pio)
 pico_generate_pio_header(mistram ../drivers/jammadb9.pio)
 pico_generate_pio_header(mistram ../drivers/ps2.pio)
+pico_generate_pio_header(mistram ../drivers/audio_i2s.pio)
 pico_generate_pio_header(mistram ../drivers/ps2tx.pio)
 pico_enable_stdio_usb(mistram 1)
 pico_enable_stdio_uart(mistram 0)
@@ -426,6 +427,7 @@ target_link_libraries(mistmb2xilinxram
 add_compile_options(-O2)
 pico_generate_pio_header(mistmb2xilinxram ../drivers/fpga.pio)
 pico_generate_pio_header(mistmb2xilinxram ../drivers/spi.pio)
+pico_generate_pio_header(mistmb2xilinxram ../drivers/audio_i2s.pio)
 # NOUSB
 pico_enable_stdio_usb(mistmb2xilinxram 1)
 # USB

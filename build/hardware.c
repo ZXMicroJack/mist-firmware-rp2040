@@ -236,6 +236,30 @@ char GetDB9(char index, unsigned char *joy_map) {
   return 1;
 }
 
+#define DB9_UP          0x80
+#define DB9_DOWN        0x40
+#define DB9_LEFT        0x20
+#define DB9_RIGHT       0x10
+#define DB9_BTN1        0x08
+#define DB9_BTN2        0x04
+#define DB9_BTN3        0x02
+#define DB9_BTN4        0x01
+
+const static uint8_t inv_joylut[] = {DB9_BTN4, DB9_BTN3, DB9_BTN2, DB9_BTN1, DB9_UP, DB9_DOWN, DB9_LEFT, DB9_RIGHT};
+void DB9Update(uint8_t joy_num, uint8_t usbjoy) {
+  uint8_t mask = 0x80;
+  uint8_t ndx = 0;
+  uint8_t joydata = 0;
+
+  while (mask) {
+    if (usbjoy & mask) joydata |= inv_joylut[ndx];
+    ndx++;
+    mask >>= 1;
+  }
+
+  jamma_SetData(joy_num & 1, joydata);
+}
+
 // TODO MJ implement RTC
 char GetRTC(unsigned char *d) {
   // implemented as d[0-7] -

@@ -32,6 +32,14 @@ uint32_t jamma_GetData(uint8_t inst) {
   return d;
 }
 
+void jamma_SetData(uint8_t inst, uint32_t data) {
+  uint8_t cmddata[2];
+  cmddata[0] = inst;
+  cmddata[1] = data;
+  ipc_Command(IPC_SENDJAMMA, cmddata, sizeof cmddata);
+}
+
+
 #ifdef MB2USB
 void tuh_task() {
 }

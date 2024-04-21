@@ -464,6 +464,7 @@ target_compile_options(mistmb2xilinxram PUBLIC
 # FLASH build - release binary for Xilinx ZXTres board -with single CPU middleboard.
 add_executable(mistmb2xilinx
   ${driver_mb2_src}
+#  ../drivers/debug.c
   ${main_src}
   ${usb_src}
   ${picosynth_src}
@@ -486,6 +487,7 @@ add_compile_options(-O2)
 pico_generate_pio_header(mistmb2xilinx ../drivers/fpga.pio)
 pico_generate_pio_header(mistmb2xilinx ../drivers/spi.pio)
 pico_generate_pio_header(mistmb2xilinx ../drivers/audio_i2s.pio)
+pico_generate_pio_header(mistmb2xilinx ../drivers/uart_tx.pio)
 pico_enable_stdio_usb(mistmb2xilinx 0)
 # pico_enable_stdio_usb(mistmb2xilinx 1)
 pico_enable_stdio_uart(mistmb2xilinx 0)
@@ -507,6 +509,7 @@ target_compile_options(mistmb2xilinx PUBLIC
   "-DUSB_DEBUG_OFF"
   "-DBOOT_FLASH_ON_ERROR"
   "-DPICOSYNTH"
+  # "-DPIODEBUG"
 )
 
 ####################################################################################

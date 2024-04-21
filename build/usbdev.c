@@ -84,6 +84,8 @@ void usb_attached(uint8_t dev, uint8_t idx, uint16_t vid, uint16_t pid, uint8_t 
   report[dev].desc_stored = desc;
   report[dev].desc_len = desclen;
   report[dev].report_size = 0;
+  device[dev].vid = vid;
+  device[dev].pid = pid;
   r = usb_hid_class.init(&device[dev], &dd);
   //TODO MJ maybe do more at this point?
 }

@@ -75,7 +75,7 @@ struct {
 
 uint8_t tuh_descriptor_get_device_sync(uint8_t dev_addr, uint8_t *dd, uint16_t len);
 
-uint8_t dd[128];
+// uint8_t dd[128];
 
 void usb_attached(uint8_t dev, uint8_t idx, uint16_t vid, uint16_t pid, uint8_t *desc, uint16_t desclen) {
   usb_device_descriptor_t dd;

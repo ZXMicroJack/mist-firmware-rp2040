@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <stdarg.h>
 #ifdef PIODEBUG
 #include "hardware/pio.h"
 #endif
@@ -27,9 +28,13 @@ static PIO dbg_pio = DEBUG_PIO;
 static uint dbg_sm = DEBUG_SM;
 
 void debuginit() {
-    const uint SERIAL_BAUD = 115200;
+  static uint8_t started = 0;
+  const uint SERIAL_BAUD = 115200;
+  if (!started) {
     uint offset = pio_add_program(dbg_pio, &uart_tx_program);
     uart_tx_program_init(dbg_pio, dbg_sm, offset, GPIO_DEBUG_TX_PIN, SERIAL_BAUD);
+    started = 1;
+  }
 }
 
 static char str[256];
@@ -38,6 +43,8 @@ int dbgprintf(const char *fmt, ...) {
   va_list argp;
   va_start(argp, fmt);
   vsprintf(str, fmt, argp);
+
+  debuginit();
 
   i=0;
   while (str[i]) {

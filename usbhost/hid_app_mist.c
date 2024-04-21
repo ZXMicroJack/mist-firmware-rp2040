@@ -26,7 +26,7 @@
 #include "bsp/board.h"
 #include "tusb.h"
 // #include "ps2.h"
-// #define DEBUG
+#define DEBUG
 #include "debug.h"
 // #include "joypad.h"
 
@@ -51,16 +51,25 @@ void usb_handle_data(uint8_t dev, uint8_t *desc, uint16_t desclen);
 
 #define MAX_REPORT  4
 
+#ifdef PIODEBUG
+#define printf dbgprintf
+#else
+// #define printf debugprintf
+#endif
+  
+
 #if CFG_TUH_HID
 
 #ifdef MIST_USB
+#define dumphex(a, d, l)
 #else
 void dumphex(char *s, uint8_t *data, int len) {
-    uprintf("%s: ", s);
+    printf("%s: ", s);
     for (int i=0; i<len; i++) {
-      uprintf("0x%02X,", data[i]);
+      if (len > 16 && (i & 0xf) == 0) printf("\n");
+      printf("0x%02X,", data[i]);
     }
-    uprintf("\n");
+    printf("\n");
 }
 #endif
 
@@ -73,9 +82,6 @@ static struct hid_info
   uint16_t vid, pid;
 } hid_info[CFG_TUSB_HOST_DEVICE_MAX];
 
-#define printf uprintf
-
-  
 void hid_app_task(void)
 {
 }
@@ -104,7 +110,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
 {
 #ifdef DEBUG
   printf("HID device address = %d, instance = %d is mounted\r\n", dev_addr, instance);
-  uprintf("tuh_hid_mount_cb(dev_addr:%d inst:%d)\n", dev_addr, instance);
+  printf("tuh_hid_mount_cb(dev_addr:%d inst:%d)\n", dev_addr, instance);
   dumphex("report", desc_report, desc_len);
 #endif
 

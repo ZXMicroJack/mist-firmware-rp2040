@@ -25,7 +25,7 @@
 #define DEBUG
 #include "debug.h"
 
-#define TEST_PS2
+// #define TEST_PS2
 // #define TEST_PS2_HOST
 // #define TEST_IPC
 // #define TEST_SDCARD_SPI
@@ -34,6 +34,7 @@
 // #define TEST_FLASH
 // #define TEST_USERIO
 // #define TEST_JAMMA
+#define TEST_DEBUG
 
 // KEY ACTION ALLOCATION
 // aAgGHjJlMNoOqQrRTuUVwWxXyYzZ
@@ -543,6 +544,14 @@ int main()
         ps2_SendChar(0, 0x66);
         break;
 #endif
+
+#define TEST_DEBUG
+      case 'd': {
+        static int n = 0;
+        debuginit();
+        dbgprintf("Hello everyone %d\n", n++);
+      }
+        
 
 #ifdef TEST_PS2_HOST
       case 'h': keyledon(0x00); break;

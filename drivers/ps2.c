@@ -607,13 +607,11 @@ void ps2_DebugQueues() {
   for (int i=0; i<NR_PS2; i++) {
     int ch;
     while ((ch = ps2_GetChar(i)) >= 0) {
-      debug(("[RX%d:%02X]", i, ch));
+      printf("[RX%d:%02X]", i, ch);
       n++;
     }
   }
-#ifdef DEBUG
-  if (n) debug(("\n"));
-#endif
+  if (n) printf("\n");
 #ifdef PIOINTS
   if (nrints) { printf("nrints = %d\n", nrints); nrints = 0; }
 #endif

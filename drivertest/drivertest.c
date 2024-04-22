@@ -26,7 +26,7 @@
 #include "debug.h"
 
 // #define TEST_PS2
-// #define TEST_PS2_HOST
+#define TEST_PS2_HOST
 // #define TEST_IPC
 // #define TEST_SDCARD_SPI
 // #define TEST_FPGA
@@ -34,7 +34,7 @@
 // #define TEST_FLASH
 // #define TEST_USERIO
 // #define TEST_JAMMA
-#define TEST_DEBUG
+// #define TEST_DEBUG
 
 // KEY ACTION ALLOCATION
 // aAgGHjJlMNoOqQrRTuUVwWxXyYzZ
@@ -394,6 +394,11 @@ int main()
   ps2_EnablePort(0, true);
   ps2_SwitchMode(0);
 #endif
+#ifdef TEST_PS2_HOST
+  ps2_Init();
+  ps2_SwitchMode(1);
+#endif
+
 //   ps2_SendChar(0, 0x7e);
 //   ps2_SendChar(0, 0xf0);
 //   ps2_SendChar(0, 0x7e);
@@ -545,12 +550,14 @@ int main()
         break;
 #endif
 
-#define TEST_DEBUG
+#ifdef TEST_DEBUG
       case 'd': {
         static int n = 0;
         debuginit();
         dbgprintf("Hello everyone %d\n", n++);
+        break;
       }
+#endif
         
 
 #ifdef TEST_PS2_HOST

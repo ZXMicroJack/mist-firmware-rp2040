@@ -22,6 +22,7 @@
 #include "fifo.h"
 #include "ipc.h"
 #include "kbd.h"
+#include "pins.h"
 #define DEBUG
 #include "debug.h"
 
@@ -366,6 +367,70 @@ void test_UserIOKill() {
   spi_deinit(spi0);
 }
 
+void switch_ps2() {
+    gpio_put(GPIO_PS2_CLK, 0);
+    gpio_set_dir(GPIO_PS2_CLK, GPIO_OUT);
+
+// at 1 = 100 us
+    gpio_put(GPIO_PS2_DATA, 0);
+    gpio_set_dir(GPIO_PS2_DATA, GPIO_OUT);
+
+// at 49 = 4900us = 4.9ms
+    gpio_put(GPIO_PS2_CLK, 1);
+    gpio_put(GPIO_PS2_DATA, 1);
+
+    gpio_set_dir(GPIO_PS2_CLK, GPIO_IN);
+    gpio_set_dir(GPIO_PS2_DATA, GPIO_IN);
+
+// at 50 = 5000us = 5ms // never gets here
+    // gpio_put(GPIO_PS2_CLK, 1);
+    // gpio_set_dir(GPIO_PS2_CLK, GPIO_IN);
+
+
+
+#if 0
+  uint64_t h = time_us_64() + 10000000;
+
+  gpio_set_dir(GPIO_PS2_CLK, GPIO_IN);
+  gpio_set_dir(GPIO_PS2_DATA, GPIO_IN);
+
+  printf("Waiting for data 0\n");
+  while (gpio_get(GPIO_PS2_DATA)) tight_loop_contents();
+  printf("Waiting for data 1\n");
+  while (!gpio_get(GPIO_PS2_DATA)) tight_loop_contents();
+
+  gpio_set_dir(GPIO_PS2_CLK, GPIO_OUT);
+  gpio_put(GPIO_PS2_CLK, 1);
+  sleep_ms(2);
+  gpio_put(GPIO_PS2_CLK, 0);
+  gpio_set_dir(GPIO_PS2_CLK, GPIO_IN);
+#endif
+
+
+
+#if 0
+  printf("Waiting for data 1\n");
+  while (!gpio_get(GPIO_PS2_DATA)) tight_loop_contents();
+  printf("Waiting for data 0\n");
+  while (gpio_get(GPIO_PS2_DATA)) tight_loop_contents();
+  printf("Waiting for data 1\n");
+  while (!gpio_get(GPIO_PS2_DATA)) tight_loop_contents();
+#endif
+
+#if 0
+  for(;;) {
+    printf("%d %d\n", gpio_get(GPIO_PS2_CLK), gpio_get(GPIO_PS2_DATA));
+    if (time_us_64() > h) break;
+  }
+#endif
+
+#if 0
+  gpio_set_dir(GPIO_PS2_CLK, GPIO_OUT);
+  gpio_put(GPIO_PS2_CLK, 1);
+  sleep_ms(1);
+  gpio_put(GPIO_PS2_CLK, 0);
+#endif
+}
 
 extern int forceexit;
 int main()
@@ -395,8 +460,8 @@ int main()
   ps2_SwitchMode(0);
 #endif
 #ifdef TEST_PS2_HOST
-  ps2_Init();
-  ps2_SwitchMode(1);
+  // ps2_Init();
+  // ps2_SwitchMode(1);
 #endif
 
 //   ps2_SendChar(0, 0x7e);
@@ -417,7 +482,7 @@ int main()
 #if defined(TEST_PS2_HOST) || defined(TEST_PS2)
     ps2_HealthCheck();
     ps2_DebugQueues();
-    // ps2_DebugQueuesX();
+    // ps2_DebugQueuesX(); 
 #endif
 
 //     ipc_MasterTick();
@@ -565,6 +630,7 @@ int main()
       case 'H': keyledon(0x07); break;
       case 'r': keyreset(); break;
       case 'x': ps2_SendChar(0, 0xaa); break;
+      case 'X': switch_ps2(); break;
 #endif
 
       // IPC

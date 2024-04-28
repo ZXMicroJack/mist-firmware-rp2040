@@ -310,6 +310,8 @@ uint8_t const hid2ps2[] = {
   0x48, 0x50, 0x57, 0x5f
 };
 
+uint8_t const e0mask = 0xd8;
+
 static uint8_t kbdkeys[6];
 static uint8_t modifier = 0;
 static uint8_t ps2ext = 0;
@@ -389,16 +391,18 @@ void usb_ToPS2(uint8_t modifier, uint8_t keys[6]) {
   memcpy(hidreport, keys, sizeof hidreport);
 
   // handle modifiers
-  uint8_t m = 0x80;
+  uint8_t m = 0x01;
   for (int i=0; i<8; i++) {
       if (!(prev_modifier&m) && (modifier&m)) {
+        if (e0mask&m) ps2[nrps2++] = 0xe0;
         ps2[nrps2++] = mod2ps2[i];
       }
       if ((prev_modifier&m) && !(modifier&m)) {
+        if (e0mask&m) ps2[nrps2++] = 0xe0;
         ps2[nrps2++] = 0xf0;
         ps2[nrps2++] = mod2ps2[i];
       }
-      m >>= 1;
+      m <<= 1;
   }
   prev_modifier = modifier;
 
@@ -464,7 +468,6 @@ void ps2_Poll() {
   if (firsttime) {
     modifier = 0;
     memset(kbdkeys, 0, sizeof kbdkeys);
-    ps2_Init();
     firsttime = 0;
   }
 

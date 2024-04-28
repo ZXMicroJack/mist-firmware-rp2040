@@ -1,0 +1,21 @@
+v1 (v2.2)
+---------
+- Initial release
+
+v2 (v2.3)
+---------
+- More PS2 devices working
+- MIST.INI not being read from MIST subdirectory (ZX3 only)
+- Detect and respond to RESET button (can't test on ZX3 - suspect it doesn't work)
+- Added midi again.
+- PS2 / USB mouse support 
+- Solve some PS2 crashing
+- USB joypad support
+- DB9 joystick support (don't ask me how to enable it in the MiST menu)
+
+v3 (v2.4)
+---------
+- Fixed USB keyboard modifier mappings
+- F1 joypad mapping menu now working.
+- USB joypad support in legacy.
+

@@ -466,6 +466,7 @@ void ps2_Poll() {
   int k;
 
   if (firsttime) {
+    ps2_Init();
     modifier = 0;
     memset(kbdkeys, 0, sizeof kbdkeys);
     firsttime = 0;

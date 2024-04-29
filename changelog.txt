@@ -19,3 +19,8 @@ v3 (v2.4)
 - F1 joypad mapping menu now working.
 - USB joypad support in legacy.
 
+v4 (v2.5)
+---------
+- PS/2 had fallen off - fixed it.
+- JAMMA was not jamming.
+

@@ -160,12 +160,16 @@ void jamma_Init() {
   jamma_InitDB9();
 }
 
+uint8_t jamma_GetMisterMode() {
+  return inited == 2 ? 0x01 : inited == 1 ? 0x00 : 0xff ;
+}
+
 void jamma_InitEx(uint8_t mister) {
   debug(("jamma_InitEx: mister = %d\n", mister));
-  if (mister) {
-    jamma_InitDB9();
-  } else {
+  if (!mister) {
     jamma_InitUSB();
+  } else if (mister != 0xff) {
+    jamma_InitDB9();
   }
 }
 

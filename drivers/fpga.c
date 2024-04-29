@@ -248,6 +248,7 @@ int fpga_configure(void *user_data, uint8_t (*next_block)(void *, uint8_t *), ui
 #endif
 
 #ifndef MB2
+  uint8_t old_jamma_mode = jamma_GetMisterMode();
   jamma_Kill();
   pio_add_program_at_offset(fpga_pio, &fpga_program, FPGA_OFFSET);
   fpga_program_init(fpga_pio, fpga_sm, FPGA_OFFSET, 0);
@@ -318,6 +319,7 @@ int fpga_configure(void *user_data, uint8_t (*next_block)(void *, uint8_t *), ui
 
 #ifndef MB2
   pio_remove_program(fpga_pio, &fpga_program, FPGA_OFFSET);
+  jamma_InitEx(old_jamma_mode);
 #endif
 
 #ifdef ALTERA_FPGA

@@ -1,6 +1,7 @@
 #ifndef _JAMMA_H
 #define _JAMMA_H
 
+uint8_t jamma_GetMisterMode();
 void jamma_InitEx(uint8_t mister);
 void jamma_Init();
 void jamma_SetData(uint8_t inst, uint32_t data);

@@ -97,6 +97,18 @@
 #define GPIO_FPGA_DATA0   1
 #define GPIO_FPGA_MSEL1   25
 
+// ZXUno+
+#define GPIO_JTAG_TCK     0 //p32
+#define GPIO_JTAG_TDO     25 //p67
+#define GPIO_JTAG_TDI     1 //p30
+#define GPIO_JTAG_TMS     13 //p29
+
+// #define GPIO_JTAG_TCK     13
+// #define GPIO_JTAG_TDO     1
+// #define GPIO_JTAG_TDI     25
+// #define GPIO_JTAG_TMS     0
+
+
 #define MSEL1_AS          1
 #define MSEL1_PS          0
 

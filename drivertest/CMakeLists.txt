@@ -25,7 +25,20 @@ include(example_auto_set_url.cmake)
 include_directories(../drivers .)
 
 # fpga program  
-add_executable(drivertest drivertest.c ../drivers/fpga.c ../drivers/pio_spi.c ../drivers/ps2.c ../drivers/sdcard.c ../drivers/bitfile.c ../drivers/ipc.c ../drivers/flash.c ../drivers/debug.c ../drivers/fifo.c ../drivers/kbd.c ../drivers/jamma.c ../drivers/crc16.c)
+add_executable(drivertest drivertest.c ../drivers/fpga.c
+  ../drivers/pio_spi.c 
+  ../drivers/ps2.c 
+  ../drivers/sdcard.c 
+  ../drivers/bitfile.c 
+  ../drivers/ipc.c 
+  ../drivers/flash.c 
+  ../drivers/debug.c 
+  ../drivers/fifo.c 
+  ../drivers/kbd.c 
+  ../drivers/jamma.c 
+  ../drivers/jtag.c
+  ../drivers/crc16.c)
+
 target_link_libraries(drivertest pico_stdlib hardware_spi hardware_pio hardware_flash hardware_i2c pico_i2c_slave)
 add_compile_options(-O2)
 pico_generate_pio_header(drivertest ../drivers/fpga.pio)

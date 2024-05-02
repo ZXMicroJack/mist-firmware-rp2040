@@ -23,6 +23,7 @@
 #include "ipc.h"
 #include "kbd.h"
 #include "pins.h"
+#include "jtag.h"
 #define DEBUG
 #include "debug.h"
 
@@ -34,8 +35,9 @@
 // #define TEST_MATRIX
 // #define TEST_FLASH
 // #define TEST_USERIO
-#define TEST_JAMMA
+// #define TEST_JAMMA
 // #define TEST_DEBUG
+#define TEST_JTAG
 
 // KEY ACTION ALLOCATION
 // aAgGHjJlMNoOqQrRTuUVwWxXyYzZ
@@ -554,6 +556,15 @@ int main()
         break;
       case 'C':
         printf("fpga_claim(true); returns %d\n", fpga_claim(true));
+        break;
+#endif
+
+#ifdef TEST_JTAG
+      case 'j':
+        jtag_init(0, 8);
+        break;
+      case 'J':
+        jtag_detect(0);
         break;
 #endif
 

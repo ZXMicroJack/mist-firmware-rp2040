@@ -41,6 +41,7 @@ uint32_t bitfile_get_length(uint8_t *data, uint32_t filesize) {
       uint32_t len = ((data[i+1]<<24) | (data[i+2]<<16) |
         (data[i+3]<<8) | data[i+4]) + i + 5;
       debug(("bitfile_get_length: detected len %d\n", len));
+      printf("i = %d\n", i);
       return len;
     }
     i += len + (tag == 'e' ? 1 : 3);

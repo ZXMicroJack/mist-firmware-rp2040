@@ -561,10 +561,10 @@ int main()
 
 #ifdef TEST_JTAG
       case 'j':
-        jtag_init(0, 8);
+        jtag_init();
         break;
       case 'J':
-        jtag_detect(0);
+        jtag_detect();
         break;
 #endif
 

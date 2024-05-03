@@ -7,21 +7,18 @@
 
 void delay(int i);
 
-int jtag_init(int ch, int preinslen);
+int jtag_init(void);
 void jtag_kill(void);
 
 void jtag_tms(int value);
 int jtag_tdi(int value);
 uint8_t jtag_tdin(int n, uint8_t bits);
 void jtag_tck(void);
-void jtag_reset();
-void jtag_idle();
+void jtag_reset(void);
+void jtag_idle(void);
 uint32_t jtag_ins(uint8_t ins, uint8_t *data, int n);
-uint32_t jtag_ins_crc(uint8_t ins, uint8_t *data, int n, uint32_t *crcCalc);
 
-void jtag_enumdevs(int ch);
-void jtag_start(int ch, uint8_t *image, uint32_t imageSize, uint32_t device, uint32_t devicemask, uint32_t crc);
-
-void jtag_detect(int ch);
+void jtag_start(uint8_t *image, uint32_t imageSize, uint32_t device, uint32_t devicemask, uint32_t crc);
+void jtag_detect(void);
 
 #endif

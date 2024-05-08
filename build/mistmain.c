@@ -351,8 +351,6 @@ uint8_t old_coretype = 0;
 
 extern uint8_t stop_watchdog;
 
-uint64_t check_core_at = 0;
-
 #ifndef USBFAKE
 uint64_t lastBeep = 0;
 void beep(int n) {
@@ -399,7 +397,6 @@ void sysex_Process() {
 
     case CMD_INITFPGAFN: {
       char fn[256];
-      extern unsigned char ConfigureFpgaEx(const char *bitfile, uint8_t fatal, uint8_t reset);
       int i = 0;
       memset(fn, 0, sizeof fn);
       for (i = 0; i < (sysex_insysex - 4); i++) {
@@ -407,17 +404,8 @@ void sysex_Process() {
       }
       
       printf("fn = %s\n", fn);
-      // skip initial separator, reset before load
-      // ConfigureFpgaEx(fn, false, true);
       ResetFPGA();
       fpga_init(fn);
-      // check_core_at = time_us_64() + 100000;
-
-      // main_Active(1);
-      // spi = sd_hw_init();
-      // fpga_load_bitfile(spi, 0, fn);
-      // sd_hw_kill(spi);
-      // main_Active(0);
       break;
     }
     
@@ -512,37 +500,16 @@ int mist_loop() {
     cdc_control_poll();
     storage_control_poll();
 
-    if (check_core_at && time_us_64() > check_core_at) {
-      user_io_detect_core_type();
-      user_io_detect_core_type();
-      user_io_detect_core_type();
-      check_core_at = 0;
-    }
-
     if (legacy_mode == LEGACY_MODE) {
       if (user_io_core_type() != CORE_TYPE_UNKNOWN) {
         set_legacy_mode(MIST_MODE);
       }
-  // beep(1);
     } else {
-  // beep(2);
       user_io_poll();
 
-#if 0
-      if (old_coretype != user_io_core_type()) {
-        old_coretype = user_io_core_type();
-        printf("user_io_core_type() %02X\n", old_coretype);
-      }
-#endif
-
-      // MJ: check for legacy core and switch support on
-#if 1
       if (user_io_core_type() == CORE_TYPE_UNKNOWN) {
         set_legacy_mode(LEGACY_MODE);
       }
-#endif
-      // printf("[%d]\n", __LINE__);
-
 
       // MIST (atari) core supports the same UI as Minimig
       if((user_io_core_type() == CORE_TYPE_MIST) || (user_io_core_type() == CORE_TYPE_MIST2)) {
@@ -551,7 +518,6 @@ int mist_loop() {
 
         HandleUI();
       }
-      // printf("[%d]\n", __LINE__);
 
       // call original minimig handlers if minimig core is found
       if((user_io_core_type() == CORE_TYPE_MINIMIG) || (user_io_core_type() == CORE_TYPE_MINIMIG2)) {
@@ -561,15 +527,12 @@ int mist_loop() {
         HandleFpga();
         HandleUI();
       }
-      // printf("[%d]\n", __LINE__);
 
       // 8 bit cores can also have a ui if a valid config string can be read from it
       if((user_io_core_type() == CORE_TYPE_8BIT) && user_io_is_8bit_with_config_string()) HandleUI();
-      // printf("[%d]\n", __LINE__);
 
       // Archie core will get its own treatment one day ...
       if(user_io_core_type() == CORE_TYPE_ARCHIE) HandleUI();
-      // printf("[%d]\n", __LINE__);
     }
     return 0;
 }

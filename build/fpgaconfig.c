@@ -24,10 +24,6 @@
 #define BUFFER_SIZE_MASK  0xf
 #define NR_BLOCKS(a) (((a)+511)>>9)
 
-//#define BUFFER_FPGA
-
-// #undef BUFFER_FPGA
-
 typedef struct {
   FIL file;
   uint32_t size;
@@ -35,8 +31,6 @@ typedef struct {
 #ifdef BUFFER_FPGA
   uint8_t buff[BUFFER_SIZE][512];
   uint8_t l, r, c;
-//   void (*closing_fn)(void *);
-//   void *closing_user;
 #endif
 } configFpga;
 
@@ -60,14 +54,6 @@ static uint8_t read_next_block(void *ud, uint8_t *data) {
   cf->size -= br;
   return 1;
 }
-
-// #ifdef BUFFER_FPGA
-
-// typedef struct {
-//   read_lba_t rl;
-//   uint8_t buff[BUFFER_SIZE][512];
-//   uint8_t l, r, c;
-// } buffered_read_lba_t;
 
 #ifdef BUFFER_FPGA
 #define brl_inc(a) (((a) + 1) & BUFFER_SIZE_MASK)
@@ -131,14 +117,33 @@ void BootFromFlash() {
 }
 #endif
 
-//MJ TODO remove
-// static configFpga cf;
-unsigned char ConfigureFpgaEx(const char *bitfile, uint8_t fatal, uint8_t reset) {
+unsigned char ConfigureFpga(const char *bitfile) {
   // configFpga cf;
   uint32_t fileSize;
   configFpga *cf;
 
   debug(("ConfigureFpgaEx: %s\n", bitfile ? bitfile : "null"));
+
+  if (bitfile && !strncmp(bitfile, "JTAGMODE.", 9)) {
+    fpga_initialise();
+    fpga_claim(true);
+    fpga_reset();
+
+    int n = 60;
+    while (n--) {
+      sleep_ms(1000);
+      user_io_detect_core_type();
+      if (user_io_core_type() != CORE_TYPE_UNKNOWN) {
+        break;
+      }
+    }
+
+    if (n>0) {
+      return 1;
+    } else {
+      bitfile = NULL;
+    }
+  }
 
 #ifdef XILINX // go to flash boot
   if (bitfile && !strcmp(bitfile, "ZXTRES.BIT")) {
@@ -148,15 +153,6 @@ unsigned char ConfigureFpgaEx(const char *bitfile, uint8_t fatal, uint8_t reset)
     return 1;
   }
 #endif
-
-  /* now configure */
-  if (reset) {
-    int r = ResetFPGA();
-    if (r) {
-      debug(("Failed: FPGA reset returns %d\n", r));
-      return 0;
-    }
-  }
 
   cf = (configFpga *)malloc(sizeof (configFpga));
 
@@ -172,8 +168,7 @@ unsigned char ConfigureFpgaEx(const char *bitfile, uint8_t fatal, uint8_t reset)
     BootFromFlash();
     return 1;
 #else
-    if (fatal) FatalError(4);
-    else return 0;
+    FatalError(4);
 #endif
   }
 
@@ -184,13 +179,8 @@ unsigned char ConfigureFpgaEx(const char *bitfile, uint8_t fatal, uint8_t reset)
 
   /* initialise fpga */
   fpga_initialise();
-//   fpga_claim(true);
 
 #ifdef BUFFER_FPGA
-#if 0
-  brl->closing_fn = NULL;
-  brl->closing_user = NULL;
-#endif  
   cf->l = cf->r = cf->c = 0;
   read_next_block_buffered_fill(cf);
 
@@ -204,8 +194,6 @@ unsigned char ConfigureFpgaEx(const char *bitfile, uint8_t fatal, uint8_t reset)
 #endif
 #endif
 
-  /* now configure */
-  if (!reset) {
     int r = ResetFPGA();
     if (r) {
       debug(("Failed: FPGA reset returns %d\n", r));
@@ -213,9 +201,6 @@ unsigned char ConfigureFpgaEx(const char *bitfile, uint8_t fatal, uint8_t reset)
       free(cf);
       return 0;
     }
-  }
-
-
 
 #ifdef BUFFER_FPGA
   fpga_configure(cf, read_next_block_buffered, fileSize);
@@ -224,22 +209,10 @@ unsigned char ConfigureFpgaEx(const char *bitfile, uint8_t fatal, uint8_t reset)
 #endif
   fpga_claim(false);
 
-// #endif
-//   sleep_ms(2000);
-
-//   kickSPI();
-//   kickSPI();
-//   kickSPI();
-//   kickSPI();
-
   int result = !cf->error;
   free(cf);
 
   // returns 1 if success / 0 on fail
   return result;
-}
-
-unsigned char ConfigureFpga(const char *bitfile) {
-  return ConfigureFpgaEx(bitfile, true, false);
 }
 

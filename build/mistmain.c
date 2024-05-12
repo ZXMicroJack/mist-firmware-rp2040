@@ -509,6 +509,10 @@ int mist_loop() {
 
       if (user_io_core_type() == CORE_TYPE_UNKNOWN) {
         set_legacy_mode(LEGACY_MODE);
+      } else {
+#ifdef XILINX
+        fpga_ConfirmType();
+#endif
       }
 
       // MIST (atari) core supports the same UI as Minimig

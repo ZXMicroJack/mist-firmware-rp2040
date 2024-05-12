@@ -538,7 +538,6 @@ target_compile_options(mistusbn1p PUBLIC
   "-DVDATE=\"\""
   "-Dhexdump=driver_hexdump"
   "-DPS2HOST"
-  "-DXILINX"
   "-DJAMMADB9"
   "-DUSB"
   "-DMIST_USB"

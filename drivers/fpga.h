@@ -17,4 +17,7 @@ void fpga_detect_init();
 void fpga_holdreset();
 int fpga_ResetButtonState();
 
+uint8_t fpga_GetType();
+void fpga_ConfirmType();
+
 #endif

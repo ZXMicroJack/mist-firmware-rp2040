@@ -217,9 +217,24 @@ static uint32_t crc32(uint32_t crc, uint8_t *blk, uint32_t len) {
 #define pio_sm_set_enabled(a,b,c) nada()
 #endif
 
+#ifndef ALTERA_FPGA
+static uint8_t fpgaType = A200T;
+static uint8_t fpgaTypeSet = AXXXT_TYPES;
+
+/* return set type if set, otherwise last detected */
+uint8_t fpga_GetType() {
+  return fpgaTypeSet == AXXXT_TYPES ? fpgaType : fpgaTypeSet;
+}
+
+/* confirm that the core is actually running - this detection should remain */
+void fpga_ConfirmType() {
+  if (fpgaTypeSet == AXXXT_TYPES) fpgaTypeSet = fpgaType;
+}
+#endif
+
 int fpga_configure(void *user_data, uint8_t (*next_block)(void *, uint8_t *), uint32_t assumelength) {
   uint8_t bits[512];
-  uint32_t data;  
+  uint32_t data;
   uint32_t len;
   uint32_t thislen;
   int j;
@@ -235,7 +250,7 @@ int fpga_configure(void *user_data, uint8_t (*next_block)(void *, uint8_t *), ui
   }
   
 #ifndef ALTERA_FPGA
-  uint32_t totallen = bitfile_get_length(bits, assumelength);
+  uint32_t totallen = bitfile_get_length(bits, assumelength, &fpgaType);
   len = totallen == 0xffffffff ? assumelength : totallen;
   debug(("fpga_get_length: returns %u\n", len));
   if (!len) {
@@ -246,7 +261,9 @@ int fpga_configure(void *user_data, uint8_t (*next_block)(void *, uint8_t *), ui
   uint32_t totallen = assumelength;
   len = assumelength;
 #endif
-
+  
+  // probably this should not be here, this makes some space in PIO memory to
+  // load the FPGA routines.
 #ifndef MB2
   uint8_t old_jamma_mode = jamma_GetMisterMode();
   jamma_Kill();

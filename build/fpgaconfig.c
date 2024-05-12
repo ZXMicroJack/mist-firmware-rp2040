@@ -17,7 +17,7 @@
 
 #include "drivers/fpga.h"
 #include "drivers/bitfile.h"
-// #define DEBUG
+#define DEBUG
 #include "drivers/debug.h"
 
 #define BUFFER_SIZE     16 // PACKETS
@@ -117,6 +117,31 @@ void BootFromFlash() {
 }
 #endif
 
+#ifdef XILINX
+uint8_t chipType = A200T;
+
+uint32_t GotoBitstreamOffset(FIL *f, uint32_t len) {
+  // uint8_t *blk;
+  uint8_t blk[512];
+  UINT br;
+
+  // blk = (uint8_t *)malloc(512);
+  if (f_read(f, blk, 512, &br) == FR_OK) {
+    if (blk[0] == 'M' && blk[1] == 'J' && blk[2] == 0x01 && blk[3] == 0x00) {
+      int o = 4 + fpga_GetType() * 4;
+      uint32_t offset = blk[o] | (blk[o+1]<<8) | (blk[o+2]<<16) | (blk[o+3]<<24);
+      uint32_t next_offset = blk[o+4] | (blk[o+5]<<8) | (blk[o+6]<<16) | (blk[o+7]<<24);
+      f_lseek(f, offset);
+      len = next_offset == 0 ? (len - offset) : (next_offset - offset);
+    } else {
+      f_lseek(f, 0);
+    }
+  }
+  // free(blk);
+  return len;
+}
+#endif
+
 unsigned char ConfigureFpga(const char *bitfile) {
   // configFpga cf;
   uint32_t fileSize;
@@ -124,6 +149,8 @@ unsigned char ConfigureFpga(const char *bitfile) {
 
   debug(("ConfigureFpgaEx: %s\n", bitfile ? bitfile : "null"));
 
+  /* handle JTAGMODE - sleep for 60s and poll for recognisable core, 
+     otherwise, reset back to core menu. */
   if (bitfile && !strncmp(bitfile, "JTAGMODE.", 9)) {
     fpga_initialise();
     fpga_claim(true);
@@ -138,6 +165,8 @@ unsigned char ConfigureFpga(const char *bitfile) {
       }
     }
 
+    // If core was detected, then return SUCCESS, otherwise
+    // load the default core.
     if (n>0) {
       return 1;
     } else {
@@ -145,6 +174,7 @@ unsigned char ConfigureFpga(const char *bitfile) {
     }
   }
 
+  /* boot from flash */
 #ifdef XILINX // go to flash boot
   if (bitfile && !strcmp(bitfile, "ZXTRES.BIT")) {
     fpga_initialise();
@@ -174,8 +204,16 @@ unsigned char ConfigureFpga(const char *bitfile) {
 
   fileSize = cf->size = f_size(&cf->file);
   cf->error = 0;
+
   debug(("cf.size = %ld\n", cf->size));
   iprintf("FPGA bitstream file %s opened, file size = %ld\r", bitfile, cf->size);
+
+#ifdef XILINX
+  if (bitfile && !strcasecmp(&bitfile[strlen(bitfile)-4], ".ZXT")) {
+    debug(("!!! it's a ZXT format chiptype is %d\n", fpga_GetType()));
+    fileSize = cf->size = GotoBitstreamOffset(&cf->file, fileSize);
+  }
+#endif
 
   /* initialise fpga */
   fpga_initialise();
@@ -186,7 +224,7 @@ unsigned char ConfigureFpga(const char *bitfile) {
 
 #ifdef XILINX
   // try to figure out actual bitstream size
-  uint32_t bslen = bitfile_get_length(cf->buff[0], 0);
+  uint32_t bslen = bitfile_get_length(cf->buff[0], 0, &chipType);
   if (bslen && bslen != 0xffffffff) {
     cf->size = bslen - (BUFFER_SIZE * 512);
     debug(("ConfigureFpga: corrected bitlen to %d\n", cf->size));

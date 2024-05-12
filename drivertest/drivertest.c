@@ -566,6 +566,9 @@ int main()
       case 'J':
         jtag_detect();
         break;
+      case 'R':
+        // 0x100A0000 size 340699
+        break;
 #endif
 
       // HELP

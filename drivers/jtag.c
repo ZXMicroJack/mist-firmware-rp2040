@@ -195,3 +195,4 @@ void jtag_start(uint8_t *image, uint32_t imageSize, uint32_t device, uint32_t de
 			printf("Error: Device not supported.\n");
 	}
 }
+

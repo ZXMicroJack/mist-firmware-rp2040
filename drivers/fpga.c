@@ -230,6 +230,12 @@ uint8_t fpga_GetType() {
 void fpga_ConfirmType() {
   if (fpgaTypeSet == AXXXT_TYPES) fpgaTypeSet = fpgaType;
 }
+
+void fpga_SetType(uint8_t type) {
+  if (type < AXXXT_TYPES) {
+    fpgaType = type;
+  }
+}
 #endif
 
 int fpga_configure(void *user_data, uint8_t (*next_block)(void *, uint8_t *), uint32_t assumelength) {

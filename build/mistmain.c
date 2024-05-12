@@ -67,6 +67,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // #define DEBUG
 #include "drivers/debug.h"
 
+#include "mbconfig.h"
+
+
 #ifndef _WANT_IO_LONG_LONG
 #error "newlib lacks support of long long type in IO functions. Please use a toolchain that was compiled with option --enable-newlib-io-long-long."
 #endif
@@ -268,6 +271,11 @@ int mist_init() {
 
     disk_ioctl(fs.pdrv, GET_SECTOR_COUNT, &storage_size);
     storage_size >>= 11;
+
+#ifdef XILINX
+    mb_ini_parse();
+    fpga_SetType(mb_cfg.fpga_type);
+#endif
 
     ChangeDirectoryName(MIST_ROOT);
 

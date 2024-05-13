@@ -13,7 +13,7 @@ const ini_section_t mb_ini_sections[] = {
 
 // mist ini vars
 const ini_var_t mb_ini_vars[] = {
-  {"FPGA_TYPE", (void*)(&(mb_cfg.fpga_type)), UINT8, 0, 1, 1},
+  {"ZXTRES_TYPE", (void*)(&(mb_cfg.fpga_type)), UINT8, 0, 1, 1},
 };
 
 // mist ini config

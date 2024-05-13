@@ -17,11 +17,18 @@
 
 #include "drivers/fpga.h"
 #include "drivers/bitfile.h"
-#define DEBUG
+//#define DEBUG
 #include "drivers/debug.h"
 
+// NB: These for production
+#ifndef PICO_NO_FLASH
 #define BUFFER_SIZE     16 // PACKETS
 #define BUFFER_SIZE_MASK  0xf
+#else
+// NB: Use these for debugging mechanism.
+#define BUFFER_SIZE     4 // PACKETS
+#define BUFFER_SIZE_MASK  0x3
+#endif
 #define NR_BLOCKS(a) (((a)+511)>>9)
 
 typedef struct {
@@ -41,7 +48,7 @@ static uint8_t read_next_block(void *ud, uint8_t *data) {
 #ifdef BUFFER_FPGA
   debug(("read_next_block cf->c = %d cf->size = %d\n", cf->c, cf->size));
 #endif
-  if (f_read(&cf->file, data, 512, &br) != FR_OK) {
+  if (f_read(&cf->file, data, cf->size > 512 ? 512 : cf->size, &br) != FR_OK) {
     cf->error = 1;
     return 0;
   }

@@ -209,6 +209,7 @@ target_compile_options(mistram PUBLIC
   "-DJAMMADB9"
   # "-DPICOSYNTH"
   #"-DTEST_BUILD"
+  "-DBUFFER_FPGA"
 )
 
 
@@ -445,7 +446,7 @@ pico_set_binary_type(mistmb2xilinxram no_flash)
 target_compile_options(mistmb2xilinxram PUBLIC
   "-DVDATE=\"\""
   "-Dhexdump=driver_hexdump"
-  # "-DBUFFER_FPGA"
+  "-DBUFFER_FPGA"
   "-DXILINX"
   "-DMB2"
   "-DIPC_MASTER"

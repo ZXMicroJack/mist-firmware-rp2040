@@ -24,3 +24,9 @@ v4 (v2.5)
 - PS/2 had fallen off - fixed it.
 - JAMMA was not jamming.
 
+v5 (v2.6)
+---------
+- JTAG mode - see wiki.
+- support for ZXT files
+- mb.ini file for FPGA_TYPE for the ZXT file. 
+

@@ -7,6 +7,8 @@
 #include "hardware/gpio.h"
 #include "jtag.h"
 #include "pins.h"
+#define DEBUG
+#include "debug.h"
 
 #define TDO GPIO_JTAG_TDO
 #define TDI GPIO_JTAG_TDI
@@ -14,6 +16,8 @@
 #define TMS GPIO_JTAG_TMS
 
 #define TCKWAIT 1
+
+#define BLOCKSIZE 512
 
 ///////////////////////////////////////////////////////
 // CRC32 specific
@@ -74,6 +78,26 @@ uint8_t jtag_tdin(int n, uint8_t bits) {
     return res;
 }
 
+// multi-bit version of tdi()
+uint8_t jtag_tdin_rev(int n, uint8_t bits) {
+    uint8_t tmp=0, res=0;
+    int i;
+
+    // shift bits and push into tmp lifo-order
+    for(i=0; i<n; i++) {
+        tmp = tmp<<1 | jtag_tdi(bits >> 7);
+        bits <<= 1;
+    }
+
+    // reverse bit order tmp->res
+    for(i=0; i<n; i++) {
+        res = res<<1 | tmp&1;
+        tmp >>= 1;
+    }
+
+    return res;
+}
+
 void jtag_tck(void) {
     gpio_put(TCK, 1);
     sleep_us(TCKWAIT);
@@ -92,7 +116,7 @@ void jtag_idle() {
 	jtag_tms(0);
 }
 
-uint32_t jtag_ins(uint8_t ins, uint8_t *data, int n) {
+uint32_t jtag_ins_ex(uint8_t ins, uint8_t *data, int n, uint8_t *data1, int n1, int rev) {
 	uint32_t result = 0;
 	uint8_t tmp;
 
@@ -111,10 +135,36 @@ uint32_t jtag_ins(uint8_t ins, uint8_t *data, int n) {
 		jtag_tms(0); // capture dr
 
 		// get dr
-    while (n>0) {
-      tmp = jtag_tdin(n > 8 ? 8 : n, *data++);
-      n -= 8;
-      result = (tmp << 24) | (result >> 8);
+    if (rev) {
+      while (n>0) {
+        tmp = jtag_tdin_rev(n > 8 ? 8 : n, *data++);
+        n -= 8;
+        result = (tmp << 24) | (result >> 8);
+      }
+
+      // get dr
+      if (data1) {
+        while (n1>0) {
+          tmp = jtag_tdin_rev(n1 > 8 ? 8 : n1, *data1++);
+          n1 -= 8;
+          result = (tmp << 24) | (result >> 8);
+        }
+      }
+    } else {
+      while (n>0) {
+        tmp = jtag_tdin(n > 8 ? 8 : n, *data++);
+        n -= 8;
+        result = (tmp << 24) | (result >> 8);
+      }
+
+      // get dr
+      if (data1) {
+        while (n1>0) {
+          tmp = jtag_tdin(n1 > 8 ? 8 : n1, *data1++);
+          n1 -= 8;
+          result = (tmp << 24) | (result >> 8);
+        }
+      }
     }
 
 		jtag_tms(1); // exit1 dr
@@ -125,6 +175,11 @@ uint32_t jtag_ins(uint8_t ins, uint8_t *data, int n) {
 
 	return result;
 }
+
+uint32_t jtag_ins(uint8_t ins, uint8_t *data, int n) {
+  return jtag_ins_ex(ins, data, n, NULL, 0, 0);
+}
+
 
 ///////////////////////////////////////////////////////
 // JTAG Xilinx specific
@@ -144,10 +199,68 @@ void jtag_detect() {
   printf("Info : idcode = %08X\n", idcode);
 }
 
+
+int jtag_get_length(uint8_t *data, uint32_t filesize, uint32_t *size, uint32_t *offset) {
+  int i = 0;
+  uint8_t tag;
+  uint16_t len;
+  
+  /* is ZX3 file? */
+  if (data[0] == 0xff && data[1] == 0xff) {
+    *size = filesize;
+    *offset = 0;
+    printf("This is a ZX3 file\n");
+    return 1;
+  }
+  
+  printf("hello\n");
+
+  /* initial header */
+  i += (data[i+0] << 8) | data[i+1];
+  i += 2; // skip over length
+
+  /* check version tag */
+  len = (data[i+0] << 8) | data[i+1];
+  if (len != 0x0001) {
+    debug(("bitfile_get_length: unknown version %04X\n", len));
+	  /* unknown version */
+	  return 0;
+  }
+  i += 2; // skip over version
+
+  while (i < (BLOCKSIZE-3)) {
+    tag = data[i+0];
+    if (tag == 'e') len = 4;
+    else len = (data[i+1] << 8) | data[i+2];
+
+    debug(("bitfile_get_length: tag (%02X) %c - %u (%04X)\n", tag, tag, len, len));
+
+    if (tag == 'e' && i <= (BLOCKSIZE-7)) {
+      *size = ((data[i+1]<<24) | (data[i+2]<<16) |
+        (data[i+3]<<8) | data[i+4]) + i + 5;
+      *offset = i+len+1;
+      return 1;
+    }
+    i += len + (tag == 'e' ? 1 : 3);
+  }
+  debug(("bitfile_get_length: failed to detect len\n"));
+  return 0;
+}
+
+
 static void jtag_start_xilinx(uint8_t *image, uint32_t imageSize, uint32_t device, uint32_t devicemask, uint32_t crc) {
 	uint32_t idcode;
 	uint8_t no_data[] = {0xff, 0xff, 0xff, 0xff};
 	uint8_t rst_config[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+  // uint8_t jtagheader[] = {0x0c, 0x85, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00};
+  uint8_t jtagheader[] = {0x30, 0xa1, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00};
+
+  uint32_t size, offset;
+
+  if (!jtag_get_length(image, imageSize, &size, &offset)) {
+    debug(("bitfile_get_length: problems\n"));
+    return;
+  }
 
 	printf("Info: Putting jtag in idle...\n");
 	jtag_idle();
@@ -165,6 +278,7 @@ static void jtag_start_xilinx(uint8_t *image, uint32_t imageSize, uint32_t devic
 	jtag_ins(INS_BYPASS, no_data, 0);
 	printf("Info: JPROGRAM...\n");
 	jtag_ins(INS_JPROGRAM, no_data, 0);
+  
 	printf("Info: CONFIGIN...\n");
 	jtag_ins(INS_CONFIGIN, no_data, 0);
 
@@ -174,7 +288,7 @@ static void jtag_start_xilinx(uint8_t *image, uint32_t imageSize, uint32_t devic
 	jtag_ins(INS_CONFIGIN, rst_config, 95);
 
 	printf("Info: CONFIGIN...\n");
-	jtag_ins(INS_CONFIGIN, image, imageSize);
+	jtag_ins_ex(INS_CONFIGIN, jtagheader, 8 * sizeof jtagheader, image, imageSize*8, 1);
 
   printf("Info: JSTART...\n");
 	jtag_ins(INS_JSTART, no_data, 0);
@@ -195,4 +309,6 @@ void jtag_start(uint8_t *image, uint32_t imageSize, uint32_t device, uint32_t de
 			printf("Error: Device not supported.\n");
 	}
 }
+
+
 

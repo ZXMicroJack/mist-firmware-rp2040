@@ -567,7 +567,7 @@ int main()
         jtag_detect();
         break;
       case 'R':
-        // 0x100A0000 size 340699
+        jtag_start((uint8_t *)0x100A0000, 340699, XILINX_SPARTAN6_XL9, 0xfffffff, 0);
         break;
 #endif
 

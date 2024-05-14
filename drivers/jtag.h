@@ -17,8 +17,12 @@ void jtag_tck(void);
 void jtag_reset(void);
 void jtag_idle(void);
 uint32_t jtag_ins(uint8_t ins, uint8_t *data, int n);
+uint32_t jtag_ins_ex(uint8_t ins, uint8_t *data, int n, uint8_t *data1, int n1, int rev);
+uint32_t jtag_ins_ex_cb(uint8_t ins, uint16_t (*next_block)(void *, uint8_t *), int len, void *user_data);
 
 void jtag_start(uint8_t *image, uint32_t imageSize, uint32_t device, uint32_t devicemask, uint32_t crc);
 void jtag_detect(void);
+
+int jtag_configure(void *user_data, uint8_t (*next_block)(void *, uint8_t *), uint32_t assumelength);
 
 #endif

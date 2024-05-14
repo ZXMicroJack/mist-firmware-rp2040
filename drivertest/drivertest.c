@@ -60,9 +60,12 @@ typedef struct {
 
 // #define FPGA_IMAGE_POS  0x100a0000
 // #define FPGA_IMAGE_SIZE 786789
-#define FPGA_IMAGE_POS 0x100b0000
-#define FPGA_IMAGE_SIZE 1340672
 
+// #define FPGA_IMAGE_POS 0x100b0000
+// #define FPGA_IMAGE_SIZE 1340672
+
+#define FPGA_IMAGE_POS 0x100A0000
+#define FPGA_IMAGE_SIZE 340699
 
 #define CRC32_POLY 0x04c11db7   /* AUTODIN II, Ethernet, & FDDI */
 #define CRC32(crc, byte) \
@@ -566,9 +569,15 @@ int main()
       case 'J':
         jtag_detect();
         break;
-      case 'R':
-        jtag_start((uint8_t *)0x100A0000, 340699, XILINX_SPARTAN6_XL9, 0xfffffff, 0);
+      case 'R': {
+        memset(&fbrt, 0x00, sizeof fbrt);
+        printf("fpga_program returns %d\n", jtag_configure(&fbrt, test_fpga_get_next_block, FPGA_IMAGE_SIZE));
+        // jtag_start((uint8_t *)0x100A0000, 340699, XILINX_SPARTAN6_XL9, 0xfffffff, 0);
+        
+        // memset(&fbrt, 0x00, sizeof fbrt);
+        // test_fpga_get_next_block
         break;
+      }
 #endif
 
       // HELP

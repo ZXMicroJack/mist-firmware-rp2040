@@ -100,9 +100,9 @@ uint8_t jtag_tdin_rev(int n, uint8_t bits) {
 
 void jtag_tck(void) {
     gpio_put(TCK, 1);
-    sleep_us(TCKWAIT);
+    // sleep_us(TCKWAIT);
     gpio_put(TCK, 0);
-    sleep_us(TCKWAIT);
+    // sleep_us(TCKWAIT);
 }
 
 void jtag_reset() {
@@ -116,7 +116,54 @@ void jtag_idle() {
 	jtag_tms(0);
 }
 
-uint32_t jtag_ins_ex(uint8_t ins, uint8_t *data, int n, uint8_t *data1, int n1, int rev) {
+// uint8_t (*next_block)(void *, uint8_t *)
+
+// uint16_t (*next_block)(void *, uint8_t *)
+
+
+// uint8_t (*next_block)(void *, uint8_t *)
+
+
+uint32_t jtag_ins_ex_cb(uint8_t ins, uint16_t (*next_block)(void *, uint8_t *), int len, void *user_data) {
+	uint32_t result = 0;
+	uint8_t tmp;
+  uint8_t buff[512];
+
+	jtag_tms(1);
+	jtag_tms(1);
+	jtag_tms(0);
+
+	jtag_tdin(6, ins);
+	jtag_tms(1); // exit ir
+	jtag_tms(1); // updir
+
+  jtag_tms(1); // select dr
+  jtag_tms(0); // capture dr
+
+  // get dr
+  while (len > 0) {
+    uint16_t n = next_block(user_data, buff);
+    uint8_t *data = buff;
+    n = n > len ? len : n;
+    len -= n;
+
+    while (n>0) {
+      tmp = jtag_tdin_rev(8, *data++);
+      n--;
+      result = (tmp << 24) | (result >> 8);
+    }
+  }
+
+  jtag_tms(1); // exit1 dr
+  jtag_tms(1); // update dr
+  jtag_tms(0); // idle
+  jtag_tms(0); // idle
+
+	return result;
+}
+
+
+uint32_t jtag_ins(uint8_t ins, uint8_t *data, int n) {
 	uint32_t result = 0;
 	uint8_t tmp;
 
@@ -135,36 +182,10 @@ uint32_t jtag_ins_ex(uint8_t ins, uint8_t *data, int n, uint8_t *data1, int n1, 
 		jtag_tms(0); // capture dr
 
 		// get dr
-    if (rev) {
-      while (n>0) {
-        tmp = jtag_tdin_rev(n > 8 ? 8 : n, *data++);
-        n -= 8;
-        result = (tmp << 24) | (result >> 8);
-      }
-
-      // get dr
-      if (data1) {
-        while (n1>0) {
-          tmp = jtag_tdin_rev(n1 > 8 ? 8 : n1, *data1++);
-          n1 -= 8;
-          result = (tmp << 24) | (result >> 8);
-        }
-      }
-    } else {
-      while (n>0) {
-        tmp = jtag_tdin(n > 8 ? 8 : n, *data++);
-        n -= 8;
-        result = (tmp << 24) | (result >> 8);
-      }
-
-      // get dr
-      if (data1) {
-        while (n1>0) {
-          tmp = jtag_tdin(n1 > 8 ? 8 : n1, *data1++);
-          n1 -= 8;
-          result = (tmp << 24) | (result >> 8);
-        }
-      }
+    while (n>0) {
+      tmp = jtag_tdin(n > 8 ? 8 : n, *data++);
+      n -= 8;
+      result = (tmp << 24) | (result >> 8);
     }
 
 		jtag_tms(1); // exit1 dr
@@ -176,9 +197,26 @@ uint32_t jtag_ins_ex(uint8_t ins, uint8_t *data, int n, uint8_t *data1, int n1, 
 	return result;
 }
 
-uint32_t jtag_ins(uint8_t ins, uint8_t *data, int n) {
-  return jtag_ins_ex(ins, data, n, NULL, 0, 0);
+void jtag_ins_start(uint8_t ins) {
+	jtag_tms(1);
+	jtag_tms(1);
+	jtag_tms(0);
+
+	jtag_tdin(6, ins);
+	jtag_tms(1); // exit ir
+	jtag_tms(1); // updir
+
+  jtag_tms(1); // select dr
+  jtag_tms(0); // capture dr
 }
+
+void jtag_ins_end() {
+  jtag_tms(1); // exit1 dr
+  jtag_tms(1); // update dr
+  jtag_tms(0); // idle
+  jtag_tms(0); // idle
+}
+
 
 
 ///////////////////////////////////////////////////////
@@ -311,4 +349,103 @@ void jtag_start(uint8_t *image, uint32_t imageSize, uint32_t device, uint32_t de
 }
 
 
+// uint32_t jtag_ins_ex_cb(uint8_t ins, , int len, void *user_data)
+
+#if 0
+static uint8_t jtagheader[] = {0x30, 0xa1, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00};
+typedef struct {
+  int n;
+  uint8_t (*next_block)(void *, uint8_t *);
+  void *user_data;
+
+} jtag_block_status;
+
+static uint16_t jtag_next_block(void *user_data, uint8_t *data) {
+  jtag_block_status *status = (jtag_block_status *)user_data;
+  if (status->n == 0) {
+    status->n++;
+    memcpy(data, jtagheader, sizeof jtagheader);
+    return sizeof jtagheader;
+  } else 
+}
+#endif
+
+void jtag_tdin_rev_block(uint8_t *data, uint32_t len) {
+  while (len--) {
+    jtag_tdin_rev(8, *data++);
+  }
+}
+
+
+int jtag_configure(void *user_data, uint8_t (*next_block)(void *, uint8_t *), uint32_t assumelength) {
+	uint32_t idcode;
+  uint8_t buff[512];
+	uint8_t no_data[] = {0xff, 0xff, 0xff, 0xff};
+	uint8_t rst_config[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+  // uint8_t jtagheader[] = {0x0c, 0x85, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00};
+  uint8_t jtagheader[] = {0x30, 0xa1, 0x00, 0x08, 0x00, 0x00, 0x00, 0x00};
+
+  uint32_t size, offset;
+
+  if (!next_block(user_data, buff)) {
+    printf("Cannot read back data\n");
+    return 1;
+  }
+
+
+  if (!jtag_get_length(buff, assumelength, &size, &offset)) {
+    debug(("bitfile_get_length: problems\n"));
+    return 1;
+  }
+
+	printf("Info: Putting jtag in idle...\n");
+	jtag_idle();
+
+	printf("Info: grabbing idcode...\n");
+	idcode = jtag_ins(INS_IDCODE, no_data, 32);
+
+	printf("Info : idcode = %08X\n", idcode);
+  if ((idcode & 0xfffffff) != XILINX_SPARTAN6_XL9) {
+		printf("Error: Incorrect device\n");
+		return 1;
+	}
+
+	printf("Info: BYPASS...\n");
+	jtag_ins(INS_BYPASS, no_data, 0);
+	printf("Info: JPROGRAM...\n");
+	jtag_ins(INS_JPROGRAM, no_data, 0);
+  
+	printf("Info: CONFIGIN...\n");
+	jtag_ins(INS_CONFIGIN, no_data, 0);
+
+  sleep_us(14000);
+
+	printf("Info: CONFIGIN...\n");
+	jtag_ins(INS_CONFIGIN, rst_config, 95);
+
+	printf("Info: CONFIGIN...\n");
+	jtag_ins_start(INS_CONFIGIN);
+
+  jtag_tdin_rev_block(jtagheader, sizeof jtagheader);
+  jtag_tdin_rev_block(buff + offset, 512 - offset);
+  size -= (512-offset);
+
+  while (size && next_block(user_data, buff)) {
+    int this_len = size > 512 ? 512 : size;
+    jtag_tdin_rev_block(buff, this_len);
+    size -= this_len;
+  }
+  jtag_ins_end();
+
+
+  printf("Info: JSTART...\n");
+	jtag_ins(INS_JSTART, no_data, 0);
+
+  jtag_idle();
+  sleep_us(10000);
+
+	printf("Info: BYPASS...\n");
+	jtag_ins(INS_BYPASS, no_data, 1);
+  return 0;
+}
 

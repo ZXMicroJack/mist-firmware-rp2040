@@ -34,7 +34,7 @@
 // #define TEST_FPGA
 // #define TEST_MATRIX
 // #define TEST_FLASH
-// #define TEST_USERIO
+#define TEST_USERIO
 // #define TEST_JAMMA
 // #define TEST_DEBUG
 #define TEST_JTAG
@@ -56,6 +56,7 @@
 typedef struct {
   int block_nr;
   int dumps;
+  int n_blocks;
 } test_block_read_t;
 
 // #define FPGA_IMAGE_POS  0x100a0000
@@ -115,6 +116,19 @@ bool test_fpga_get_next_block(void *user_data, uint8_t *data) {
 
   
   memcpy(data, bits, 512);
+  b->block_nr ++;
+  return true;
+}
+
+bool test_fpga_get_next_block_stdin(void *user_data, uint8_t *data) {
+  test_block_read_t *b = (test_block_read_t *)user_data;
+  if (b->block_nr >= b->n_blocks) return false;
+
+  for (int i=0; i<512; i++) {
+    data[i] = getchar();
+  }
+
+  // fread(data, 1, 512, stdin);
   b->block_nr ++;
   return true;
 }
@@ -578,6 +592,21 @@ int main()
         // test_fpga_get_next_block
         break;
       }
+      case 'r': {
+        printf("Size of block = ");
+        int len;
+        scanf("%d", &len);
+        printf("%d\n", len);
+
+        memset(&fbrt, 0x00, sizeof fbrt);
+        fbrt.n_blocks = (len + 511) / 512;
+        printf("fpga_program returns %d\n", jtag_configure(&fbrt, test_fpga_get_next_block_stdin, len));
+        // jtag_start((uint8_t *)0x100A0000, 340699, XILINX_SPARTAN6_XL9, 0xfffffff, 0);
+        
+        // memset(&fbrt, 0x00, sizeof fbrt);
+        // test_fpga_get_next_block
+        break;
+      }
 #endif
 
       // HELP
@@ -592,6 +621,7 @@ int main()
         printf("KBD: (K)bd init (L)kbd process\n");
         printf("USERIO: (u)init (U)close (V)coreid\n");
         printf("JAMMA: (j)init (J)getdata\n");
+        printf("JTAG: (j)taginit (J)tagdetect (R)unflash (r)unserial\n");
         break;
 
       // PS2

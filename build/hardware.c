@@ -206,7 +206,11 @@ char GetDB9(char index, unsigned char *joy_map) {
   // *joy_map is set to a combination of the following bitmapped values
   // JOY_UP, JOY_DOWN, JOY_LEFT, JOY_RIGHT, JOY_BTN1, JOY_BTN2
 
+#ifdef ZXUNO
+  uint32_t d = 0;
+#else
   uint32_t d = jamma_GetData(index);
+#endif
   uint8_t mask = 0x80;
   uint8_t ndx = 0;
   char j = 0;
@@ -257,7 +261,10 @@ void DB9Update(uint8_t joy_num, uint8_t usbjoy) {
     mask >>= 1;
   }
 
+#ifdef ZXUNO
+#else
   jamma_SetData(joy_num & 1, joydata);
+#endif
 }
 
 // TODO MJ implement RTC

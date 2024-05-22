@@ -56,6 +56,22 @@ set(driver_mb2_src
   usboffshore.c
 )
 
+set(driver_zx1_src
+../drivers/jtag.c
+../drivers/pio_spi.c
+../drivers/ps2.c
+../drivers/sdcard.c
+../drivers/bitfile.c
+../drivers/midi.c
+#../drivers/ipc.c
+#../drivers/flash.c
+../drivers/debug.c
+../drivers/fifo.c
+../drivers/kbd.c
+#../drivers/jamma.c
+../drivers/crc16.c
+)
+
 set(main_src
   glue.c
   spi.c
@@ -546,3 +562,40 @@ target_compile_options(mistusbn1p PUBLIC
   "-DUSB_STORAGE"
   "-DUSB_DEBUG_OFF"
 )
+
+####################################################################################
+# Main build RAM test build for ZXUno
+add_executable(mistzx1ram
+  ${driver_zx1_src}
+  ${main_src}
+  ${picosynth_src}
+  )
+
+target_link_libraries(mistzx1ram pico_stdlib mistfirmware${testarch} hardware_spi hardware_pio pico_multicore 
+${picosynth_lib})
+add_compile_options(-O2)
+target_include_directories(mistzx1ram PUBLIC ../picosynth)
+pico_generate_pio_header(mistzx1ram ../drivers/fpga.pio)
+pico_generate_pio_header(mistzx1ram ../drivers/spi.pio)
+pico_generate_pio_header(mistzx1ram ../drivers/jamma.pio)
+pico_generate_pio_header(mistzx1ram ../drivers/jammadb9.pio)
+pico_generate_pio_header(mistzx1ram ../drivers/ps2.pio)
+pico_generate_pio_header(mistzx1ram ../drivers/audio_i2s.pio)
+pico_generate_pio_header(mistzx1ram ../drivers/ps2tx.pio)
+pico_enable_stdio_usb(mistzx1ram 1)
+pico_enable_stdio_uart(mistzx1ram 0)
+pico_add_extra_outputs(mistzx1ram)
+example_auto_set_url(mistzx1ram)
+pico_set_binary_type(mistzx1ram no_flash)
+target_compile_options(mistzx1ram PUBLIC
+  "-DVDATE=\"\""
+  "-Dhexdump=driver_hexdump"
+  "-DPS2HOST"
+  "-DZXUNO"
+  ${archdefs}
+  "-DJAMMADB9"
+  # "-DPICOSYNTH"
+  #"-DTEST_BUILD"
+)
+
+

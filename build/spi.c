@@ -16,7 +16,12 @@
 #define MIST_SS2    20 // data io
 #define MIST_SS3    21 // osd
 // #define MIST_SS4    24 // dmode?
+// #ifdef ZXUNO
+// #define MIST_SS4    19 // dmode?
+//TODO MJ this will probably have to change GPIO19 / P48 seems to be busy
+// #else
 #define MIST_SS4    22 // dmode?
+// #endif
 
 #define SPI_SLOW_BAUD   500000
 #define SPI_SDC_BAUD   24000000
@@ -64,7 +69,11 @@ void mist_spi_init() {
     gpio_set_dir(csn_lut[i], GPIO_OUT);
   }
 
+// #ifdef ZXUNO
+//   uint8_t spi_pins[] = {16, 18, 22};
+// #else
   uint8_t spi_pins[] = {16, 18, 19};
+// #endif
 
   for (int i=0; i<sizeof spi_pins; i++) {
     gpio_init(spi_pins[i]);

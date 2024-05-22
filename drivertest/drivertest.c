@@ -316,8 +316,26 @@ void mouseenable(uint8_t ch) {
 // 18  w7_sck  |   SPI0SCK
 // 19  v7_cs   /   SPI0TX
 
-#if 0
-void test_UserIOSPI() {
+void test_UserIOSPI_ConfigStr() {
+  uint8_t data[64];
+  gpio_put(17, 0);
+
+  memset(data, 0xff, sizeof data);
+  data[0] = 0x14;
+  spi_write_read_blocking(spi0, data, data, sizeof data);
+  printf("Returns: ");
+  for (int i=0; i<sizeof data; i++) {
+    printf("%02X ", data[i]);
+  }
+  printf(" - ");
+  for (int i=0; i<sizeof data; i++) {
+    printf("%c", data[i] >=' ' ? data[i] : '?');
+  }
+  printf("\n");
+  gpio_put(17, 1);
+}
+
+void test_UserIOSPI_CoreId() {
   uint8_t data[6];
 // int spi_write_read_blocking (spi_inst_t *spi, const uint8_t *src, uint8_t *dst, size_t len)
   uint8_t cmd[] = {0x1a, 0x00, 0x00, 0x00, 0xff, 0xff};
@@ -333,12 +351,23 @@ void test_UserIOSPI() {
   printf("\n");
   gpio_put(17, 1);
 }
-#endif
 
+// working
+#if 0
+#define MIST_CSN    17
+// #define MIST_SS2    20
+#define MIST_SS2    16
+#define MIST_SS3    21
+// #define MIST_SS4    22
+#define MIST_SS4    18
+// #define MIST_SS4    24
+#else
 #define MIST_CSN    17
 #define MIST_SS2    20
 #define MIST_SS3    21
-#define MIST_SS4    24
+#define MIST_SS4    22
+// #define MIST_SS4    19
+#endif
 
 
 void ipc_HandleData(uint8_t tag, uint8_t *data, uint16_t len) {
@@ -369,15 +398,28 @@ void test_UserIOSPI(uint8_t datain) {
 
 
 void test_UserIOInit() {
+  uint8_t csn_pins[] = {MIST_CSN, MIST_SS2, MIST_SS3, MIST_SS4};
+  for (int i=0; i<sizeof csn_pins; i++) {
+    gpio_init(csn_pins[i]);
+    gpio_put(csn_pins[i], 1);
+    gpio_set_dir(csn_pins[i], GPIO_OUT);
+  }
+#if 0
   gpio_init(MIST_CSN);
   gpio_put(MIST_CSN, 1);
   gpio_set_dir(MIST_CSN, GPIO_OUT);
-  uint8_t spi_pins[] = {16, 18, 19};
+#endif
+  // uint8_t spi_pins[] = {16, 18, 19};
+  // working
+  // uint8_t spi_pins[] = {16, 22, 19};
+  uint8_t spi_pins[] = {16, 18, 19}; // original - not working
+  // uint8_t spi_pins[] = {16, 18, 22};
 
   for (int i=0; i<sizeof spi_pins; i++) {
     gpio_init(spi_pins[i]);
     gpio_set_function(spi_pins[i], GPIO_FUNC_SPI);
   }
+
   spi_init(spi0, 500000); // 500khz
   spi_set_format(spi0, 8, SPI_CPOL_1, SPI_CPHA_1, SPI_MSB_FIRST);
 }
@@ -826,6 +868,12 @@ int main()
         break;
       case 'U':
         test_UserIOKill();
+        break;
+      case 'v':
+        test_UserIOSPI_CoreId();
+        break;
+      case 'V':
+        test_UserIOSPI_ConfigStr();
         break;
       case 'z':
         test_UserIOSPI(0xaa);

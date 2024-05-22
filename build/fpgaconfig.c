@@ -114,11 +114,15 @@ uint8_t read_next_block_buffered(void *user_data, uint8_t *block) {
 //MJ TODO remove
 int ResetFPGA() {
   /* initialise fpga */
+#ifdef ZXUNO
+  return 0;
+#else
   fpga_initialise();
   fpga_claim(true);
 
   /* now configure */
   return fpga_reset();
+#endif
 }
 
 #ifdef BOOT_FLASH_ON_ERROR
@@ -183,8 +187,11 @@ unsigned char ConfigureFpgaEx(const char *bitfile, uint8_t fatal, uint8_t reset)
   iprintf("FPGA bitstream file %s opened, file size = %ld\r", bitfile, cf->size);
 
   /* initialise fpga */
+#ifdef ZXUNO
+#else
   fpga_initialise();
 //   fpga_claim(true);
+#endif
 
 #ifdef BUFFER_FPGA
 #if 0
@@ -217,13 +224,16 @@ unsigned char ConfigureFpgaEx(const char *bitfile, uint8_t fatal, uint8_t reset)
 
 
 
+#ifdef ZXUNO
+  cf->error = 0;
+#else
 #ifdef BUFFER_FPGA
   fpga_configure(cf, read_next_block_buffered, fileSize);
 #else
   fpga_configure(cf, read_next_block, fileSize);
 #endif
   fpga_claim(false);
-
+#endif
 // #endif
 //   sleep_ms(2000);
 

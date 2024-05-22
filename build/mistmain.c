@@ -122,11 +122,14 @@ uint8_t legacy_mode = DEFAULT_MODE;
 void set_legacy_mode(uint8_t mode) {
   if (mode != legacy_mode) {
     printf("Setting legacy mode to %d\n", mode);
+#ifdef ZXUNO
+#else
 #ifdef MB2
     ipc_Command(IPC_SETMISTER, &mode, sizeof mode);
 #else
     jamma_Kill();
     jamma_InitEx(mode == MIST_MODE);
+#endif
 #endif
   }
   legacy_mode = mode;
@@ -307,8 +310,12 @@ int mist_init() {
     }
 
     usb_dev_open();
+#ifdef ZXUNO
+  //TODO joystick
+#else
 #ifndef MB2
     jamma_InitEx(1);
+#endif
 #endif
 
 #if defined(XILINX) && !defined(USBFAKE)
@@ -500,6 +507,7 @@ int mist_loop() {
   midi_loop();
 #endif
 
+#ifndef ZXUNO
 #ifndef USBFAKE
   if (fpga_ResetButtonState()) {
 #ifdef MB2
@@ -507,6 +515,7 @@ int mist_loop() {
 #endif
     watchdog_enable(1, 1);
   }
+#endif
 #endif
 
     cdc_control_poll();

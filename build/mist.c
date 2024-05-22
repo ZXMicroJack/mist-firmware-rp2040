@@ -433,8 +433,11 @@ static bool watchdog_Callback(struct repeating_timer *t) {
 
 
 int main() {
+#ifdef ZXUNO
+#else
   // hold FPGA in reset until we decide what to do with it - (ZXTRES only)
   fpga_holdreset();
+#endif
 
   stdio_init_all();
 

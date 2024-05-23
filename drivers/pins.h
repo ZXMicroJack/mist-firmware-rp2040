@@ -73,10 +73,18 @@
 #define GPIO_PS2_CLK2     1
 #define GPIO_PS2_DATA2    0
 #else
+
+#ifdef ZXUNO
+#define GPIO_PS2_CLK2     26
+#define GPIO_PS2_DATA2    27
+#define GPIO_PS2_CLK      23
+#define GPIO_PS2_DATA     24
+#else
 #define GPIO_PS2_CLK      11
 #define GPIO_PS2_DATA     12
 #define GPIO_PS2_CLK2     14
 #define GPIO_PS2_DATA2    15
+#endif
 #endif
 
 #define GPIO_RP2U_PS2_CLK   GPIO_RP2M_COM4

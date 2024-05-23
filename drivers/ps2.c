@@ -562,8 +562,10 @@ void ps2_SwitchMode(int _hostMode) {
       ps2_program_init(ps2host_pio, ps2port[0].sm, ps2_offset, GPIO_PS2_CLK);
       ps2_program_init(ps2host_pio, ps2port[1].sm, ps2_offset, GPIO_PS2_CLK2);
     } else {
+#ifndef NO_LEGACY_MODE
       ps2tx_program_init(ps2host_pio, ps2port[0].sm, ps2_offset, GPIO_PS2_CLK);
       ps2tx_program_init(ps2host_pio, ps2port[1].sm, ps2_offset, GPIO_PS2_CLK2);
+#endif
     }
 
     hostMode = _hostMode;
@@ -578,12 +580,16 @@ int ps2_GetChar(uint8_t ch) {
 }
 
 void ps2_InsertChar(uint8_t ch, uint8_t data) {
+#ifndef NO_PS2_TX
   fifo_Put(&ps2port[ch].fifo, data);
+#endif
 }
 
 void ps2_SendChar(uint8_t ch, uint8_t data) {
+#ifndef NO_PS2_TX
   fifo_Put(&ps2port[ch].fifo, data);
   ps2_HealthCheck();
+#endif
 }
 
 void ps2_HealthCheck() {
@@ -595,9 +601,11 @@ void ps2_HealthCheck() {
       fifo_Put(&ps2port[ch].fifo_rx, c);
     }
 
+#ifndef NO_PS2_TX
     while (!pio_sm_is_tx_fifo_full(ps2host_pio, ps2port[ch].sm) && (c = fifo_Get(&ps2port[ch].fifo)) >= 0) {
       writePs2(ps2host_pio, ps2port[ch].sm, c, hostMode);
     }
+#endif
   }
 }
 

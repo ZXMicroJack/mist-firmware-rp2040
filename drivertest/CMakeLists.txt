@@ -61,6 +61,14 @@ pico_generate_pio_header(drivertest ../drivers/ps2.pio)
 pico_generate_pio_header(drivertest ../drivers/ps2tx.pio)
 pico_enable_stdio_usb(drivertest 1)
 pico_enable_stdio_uart(drivertest 0)
+
+target_compile_options(drivertest PUBLIC
+  "-DNO_PS2_TX"
+  "-DNO_LEGACY_MODE"
+  "-DZXUNO"
+)
+
+
 pico_add_extra_outputs(drivertest)
 example_auto_set_url(drivertest)
 pico_set_binary_type(drivertest no_flash)

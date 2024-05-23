@@ -29,13 +29,13 @@
 #include "debug.h"
 
 // #define TEST_PS2
-// #define TEST_PS2_HOST
+#define TEST_PS2_HOST
 // #define TEST_IPC
 // #define TEST_SDCARD_SPI
 // #define TEST_FPGA
 // #define TEST_MATRIX
 // #define TEST_FLASH
-#define TEST_USERIO
+// #define TEST_USERIO
 // #define TEST_JAMMA
 // #define TEST_DEBUG
 #define TEST_JTAG
@@ -526,8 +526,8 @@ int main()
   ps2_SwitchMode(0);
 #endif
 #ifdef TEST_PS2_HOST
-  // ps2_Init();
-  // ps2_SwitchMode(1);
+  ps2_Init();
+  ps2_SwitchMode(1);
 #endif
 
 //   ps2_SendChar(0, 0x7e);
@@ -630,6 +630,7 @@ int main()
       case 'J':
         jtag_detect();
         break;
+#if 0
       case 'R': {
         memset(&fbrt, 0x00, sizeof fbrt);
 
@@ -641,6 +642,7 @@ int main()
         // test_fpga_get_next_block
         break;
       }
+#endif
 #if 0
       case 'w': {
         // bitstore_InitRetrieve();
@@ -674,7 +676,7 @@ int main()
         jtag_configure(NULL, bitstore_GetBlockJTAG, bitstore_Size());
         break;
       }
-      case 'r': {
+      case 'R': {
         printf("Size of block = ");
         int len;
         scanf("%d", &len);

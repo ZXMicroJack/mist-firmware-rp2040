@@ -594,6 +594,9 @@ target_compile_options(mistzx1ram PUBLIC
   "-DZXUNO"
   ${archdefs}
   "-DJAMMADB9"
+  "-DNO_PS2_TX"
+  "-DNO_LEGACY_MODE"
+  "-DZXUNO"
   # "-DPICOSYNTH"
   #"-DTEST_BUILD"
 )

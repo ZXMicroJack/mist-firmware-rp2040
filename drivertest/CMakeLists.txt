@@ -22,7 +22,7 @@ include(example_auto_set_url.cmake)
 
 # Build project
 
-include_directories(../drivers .)
+include_directories(../drivers . ../zlib)
 
 # fpga program  
 add_executable(drivertest drivertest.c ../drivers/fpga.c
@@ -37,7 +37,19 @@ add_executable(drivertest drivertest.c ../drivers/fpga.c
   ../drivers/kbd.c 
   ../drivers/jamma.c 
   ../drivers/jtag.c
-  ../drivers/crc16.c)
+  ../drivers/crc16.c
+  ../drivers/bitstore.c
+  ../zlib/inflate.c
+  ../zlib/deflate.c
+  ../zlib/adler32.c
+  ../zlib/inffast.c
+  ../zlib/inftrees.c
+  ../zlib/crc32.c
+  ../zlib/deflate.c
+  ../zlib/trees.c
+  ../zlib/zutil.c
+
+)
 
 target_link_libraries(drivertest pico_stdlib hardware_spi hardware_pio hardware_flash hardware_i2c pico_i2c_slave)
 add_compile_options(-O2)

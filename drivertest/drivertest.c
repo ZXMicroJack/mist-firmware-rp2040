@@ -24,6 +24,7 @@
 #include "kbd.h"
 #include "pins.h"
 #include "jtag.h"
+#include "bitstore.h"
 #define DEBUG
 #include "debug.h"
 
@@ -627,7 +628,33 @@ int main()
         break;
       case 'R': {
         memset(&fbrt, 0x00, sizeof fbrt);
+
+        // bool test_fpga_get_next_block(void *user_data, uint8_t *data) {
         printf("fpga_program returns %d\n", jtag_configure(&fbrt, test_fpga_get_next_block, FPGA_IMAGE_SIZE));
+        // jtag_start((uint8_t *)0x100A0000, 340699, XILINX_SPARTAN6_XL9, 0xfffffff, 0);
+        
+        // memset(&fbrt, 0x00, sizeof fbrt);
+        // test_fpga_get_next_block
+        break;
+      }
+      case 'w': {
+        memset(&fbrt, 0x00, sizeof fbrt);
+
+        bitstore_init_store();
+        uint8_t blk[512];
+        bool ret;
+
+        do {
+          ret = test_fpga_get_next_block(&fbrt, blk);
+          bitstore_put_block(blk, !ret);
+        } while (ret);
+
+
+
+
+        // if (test_fpga_get_next_block)
+        
+        // printf("fpga_program returns %d\n", jtag_configure(&fbrt, test_fpga_get_next_block, FPGA_IMAGE_SIZE));
         // jtag_start((uint8_t *)0x100A0000, 340699, XILINX_SPARTAN6_XL9, 0xfffffff, 0);
         
         // memset(&fbrt, 0x00, sizeof fbrt);

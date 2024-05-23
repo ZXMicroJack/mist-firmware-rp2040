@@ -494,6 +494,10 @@ void switch_ps2() {
 #endif
 }
 
+int bitstore_GetBlockJTAG(void *user_data, uint8_t *blk) {
+  return bitstore_GetBlock(blk) ? false : true;
+}
+
 extern int forceexit;
 int main()
 {
@@ -637,28 +641,37 @@ int main()
         // test_fpga_get_next_block
         break;
       }
+#if 0
       case 'w': {
+        // bitstore_InitRetrieve();
         memset(&fbrt, 0x00, sizeof fbrt);
+        int chunks = bitstore_Store(&fbrt, test_fpga_get_next_block);
+        printf("loaded %d chunks\n", chunks);
+        break;
+      }
+#endif
+      case 'w': {
+        printf("Size of block = ");
+        int len;
+        scanf("%d", &len);
+        printf("%d\n", len);
 
-        bitstore_init_store();
-        uint8_t blk[512];
-        bool ret;
+        memset(&fbrt, 0x00, sizeof fbrt);
+        fbrt.n_blocks = (len + 511) / 512;
+        bitstore_InitRetrieve();
+        int chunks = bitstore_Store(&fbrt, test_fpga_get_next_block_stdin);
+        printf("loaded %d chunks\n", chunks);
 
-        do {
-          ret = test_fpga_get_next_block(&fbrt, blk);
-          bitstore_put_block(blk, !ret);
-        } while (ret);
-
-
-
-
-        // if (test_fpga_get_next_block)
-        
-        // printf("fpga_program returns %d\n", jtag_configure(&fbrt, test_fpga_get_next_block, FPGA_IMAGE_SIZE));
+        // printf("fpga_program returns %d\n", jtag_configure(&fbrt, test_fpga_get_next_block_stdin, len));
         // jtag_start((uint8_t *)0x100A0000, 340699, XILINX_SPARTAN6_XL9, 0xfffffff, 0);
         
         // memset(&fbrt, 0x00, sizeof fbrt);
         // test_fpga_get_next_block
+        break;
+      }
+      case 'W': {
+        bitstore_InitRetrieve();
+        jtag_configure(NULL, bitstore_GetBlockJTAG, bitstore_Size());
         break;
       }
       case 'r': {
@@ -690,7 +703,7 @@ int main()
         printf("KBD: (K)bd init (L)kbd process\n");
         printf("USERIO: (u)init (U)close (V)coreid\n");
         printf("JAMMA: (j)init (J)getdata\n");
-        printf("JTAG: (j)taginit (J)tagdetect (R)unflash (r)unserial\n");
+        printf("JTAG: (j)taginit (J)tagdetect (R)unflash (r)unserial (w)bitstore load (W)bitstore fire\n");
         break;
 
       // PS2

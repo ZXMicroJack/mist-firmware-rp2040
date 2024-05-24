@@ -9,6 +9,7 @@
 
 #include "drivers/jamma.h"
 #include <pico/time.h>
+#include "hardware/gpio.h"
 // #include "usbrtc.h"
 
 uint32_t systimer;
@@ -197,31 +198,53 @@ unsigned char UserButton() {
   return 0;
 }
 
+// poll db9 joysticks
+#ifdef ZXUNO
+#define GPIO_JRT        28
+#define GPIO_JLT        15
+#define GPIO_JDN        14
+#define GPIO_JUP        12
+#define GPIO_JF1        11
+
 void InitDB9() {
+  uint8_t lut[] = { GPIO_JRT, GPIO_JLT, GPIO_JDN, GPIO_JUP, GPIO_JF1 };
+  for (int i=0; i<sizeof lut; i++) {
+    gpio_init(lut[i]);
+    gpio_set_dir(lut[i], GPIO_IN);
+  }
 }
 
-// poll db9 joysticks
+#define JOY_ALL   (JOY_RIGHT|JOY_LEFT|JOY_UP|JOY_DOWN|JOY_BTN1)
+
+char GetDB9(char index, unsigned char *joy_map) {
+  char data = 0;
+
+  if (!index) {
+    data |= gpio_get(GPIO_JRT) ? 0 : JOY_RIGHT;
+    data |= gpio_get(GPIO_JLT) ? 0 : JOY_LEFT;
+    data |= gpio_get(GPIO_JDN) ? 0 : JOY_DOWN;
+    data |= gpio_get(GPIO_JUP) ? 0 : JOY_UP;
+    data |= gpio_get(GPIO_JF1) ? 0 : JOY_BTN1;
+  }
+
+  if ((data & JOY_ALL) == JOY_ALL) {
+    /* pins pobably not reflected */
+    return 0;
+  }
+
+  *joy_map = data;
+  return 1;
+}
+#else
 const static uint8_t joylut[] = {0, JOY_UP, JOY_DOWN, JOY_LEFT, JOY_RIGHT, JOY_BTN1, JOY_BTN2, 0};
 char GetDB9(char index, unsigned char *joy_map) {
   // *joy_map is set to a combination of the following bitmapped values
   // JOY_UP, JOY_DOWN, JOY_LEFT, JOY_RIGHT, JOY_BTN1, JOY_BTN2
 
-#ifdef ZXUNO
-  uint32_t d = 0;
-#else
   uint32_t d = jamma_GetData(index);
-#endif
   uint8_t mask = 0x80;
   uint8_t ndx = 0;
   char j = 0;
-
-#if 0
-  if (d == 0xff) {
-    // DB9 is not reflected - report no movement
-    *joy_map = 0;
-    return 0;
-  }
-#endif
 
   while (mask) {
     if (d & mask) j |= joylut[ndx];
@@ -236,9 +259,9 @@ char GetDB9(char index, unsigned char *joy_map) {
   }
   
   *joy_map = d == 0xff ? 0 : j;
-  // *joy_map = 0;
   return 1;
 }
+#endif
 
 #define DB9_UP          0x80
 #define DB9_DOWN        0x40

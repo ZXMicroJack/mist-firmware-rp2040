@@ -224,6 +224,14 @@
  (SPI1 CSN) (I2C0 SCL) (UART0 RX) GP13 - COM7 - GP15 (SPI1 TX)  (I2C1 SCL)
 */
 
+
+#define GPIO_JRT        28
+#define GPIO_JLT        15
+#define GPIO_JDN        14
+#define GPIO_JUP        12
+#define GPIO_JF1        11
+
+
 #define RP2X_MIDIAPP    0x1CE07AC1
 #define RP2X_USBAPP     0xE31F853E
 #define RP2X_MIDILUTS   0xed27055a
@@ -275,7 +283,6 @@
 #define SDCARD_PIO pio0
 #define SDCARD_SM 1
 #define SDCARD_OFFSET  30
-
 
 
 

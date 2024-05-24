@@ -220,6 +220,7 @@ int mist_init() {
     iprintf("spiclk: %u MHz\r", GetSPICLK());
 
     usb_init();
+    InitDB9();
 
     InitADC();
 

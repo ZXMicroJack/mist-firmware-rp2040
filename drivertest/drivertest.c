@@ -29,7 +29,7 @@
 #include "debug.h"
 
 // #define TEST_PS2
-#define TEST_PS2_HOST
+// #define TEST_PS2_HOST
 // #define TEST_IPC
 // #define TEST_SDCARD_SPI
 // #define TEST_FPGA
@@ -37,8 +37,10 @@
 // #define TEST_FLASH
 // #define TEST_USERIO
 // #define TEST_JAMMA
+#define TEST_JOYPAD
 // #define TEST_DEBUG
 #define TEST_JTAG
+// #define TEST_DB9
 
 // KEY ACTION ALLOCATION
 // aAgGHjJlMNoOqQrRTuUVwWxXyYzZ
@@ -893,6 +895,10 @@ int main()
       case 'J': jamma_InitEx(1); printf("joypad 0 %X 1 %X\n", jamma_GetData(0), jamma_GetData(1)); break;
       case 'y': printf("jamma %08X\n", jamma_GetDataAll()); break;
       case 'x': jamma_Kill(); printf("kill jamma\n"); break;
+#endif
+
+#ifdef TEST_JOYPAD
+      case 'g': gpio_init(28); gpio_set_dir(28, GPIO_IN); printf("gpio %08X\n", gpio_get_all()); break;
 #endif
 
       // MATRIX KEYBOARD

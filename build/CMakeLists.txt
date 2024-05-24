@@ -84,6 +84,18 @@ set(main_src
   fpgaconfig.c
 )
 
+set(mainzx1_src
+  glue.c
+  spi.c
+  usbdev.c
+  hardware.c
+  mist.c
+  mistmain.c
+  mmc.c
+  keyboard.c
+  fpgaconfigzx1.c
+)
+
 set(usb_src
   ../usbhost/hid_app_mist.c
   ../usbhost/msc_app.c
@@ -567,7 +579,7 @@ target_compile_options(mistusbn1p PUBLIC
 # Main build RAM test build for ZXUno
 add_executable(mistzx1ram
   ${driver_zx1_src}
-  ${main_src}
+  ${mainzx1_src}
   ${picosynth_src}
   )
 
@@ -575,10 +587,10 @@ target_link_libraries(mistzx1ram pico_stdlib mistfirmware${testarch} hardware_sp
 ${picosynth_lib})
 add_compile_options(-O2)
 target_include_directories(mistzx1ram PUBLIC ../picosynth)
-pico_generate_pio_header(mistzx1ram ../drivers/fpga.pio)
+#pico_generate_pio_header(mistzx1ram ../drivers/fpga.pio)
 pico_generate_pio_header(mistzx1ram ../drivers/spi.pio)
-pico_generate_pio_header(mistzx1ram ../drivers/jamma.pio)
-pico_generate_pio_header(mistzx1ram ../drivers/jammadb9.pio)
+#pico_generate_pio_header(mistzx1ram ../drivers/jamma.pio)
+#pico_generate_pio_header(mistzx1ram ../drivers/jammadb9.pio)
 pico_generate_pio_header(mistzx1ram ../drivers/ps2.pio)
 pico_generate_pio_header(mistzx1ram ../drivers/audio_i2s.pio)
 pico_generate_pio_header(mistzx1ram ../drivers/ps2tx.pio)

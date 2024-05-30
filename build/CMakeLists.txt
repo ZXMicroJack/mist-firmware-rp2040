@@ -70,6 +70,7 @@ set(driver_zx1_src
 ../drivers/kbd.c
 #../drivers/jamma.c
 ../drivers/crc16.c
+../drivers/bitstore.c
 )
 
 set(main_src
@@ -195,6 +196,16 @@ target_compile_options(mistfirmwareusb PUBLIC
   "-DMIST"
   "-DUSB_STORAGE"
   "-DEXCL_XBOX_JPAD"
+  "-DMIST_ROOT=\"/\""
+)
+
+# mist library
+add_library(mistfirmwarezx1 STATIC ${mistfirmware_src})
+target_compile_options(mistfirmwarezx1 PUBLIC
+  "-DVDATE=\"\""
+  "-DSD_IMAGES=1"
+  "-DMIST"
+  "-DXILINX"
   "-DMIST_ROOT=\"/\""
 )
 
@@ -583,7 +594,7 @@ add_executable(mistzx1ram
   ${picosynth_src}
   )
 
-target_link_libraries(mistzx1ram pico_stdlib mistfirmware${testarch} hardware_spi hardware_pio pico_multicore 
+target_link_libraries(mistzx1ram pico_stdlib mistfirmwarezx1 hardware_spi hardware_pio pico_multicore 
 ${picosynth_lib})
 add_compile_options(-O2)
 target_include_directories(mistzx1ram PUBLIC ../picosynth)
@@ -603,6 +614,7 @@ target_compile_options(mistzx1ram PUBLIC
   "-DVDATE=\"\""
   "-Dhexdump=driver_hexdump"
   "-DPS2HOST"
+  "-DMIST_ROOT=\"/\""
   "-DZXUNO"
   ${archdefs}
   "-DJAMMADB9"
@@ -613,4 +625,38 @@ target_compile_options(mistzx1ram PUBLIC
   #"-DTEST_BUILD"
 )
 
+####################################################################################
+# Main build RAM test build for ZXUno
+add_executable(mistzx1
+  ${driver_zx1_src}
+  ${mainzx1_src}
+  ${picosynth_src}
+  )
 
+target_link_libraries(mistzx1 pico_stdlib mistfirmwarezx1 hardware_spi hardware_pio pico_multicore 
+${picosynth_lib})
+add_compile_options(-O2)
+target_include_directories(mistzx1 PUBLIC ../picosynth)
+pico_generate_pio_header(mistzx1 ../drivers/spi.pio)
+pico_generate_pio_header(mistzx1 ../drivers/ps2.pio)
+pico_generate_pio_header(mistzx1 ../drivers/audio_i2s.pio)
+pico_generate_pio_header(mistzx1 ../drivers/ps2tx.pio)
+pico_enable_stdio_usb(mistzx1 1)
+pico_enable_stdio_uart(mistzx1 0)
+pico_add_extra_outputs(mistzx1)
+example_auto_set_url(mistzx1)
+#pico_set_binary_type(mistzx1 no_flash)
+target_compile_options(mistzx1 PUBLIC
+  "-DVDATE=\"\""
+  "-Dhexdump=driver_hexdump"
+  "-DPS2HOST"
+  "-DMIST_ROOT=\"/\""
+  "-DZXUNO"
+  "-DXILINX"
+  "-DJAMMADB9"
+  "-DNO_PS2_TX"
+  "-DNO_LEGACY_MODE"
+  "-DZXUNO"
+  # "-DPICOSYNTH"
+  #"-DTEST_BUILD"
+)

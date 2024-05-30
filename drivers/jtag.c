@@ -336,6 +336,8 @@ static void jtag_start_xilinx(uint8_t *image, uint32_t imageSize, uint32_t devic
 
 	printf("Info: BYPASS...\n");
 	jtag_ins(INS_BYPASS, no_data, 1);
+
+  printf("Info: offset %d size %d\n", offset, size);
 }
 
 void jtag_start(uint8_t *image, uint32_t imageSize, uint32_t device, uint32_t devicemask, uint32_t crc) {

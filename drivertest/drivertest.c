@@ -693,6 +693,10 @@ int main()
         // test_fpga_get_next_block
         break;
       }
+
+      case '`':
+        watchdog_enable(1, 1);
+        break;
 #endif
 
       // HELP

@@ -61,6 +61,7 @@ static int cursor = 0;
 
 static void bitstore_add() {
   nr_chunks ++;
+#if !PICO_NO_FLASH
   chunk_t *chunk = (chunk_t *)malloc(sizeof(chunk_t));
   chunk->next = NULL;
 
@@ -70,22 +71,41 @@ static void bitstore_add() {
     latest->next = chunk;
     latest = latest->next;
   }
+#else
+  latest = (chunk_t *)nr_chunks;
+#endif
+  printf("chunk %d\n", nr_chunks);
 }
 
 void bitstore_free() {
+#if !PICO_NO_FLASH
   while (store) {
     chunk_t *chunk = store;
     store = store->next;
     free(chunk);
   }
+#else
+  latest = NULL;
+#endif
+  nr_chunks = 0;
 }
 
 static void bitstore_put(uint8_t data) {
+#if 0
+  static int q = 0;
+  printf("[%02X]", data);
+  q++;
+  if (q > 32) { q = 0; printf("\n"); }
+#endif
   if (latest == NULL || lastblock == CHUNKSIZE) {
     bitstore_add();
     lastblock = 0;
   }
+#if !PICO_NO_FLASH
   latest->data[lastblock++] = data;
+#else
+  lastblock++;
+#endif
 }
 
 static int bitstore_get(uint8_t *data, int len) {
@@ -134,7 +154,7 @@ static void reset_byteorder()
     {
         byte_order[i] = i;
         reverse_order[i] = i;
-	huff_byteorder[i] = i;
+	      huff_byteorder[i] = i;
     }
 
 }
@@ -224,7 +244,7 @@ static void huff_put(int data)
       mask >>=1;
       if (!l)
       {
-	bitstore_put(d);
+	      bitstore_put(d);
       	l = 8;
       	d = 0x00;
       }
@@ -293,7 +313,7 @@ int bitstore_Size() {
   return nr_chunks * CHUNKSIZE - (CHUNKSIZE - lastblock);
 }
 
-int bitstore_Store(void *user_data, int (*get_block)(void *user_data, uint8_t *block)) {
+int bitstore_Store(void *user_data, uint8_t (*get_block)(void *user_data, uint8_t *block)) {
 	uint8_t buffer[512];
 	int j, k;
 	int bytesread;
@@ -305,12 +325,18 @@ int bitstore_Store(void *user_data, int (*get_block)(void *user_data, uint8_t *b
 	uint8_t d;
 	int buf;
 
+  nr_chunks = 0;
+
+  bitstore_free();
   huff_reset();
 
 	if (!get_block(user_data, buffer)) {
-		buf = 0;
-		flag_byte = leastused(buffer, 512);
+    // error
+    return 0;
 	}
+
+  buf = 0;
+  flag_byte = leastused(buffer, 512);
 
 	bitstore_put(flag_byte);
 
@@ -345,6 +371,8 @@ int bitstore_Store(void *user_data, int (*get_block)(void *user_data, uint8_t *b
 				break;
 			}
 			buf = 0;
+      printf("read block\n");
+      // break;
 		}
 	}
 	int l = process_rle(cont, data, flag_byte, NULL);
@@ -469,7 +497,7 @@ int main(int argc, char **argv) {
 #ifdef HUFF
     huff_reset();
 #endif
-    bitstore_store(&cursor, get_block);
+    bitstore_Store(&cursor, get_block);
 #ifdef HUFF
     huff_put(-1);
 #endif
@@ -488,8 +516,8 @@ int main(int argc, char **argv) {
 #ifdef HUFF
     huff_reset();
 #endif
-    bitstore_init_retrieve();
-    while (!bitstore_get_block(&out[outlen])) {
+    bitstore_InitRetrieve();
+    while (!bitstore_GetBlock(&out[outlen])) {
       outlen += 512;
     }
     outlen += lastblock;

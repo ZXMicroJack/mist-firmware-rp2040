@@ -204,10 +204,19 @@ int mist_init() {
 
     mist_spi_init();
 
+#if defined(ZXUNO) && PICO_NO_FLASH
+    {
+      extern void ConfigureFPGAStdin();
+      ConfigureFPGAStdin();
+    }
+#endif
+
+#ifndef ZXUNO
 #ifdef XILINX
     fpga_initialise();
     fpga_claim(true);
     fpga_reset(0);
+#endif
 #endif
 
     if(MMC_Init()) mmc_ok = 1;

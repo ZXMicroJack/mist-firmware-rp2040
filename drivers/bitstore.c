@@ -4,6 +4,8 @@
 #include <string.h>
 
 #include "bitstore.h"
+#define DEBUG
+#include "debug.h"
 
 #define HUFF
 
@@ -11,6 +13,9 @@
 #define N_SYMBOLS 256
 //#define TRACE_CODES
 //#define TRACE_CODES_D
+
+#undef PICO_NO_FLASH
+#define PICO_NO_FLASH 0
 
 
 static const uint16_t std_hcodes[N_SYMBOLS] = {
@@ -77,19 +82,6 @@ static void bitstore_add() {
   printf("chunk %d\n", nr_chunks);
 }
 
-void bitstore_free() {
-#if !PICO_NO_FLASH
-  while (store) {
-    chunk_t *chunk = store;
-    store = store->next;
-    free(chunk);
-  }
-#else
-  latest = NULL;
-#endif
-  nr_chunks = 0;
-}
-
 static void bitstore_put(uint8_t data) {
 #if 0
   static int q = 0;
@@ -147,6 +139,14 @@ static uint32_t huff_size = 0;
 static uint8_t huff_byteorder[256];
 static uint8_t huff_init = 0;
 
+static uint8_t d = 0x00;
+static uint8_t l = 8;
+static unsigned short code;
+static unsigned short mask;
+static uint8_t r;
+static uint32_t reallen = 0;
+
+
 static void reset_byteorder()
 {
     int i;
@@ -161,6 +161,9 @@ static void reset_byteorder()
 
 static void huff_reset(void) {
   huff_l = huff_d = huff_size = huff_init = 0;
+  d = 0x00;
+  l = 8;
+  reallen = 0;
   reset_byteorder();
 }
 
@@ -216,12 +219,6 @@ int huff_get(void) {
   }
   return -1;
 }
-
-static uint8_t d = 0x00;
-static uint8_t l = 8;
-static unsigned short code;
-static unsigned short mask;
-static uint8_t r;
 
 static void huff_put(int data)
 {
@@ -310,7 +307,8 @@ static int process_rle(int cont, uint8_t data, uint8_t flag_byte, uint8_t *out)
 }
 
 int bitstore_Size() {
-  return nr_chunks * CHUNKSIZE - (CHUNKSIZE - lastblock);
+  //return nr_chunks * CHUNKSIZE - (CHUNKSIZE - lastblock);
+  return reallen;
 }
 
 int bitstore_Store(void *user_data, uint8_t (*get_block)(void *user_data, uint8_t *block)) {
@@ -326,14 +324,17 @@ int bitstore_Store(void *user_data, uint8_t (*get_block)(void *user_data, uint8_
 	int buf;
 
   nr_chunks = 0;
+  reallen = 512;
 
-  bitstore_free();
+  bitstore_Free();
   huff_reset();
 
 	if (!get_block(user_data, buffer)) {
     // error
     return 0;
 	}
+
+  // hexdump(buffer, 512);
 
   buf = 0;
   flag_byte = leastused(buffer, 512);
@@ -371,7 +372,8 @@ int bitstore_Store(void *user_data, uint8_t (*get_block)(void *user_data, uint8_
 				break;
 			}
 			buf = 0;
-      printf("read block\n");
+      reallen += 512;
+      // printf("read block\n");
       // break;
 		}
 	}
@@ -379,9 +381,6 @@ int bitstore_Store(void *user_data, uint8_t (*get_block)(void *user_data, uint8_
 	outlen += l;
   return nr_chunks;
 }
-
-
-
 
 static uint8_t *rle_inbuff;
 static uint32_t rle_inlen;
@@ -440,13 +439,33 @@ static int rle_get(void) {
 
 
 int bitstore_GetBlock(uint8_t *blk) {
-  for (int i = 0; i<512; i++) {
+  int i;
+  for (i = 0; i<512; i++) {
     int c = rle_get();
-    if (c < 0) { printf("i %d\n", i); return 1; }
+    if (c < 0) break;
     blk[i] = c;
   }
-  return 0;
+  // hexdump(blk, 512);
+  return i == 0;
 }
+
+void bitstore_Free() {
+#if !PICO_NO_FLASH
+  while (store) {
+    chunk_t *chunk = store;
+    store = store->next;
+    free(chunk);
+  }
+#else
+#endif
+  store = latest = NULL;
+  lastblock = 0;
+  nr_chunks = 0;
+  cursor = 0;
+  rle_reset();
+  huff_reset();
+}
+
 
   
 #ifdef TEST
@@ -471,7 +490,7 @@ uint32_t complen = 0;
 uint8_t out[512*1024];
 uint32_t outlen = 0;
 
-int get_block(void *user_data, uint8_t *block) {
+uint8_t get_block(void *user_data, uint8_t *block) {
 	uint32_t *cursor = (uint32_t *)user_data;
 
 	if ((*cursor) < inlen) {

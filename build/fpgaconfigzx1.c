@@ -316,11 +316,13 @@ void ConfigureFPGAStdin() {
 
 unsigned char ConfigureFpga(const char *bitfile) {
   configFpga cf;
+  uint32_t size;
+
   if (f_open(&cf.file, bitfile ? bitfile : "CORE.BIT", FA_READ) != FR_OK) {
     FatalError(4);
   }
 
-  cf.size = f_size(&cf.file);
+  size = cf.size = f_size(&cf.file);
   cf.error = 0;
 
   /* initialise fpga */

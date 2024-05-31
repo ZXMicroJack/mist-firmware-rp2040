@@ -510,6 +510,7 @@ int main()
   uint8_t buf[16];
   int i;
   uint8_t rddata = 0;
+  uint32_t jtaglen;
 
   // set up error led
 //   gpio_init(PICO_DEFAULT_LED_PIN);
@@ -659,12 +660,14 @@ int main()
         int len;
         scanf("%d", &len);
         printf("%d\n", len);
+        jtaglen = len;
 
         memset(&fbrt, 0x00, sizeof fbrt);
         fbrt.n_blocks = (len + 511) / 512;
         bitstore_InitRetrieve();
         int chunks = bitstore_Store(&fbrt, test_fpga_get_next_block_stdin);
         printf("loaded %d chunks\n", chunks);
+        printf("len %d\n", bitstore_Size());
 
         // printf("fpga_program returns %d\n", jtag_configure(&fbrt, test_fpga_get_next_block_stdin, len));
         // jtag_start((uint8_t *)0x100A0000, 340699, XILINX_SPARTAN6_XL9, 0xfffffff, 0);
@@ -675,7 +678,8 @@ int main()
       }
       case 'W': {
         bitstore_InitRetrieve();
-        jtag_configure(NULL, bitstore_GetBlockJTAG, bitstore_Size());
+        jtag_configure(NULL, bitstore_GetBlockJTAG, jtaglen);
+        bitstore_Free();
         break;
       }
       case 'R': {

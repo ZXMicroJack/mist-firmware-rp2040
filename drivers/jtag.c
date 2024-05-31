@@ -394,11 +394,18 @@ int jtag_configure(void *user_data, uint8_t (*next_block)(void *, uint8_t *), ui
     return 1;
   }
 
+  printf("%02X %02X %02X %02X\n", buff[0], buff[1], buff[2], buff[3]);
+
+  if (buff[0] != 0x00 || buff[1] != 0x09 || buff[2] != 0x0f || buff[3] != 0xf0)
+    return 1;
+
 
   if (!jtag_get_length(buff, assumelength, &size, &offset)) {
     debug(("bitfile_get_length: problems\n"));
     return 1;
   }
+
+  printf("size %d offset %d\n", size, offset);
 
 	printf("Info: Putting jtag in idle...\n");
 	jtag_idle();
@@ -431,13 +438,17 @@ int jtag_configure(void *user_data, uint8_t (*next_block)(void *, uint8_t *), ui
   jtag_tdin_rev_block(jtagheader, sizeof jtagheader);
   jtag_tdin_rev_block(buff + offset, 512 - offset);
   size -= (512-offset);
+  // size -= 512;
 
+  int nr_blocks = 0;
   while (size && next_block(user_data, buff)) {
     int this_len = size > 512 ? 512 : size;
     jtag_tdin_rev_block(buff, this_len);
     size -= this_len;
+    nr_blocks ++;
   }
   jtag_ins_end();
+  printf("nr_blocks = %d\n", nr_blocks);
 
 
   printf("Info: JSTART...\n");

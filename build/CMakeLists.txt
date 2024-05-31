@@ -615,8 +615,7 @@ target_compile_options(mistzx1ram PUBLIC
   "-Dhexdump=driver_hexdump"
   "-DPS2HOST"
   "-DMIST_ROOT=\"/\""
-  "-DZXUNO"
-  ${archdefs}
+  "-DXILINX"
   "-DJAMMADB9"
   "-DNO_PS2_TX"
   "-DNO_LEGACY_MODE"

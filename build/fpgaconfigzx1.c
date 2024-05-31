@@ -18,6 +18,7 @@
 #include "drivers/fpga.h"
 #include "drivers/bitfile.h"
 #include "drivers/bitstore.h"
+#include "drivers/pins.h"
 // #define DEBUG
 #include "drivers/debug.h"
 
@@ -294,6 +295,43 @@ uint8_t read_next_block_stdin(void *user_data, uint8_t *data) {
 
 static int bitstore_GetBlockJTAG(void *user_data, uint8_t *blk) {
   return bitstore_GetBlock(blk) ? false : true;
+}
+
+uint32_t fpga_image_size;
+
+static bool test_fpga_get_next_block(void *user_data, uint8_t *data) {
+  int j;
+  int thislen;
+  int o = 0;
+  configFpga *b = (configFpga *)user_data;
+  
+
+  if ((b->block_nr * 512) > fpga_image_size) {
+    return false;
+  }
+
+  uint8_t *bits = (uint8_t *)(FPGA_IMAGE_POS + b->block_nr * 512);
+
+  memcpy(data, bits, 512);
+  b->block_nr ++;
+  return true;
+}
+
+void ConfigureFPGAFlash()
+{
+  configFpga cf;
+  uint32_t size, offset;
+  int result = jtag_get_length((uint8_t *)FPGA_IMAGE_POS, 512, &size, &offset);
+
+  printf("result %d size %d offset %d\n", result, size, offset);
+  //result 1 size 340699 offset 95
+
+  if (result) {
+    fpga_image_size = size;
+    memset(&cf, 0x00, sizeof cf);
+    jtag_init();
+    printf("fpga_program returns %d\n", jtag_configure(&cf, test_fpga_get_next_block, size));
+  }
 }
 
 void ConfigureFPGAStdin() {

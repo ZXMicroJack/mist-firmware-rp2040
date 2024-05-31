@@ -485,6 +485,13 @@ int main() {
 //     int c = getchar();
 //     if (forceexit) break;
     if (c == 'q') break;
+#ifdef ZXUNO
+    if (c == 'j') {
+      void ConfigureFPGAStdin();
+      ConfigureFPGAStdin();
+      while (getchar_timeout_us(2) >= 0);
+    }
+#endif
     if (c == 'm') {
       extern int menu;
       menu = !menu;

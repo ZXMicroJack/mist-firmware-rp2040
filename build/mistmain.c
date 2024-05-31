@@ -211,7 +211,12 @@ int mist_init() {
     }
 #endif
 
-#ifndef ZXUNO
+#ifdef ZXUNO
+  {
+    void ConfigureFPGAFlash();
+    ConfigureFPGAFlash();
+  }
+#else
 #ifdef XILINX
     fpga_initialise();
     fpga_claim(true);

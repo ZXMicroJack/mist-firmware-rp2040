@@ -698,6 +698,14 @@ int main()
         break;
       }
 
+      case 'l': {
+        uint32_t size, offset;
+        int result = jtag_get_length((uint8_t *)FPGA_IMAGE_POS, 512, &size, &offset);
+        printf("result %d size %d offset %d\n", result, size, offset);
+        //result 1 size 340699 offset 95
+        break;
+      }
+
       case '`':
         watchdog_enable(1, 1);
         break;

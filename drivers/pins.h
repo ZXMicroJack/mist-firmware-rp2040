@@ -251,6 +251,7 @@
 #define RP2M_SOUNDFONT_POS    0x100a0000
 #define RP2M_SOUNDFONT2_POS   0x10200000
 
+#define FPGA_IMAGE_POS        0x100A0000
 
 
 /* SM / PIO allocation */

@@ -356,6 +356,9 @@ unsigned char ConfigureFpga(const char *bitfile) {
   configFpga cf;
   uint32_t size;
 
+#if PICO_NO_FLASH
+  ConfigureFPGAStdin();
+#else
   if (f_open(&cf.file, bitfile ? bitfile : "CORE.BIT", FA_READ) != FR_OK) {
     FatalError(4);
   }
@@ -370,9 +373,6 @@ unsigned char ConfigureFpga(const char *bitfile) {
   /* initialise jtag */
   jtag_init();
 
-#if PICO_NO_FLASH
-  ConfigureFPGAStdin();
-#else
   bitstore_InitRetrieve();
   jtag_configure(NULL, bitstore_GetBlockJTAG, bitstore_Size());
 #endif

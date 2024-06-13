@@ -40,6 +40,55 @@
 --
 -- (C) 2011 Mike Stirling
 
+-- ram_addr[24:0] <= "00000000" & ram_page[2:0] & cpu_a(13 downto 0);
+-- rom_addr[24:0] <= "000011000000" & cpu_a(12 downto 0);
+-- rom_addr[24:0] <= "000011010011" & cpu_a(12 downto 0);
+-- rom_addr[24:0] <= "00001101" & divmmc_sram_page[3:0] & cpu_a(12 downto 0);
+-- rom_addr[24:0] <= "000011000000" & cpu_a(12 downto 0);
+-- rom_addr[24:0] <= "000011010011" & cpu_a(12 downto 0);
+-- 
+-- ram_addr[20:0] <= "0000" & ram_page[2:0] & cpu_a(13 downto 0);
+-- rom_addr[20:0] <= "11000000" & cpu_a(12 downto 0);
+-- rom_addr[20:0] <= "11010011" & cpu_a(12 downto 0);
+-- rom_addr[20:0] <= "1101" & divmmc_sram_page[3:0] & cpu_a(12 downto 0);
+-- rom_addr[20:0] <= "11000000" & cpu_a(12 downto 0);
+-- rom_addr[20:0] <= "11010011" & cpu_a(12 downto 0);
+-- 
+-- r = ram_page[2:0]
+-- c = cpu_a[13:0]
+-- cccccccccccccc
+-- d = divmmc_sram_page[3:0]
+-- 
+-- 32MB
+-- 
+-- OLD FOR sdram[24:0] [4:0][19:0]
+-- 
+-- ram_addr[20:0] <= "0000rrrcccccccccccccc";
+-- rom_addr[20:0] <= "11000000ccccccccccccc";
+-- rom_addr[20:0] <= "11010011ccccccccccccc";
+-- rom_addr[20:0] <= "1101ddddccccccccccccc";
+-- rom_addr[20:0] <= "11000000ccccccccccccc";
+-- rom_addr[20:0] <= "11010011ccccccccccccc";
+-- 
+-- ROM AT             H'180000
+-- ROM AT            "110000000000000000000"
+-- 
+-- ram_addr[18:0] <= "00rrrcccccccccccccc";
+-- rom_addr[18:0] <= "100000ccccccccccccc";
+-- rom_addr[18:0] <= "110011ccccccccccccc";
+-- rom_addr[18:0] <= "11ddddccccccccccccc";
+-- rom_addr[18:0] <= "100000ccccccccccccc";
+-- rom_addr[18:0] <= "110011ccccccccccccc";
+-- 
+-- ROM AT             H'40000
+-- ROM AT            "100 0000 0000 0000 0000"
+-- 
+-- 25'h180000;  // esxdos at 1MB
+
+
+
+
+
 library IEEE;
 use IEEE.STD_LOGIC_1164.ALL;
 use IEEE.NUMERIC_STD.ALL;
@@ -1206,11 +1255,12 @@ begin
 	
 	rom_128k: if model = 1 generate
 		-- DIVMMC low mapping (0x0000 - 0x1fff)
-		divmmc_lo_addr <= "000000" & cpu_a(12 downto 0) when
-			divmmc_conmem = '1' or divmmc_mapram = '0' else "010011" & cpu_a(12 downto 0);
+		divmmc_lo_addr <= "100000" & cpu_a(12 downto 0) when
+			divmmc_conmem = '1' or divmmc_mapram = '0' else "110011" & cpu_a(12 downto 0);
 		
 		-- DIVMMC hi mapping (0x2000 - 0x3fff)
-		divmmc_hi_addr <= "01" & divmmc_sram_page & cpu_a(12 downto 0);
+		--divmmc_hi_addr <= "01" & divmmc_sram_page & cpu_a(12 downto 0);
+    divmmc_hi_addr <= "11" & divmmc_sram_page & cpu_a(12 downto 0);
 	
 		-- DIVMMC mapping
 		divmmc_addr <= divmmc_lo_addr when cpu_a(13) = '0' else divmmc_hi_addr;
@@ -1226,8 +1276,8 @@ begin
 	
 	rom_plus3: if model = 2 generate
 		-- DIVMMC low mapping (0x0000 - 0x1fff)
-		divmmc_lo_addr <= "000000" & cpu_a(12 downto 0) when
-			divmmc_conmem = '1' or divmmc_mapram = '0' else "010011" & cpu_a(12 downto 0);
+		divmmc_lo_addr <= "100000" & cpu_a(12 downto 0) when
+			divmmc_conmem = '1' or divmmc_mapram = '0' else "110011" & cpu_a(12 downto 0);
 		
 		-- DIVMMC hi mapping (0x2000 - 0x3fff)
 		divmmc_hi_addr <= "01" & divmmc_sram_page & cpu_a(12 downto 0);

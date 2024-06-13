@@ -97,7 +97,8 @@ always@(posedge sck, posedge ss) begin
 		if((cmd == UIO_FILE_TX) && (cnt == 15)) begin
 			// prepare 
 			if(sdi) begin
-				if(index == 0) addr <= 25'h180000;  // esxdos at 1MB
+				//if(index == 0) addr <= 25'h180000;  // esxdos at 1MB
+        if(index == 0) addr <= 25'h40000;  // esxdos at 1MB
 				else				addr <= 25'h200000;  // tape buffer at 2MB
 				
 				downloading_reg <= 1'b1; 
@@ -106,7 +107,8 @@ always@(posedge sck, posedge ss) begin
 					
 				// in case of a esxdos 8k download we also erase the memory
 				// area at 1a0000 to make sure divmmc ram is empty
-				if(addr == 25'h182000)
+				//if(addr == 25'h182000)
+        if(addr == 25'h42000)
 					erase_trigger <= 1'b1;
 			end
 		end
@@ -148,7 +150,8 @@ always@(posedge clk) begin
 	end else begin
 		erase_clk_div <= erase_clk_div + 5'd1;
 		if(erase_clk_div == 0) begin
-			if(erase_addr != 25'h1a2000) begin
+			//if(erase_addr != 25'h1a2000) begin
+      if(erase_addr != 25'h62000) begin
 				erase_addr <= erase_addr + 25'd1;
 				wr <= 1'b1;
 			end else

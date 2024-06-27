@@ -394,11 +394,12 @@ int jtag_configure(void *user_data, uint8_t (*next_block)(void *, uint8_t *), ui
     return 1;
   }
 
+#if 0
   printf("%02X %02X %02X %02X\n", buff[0], buff[1], buff[2], buff[3]);
 
   if (buff[0] != 0x00 || buff[1] != 0x09 || buff[2] != 0x0f || buff[3] != 0xf0)
     return 1;
-
+#endif
 
   if (!jtag_get_length(buff, assumelength, &size, &offset)) {
     debug(("bitfile_get_length: problems\n"));
@@ -445,6 +446,7 @@ int jtag_configure(void *user_data, uint8_t (*next_block)(void *, uint8_t *), ui
     int this_len = size > 512 ? 512 : size;
     jtag_tdin_rev_block(buff, this_len);
     size -= this_len;
+    // printf("nr_blocks = %d size %d\n", nr_blocks, size);
     nr_blocks ++;
   }
   jtag_ins_end();

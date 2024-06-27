@@ -8,7 +8,7 @@ include(pico_extras_import.cmake)
 project(pico_examples C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DIPC_MASTER -DPICO_XOSC_STARTUP_DELAY_MULTIPLIER=64 -DNR_PS2=2 -fsigned-char -DSD_DIRECT_MODE_GPIO=22 -DUSE_8BA -DSAMPLE_RATE=22050 -DSAMPLE_LEN=512 -DPICO_AUDIO_I2S_DATA_PIN=4 -DPICO_AUDIO_I2S_CLOCK_PIN_BASE=2 -DVE_STEPS=64 -DLFO_STEPS=64 -DNONAME -DPICO_AUDIO_I2S_PIO=1")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DIPC_MASTER -DPICO_XOSC_STARTUP_DELAY_MULTIPLIER=64 -DNR_PS2=2 -fsigned-char -DUSE_8BA -DSAMPLE_RATE=22050 -DSAMPLE_LEN=512 -DPICO_AUDIO_I2S_DATA_PIN=4 -DPICO_AUDIO_I2S_CLOCK_PIN_BASE=2 -DVE_STEPS=64 -DLFO_STEPS=64 -DNONAME -DPICO_AUDIO_I2S_PIO=1")
 
 set(PICO_EXAMPLES_PATH ${PROJECT_SOURCE_DIR})
 set(CMAKE_BUILD_TYPE "Debug")
@@ -167,8 +167,9 @@ target_compile_options(mistfirmware PUBLIC
   "-DVDATE=\"\""
   "-DMIST"
   "-DMIST_ROOT=\"/\""
+  "-DCOREEXT=\"RBF\""
+  "-DCOREEXTOTHER=\"NP1\""
 )
-
 # mist library xilinx
 add_library(mistfirmwarexilinx STATIC ${mistfirmware_src})
 target_compile_options(mistfirmwarexilinx PUBLIC
@@ -176,6 +177,8 @@ target_compile_options(mistfirmwarexilinx PUBLIC
   "-DXILINX"
   "-DMIST"
   "-DMIST_ROOT=\"/MIST\""
+  "-DCOREEXT=\"BIT\""
+  "-DCOREEXTOTHER=\"ZXT\""
 )
 
 # mist USB library
@@ -187,6 +190,8 @@ target_compile_options(mistfirmwareusbxilinx PUBLIC
   "-DXILINX"
   "-DEXCL_XBOX_JPAD"
   "-DMIST_ROOT=\"/MIST\""
+  "-DCOREEXT=\"BIT\""
+  "-DCOREEXTOTHER=\"ZXT\""
 )
 
 # mist USB library
@@ -197,17 +202,21 @@ target_compile_options(mistfirmwareusb PUBLIC
   "-DUSB_STORAGE"
   "-DEXCL_XBOX_JPAD"
   "-DMIST_ROOT=\"/\""
-)
+  "-DCOREEXT=\"RBF\""
+  "-DCOREEXTOTHER=\"NP1\""
+  )
 
 # mist library
 add_library(mistfirmwarezx1 STATIC ${mistfirmware_src})
 target_compile_options(mistfirmwarezx1 PUBLIC
   "-DVDATE=\"\""
-  "-DSD_IMAGES=1"
+  "-DNO_FILE_INDEX"
   "-DMIST"
   "-DXILINX"
-  "-DMIST_ROOT=\"/\""
-)
+  "-DMIST_ROOT=\"/MIST\""
+  "-DCOREEXT=\"BIT\""
+  "-DCOREEXTOTHER=\"ZX1\""
+  )
 
 ####################################################################################
 # Main build RAM test build for functionality Xilinx ZXTres
@@ -245,6 +254,7 @@ target_compile_options(mistram PUBLIC
   "-DPS2HOST"
   ${archdefs}
   "-DJAMMADB9"
+  "-DSD_DIRECT_MODE_GPIO=22"
   # "-DPICOSYNTH"
   #"-DTEST_BUILD"
 )
@@ -276,6 +286,7 @@ target_compile_options(mistusbfake PUBLIC
   "-DJAMMADB9"
   "-DUSB"
   "-DUSBFAKE"
+  "-DSD_DIRECT_MODE_GPIO=22"
   "-DTEST_BUILD"
 )
 
@@ -320,6 +331,7 @@ target_compile_options(mistxilinx PUBLIC
   "-DJAMMADB9"
   "-DMIST_ROOT=\"/MIST\""
   "-DBUFFER_FPGA"
+  "-DSD_DIRECT_MODE_GPIO=22"
   # "-DUSBFAKE"
   # "-DUSB"
   # "-DMIST_USB"
@@ -377,6 +389,7 @@ target_compile_options(mistusbxilinx PUBLIC
   "-DMIST_USB"
   "-DUSB_STORAGE"
   "-DBOOT_FLASH_ON_ERROR"
+  "-DSD_DIRECT_MODE_GPIO=22"
   #"-DDEVKIT_DEBUG"
   "-DUSB_DEBUG_OFF"
   "-DMIST_ROOT=\"/MIST\""
@@ -426,6 +439,7 @@ target_compile_options(mistusb PUBLIC
   # "-DXILINX"
   "-DJAMMADB9"
   "-DUSB"
+  "-DSD_DIRECT_MODE_GPIO=22"
   "-DMIST_USB"
   "-DALTERA_FPGA"
   "-DQMTECH"
@@ -489,6 +503,7 @@ target_compile_options(mistmb2xilinxram PUBLIC
   "-DIPC_MASTER"
   "-DUSB_DEBUG_OFF"
   "-DBOOT_FLASH_ON_ERROR"
+  "-DSD_DIRECT_MODE_GPIO=22"
   # "-DPICOSYNTH"
   # "-DMB2USB"
 
@@ -548,6 +563,7 @@ target_compile_options(mistmb2xilinx PUBLIC
   "-DUSB_DEBUG_OFF"
   "-DBOOT_FLASH_ON_ERROR"
   "-DPICOSYNTH"
+  "-DSD_DIRECT_MODE_GPIO=22"
   # "-DPIODEBUG"
 )
 
@@ -582,6 +598,7 @@ target_compile_options(mistusbn1p PUBLIC
   "-DUSB"
   "-DMIST_USB"
   "-DALTERA_FPGA"
+  "-DSD_DIRECT_MODE_GPIO=22"
   "-DUSB_STORAGE"
   "-DUSB_DEBUG_OFF"
 )
@@ -614,12 +631,14 @@ target_compile_options(mistzx1ram PUBLIC
   "-DVDATE=\"\""
   "-Dhexdump=driver_hexdump"
   "-DPS2HOST"
-  "-DMIST_ROOT=\"/\""
   "-DXILINX"
   "-DJAMMADB9"
   "-DNO_PS2_TX"
   "-DNO_LEGACY_MODE"
+  "-DSD_DIRECT_MODE_GPIO=19"
+  "-DMIST_ROOT=\"/MIST\""
   "-DZXUNO"
+  "-DNO_FILE_INDEX"
   # "-DPICOSYNTH"
   #"-DTEST_BUILD"
 )
@@ -654,6 +673,8 @@ target_compile_options(mistzx1 PUBLIC
   "-DXILINX"
   "-DJAMMADB9"
   "-DNO_PS2_TX"
+  "-DSD_DIRECT_MODE_GPIO=19"
+  "-DMIST_ROOT=\"/MIST\""
   "-DNO_LEGACY_MODE"
   "-DZXUNO"
   # "-DPICOSYNTH"

@@ -36,6 +36,9 @@ int jtag_init() {
   gpio_set_dir(TDI, GPIO_OUT);
   gpio_set_dir(TCK, GPIO_OUT);
   gpio_set_dir(TMS, GPIO_OUT);
+
+  //TODO move
+  // reset_SetCallback(NULL);
 	
 	return 0;
 }
@@ -463,4 +466,38 @@ int jtag_configure(void *user_data, uint8_t (*next_block)(void *, uint8_t *), ui
 	jtag_ins(INS_BYPASS, no_data, 1);
   return 0;
 }
+
+void jtag_ResetFPGA() {
+  gpio_init(10);
+  gpio_put(10, 1);
+  gpio_set_dir(10, GPIO_OUT);
+
+  gpio_put(10, 0);
+  sleep_us(100);
+  gpio_put(10, 1);
+  gpio_init(10);
+}
+
+//   gpio_set_irq_enabled(10, GPIO_IRQ_EDGE_FALL, true);
+
+//   gpio_set_irq_callback(reset_callback);
+//   irq_set_enabled(IO_IRQ_BANK0, true);
+// }
+
+// }
+
+// static void reset_callback(uint gpio, uint32_t events) {
+//   printf("gpio: %u events %X\n", gpio, events);
+// }
+
+// void reset_SetCallback(void (*callback)(void)) {
+//   gpio_init(10);
+//   gpio_set_dir(10, GPIO_IN);
+
+//   gpio_set_irq_enabled(10, GPIO_IRQ_EDGE_FALL, true);
+
+//   gpio_set_irq_callback(reset_callback);
+//   irq_set_enabled(IO_IRQ_BANK0, true);
+// }
+
 

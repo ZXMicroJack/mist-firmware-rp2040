@@ -135,6 +135,11 @@ unsigned char ConfigureFpga(const char *bitfile) {
     return 1;
   }
 
+  if (bitfile && !strcmp(bitfile, "FLSHMENU.BIT")) {
+    /* already done earlier on */
+    return 1;
+  }
+
   if (f_open(&cf.file, bitfile ? bitfile : "CORE.BIT", FA_READ) != FR_OK) {
     FatalError(4);
   }

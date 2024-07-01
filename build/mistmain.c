@@ -61,6 +61,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "storage_control.h"
 #include "FatFs/diskio.h"
 #include "mistmain.h"
+#include "settings.h"
 
 #include "drivers/ipc.h"
 #include "drivers/midi.h"
@@ -340,7 +341,20 @@ int mist_init() {
 #ifdef PICOSYNTH
     picosynth_Init();
 #endif
+
+#ifdef ZXUNO
+    settings_board_load();
+    settings_load(1);
+    if (!settings_boot_menu()) {
+      jtag_ResetFPGA();
+      user_io_detect_core_type();
+    }
+#endif
+
     set_legacy_mode(user_io_core_type() == CORE_TYPE_UNKNOWN ? LEGACY_MODE : MIST_MODE);
+
+
+    // set_legacy_mode(user_io_core_type() == CORE_TYPE_UNKNOWN ? LEGACY_MODE : MIST_MODE);
     return 0;
 }
 
@@ -368,6 +382,7 @@ uint8_t sysex_buffer[MAX_SYSEX];
 #define CMD_INITFPGA        0x0C
 #define CMD_INITFPGAFN      0x0D
 #define CMD_BOOTSTRAP       0x0E
+#define CMD_STARTMIST       0x0F
 
 uint8_t old_coretype = 0;
 
@@ -419,6 +434,12 @@ void sysex_Process() {
     }
 #endif
 
+#ifdef ZXUNO
+    case CMD_STARTMIST: {
+      break;
+    }
+#endif
+
     case CMD_INITFPGAFN: {
       char fn[256];
       extern unsigned char ConfigureFpgaEx(const char *bitfile, uint8_t fatal, uint8_t reset);
@@ -432,6 +453,15 @@ void sysex_Process() {
       // skip initial separator, reset before load
       // ConfigureFpgaEx(fn, false, true);
       ResetFPGA();
+
+#ifdef ZXUNO
+      /* ZXUNO version has no direct access to SD card - need to reset to menu first  */
+      if (legacy_mode == LEGACY_MODE) {
+        void ConfigureFPGAFlash();
+        ConfigureFPGAFlash();
+      }
+#endif
+
       fpga_init(fn);
       // check_core_at = time_us_64() + 100000;
 
@@ -498,7 +528,7 @@ void midi_loop() {
     
     thisread = midi_get(uartbuff, thisread);
 
-#if 0 // disabled for debug
+#if 1 // disabled for debug
     printf("MidiIn: ");
     for (int i=0; i<thisread; i++) {
       printf("%02X %c", uartbuff[i], (uartbuff[i] >= ' ' && uartbuff[i] < 128) ? uartbuff[i] : '?');

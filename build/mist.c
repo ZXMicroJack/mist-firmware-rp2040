@@ -9,7 +9,7 @@
 
 #include "hardware/clocks.h"
 #include "hardware/structs/clocks.h"
-#include "hardware/flash.h"
+// #include "hardware/flash.h"
 #include "hardware/resets.h"
 #include "hardware/spi.h"
 
@@ -485,6 +485,8 @@ int main() {
 //     int c = getchar();
 //     if (forceexit) break;
     if (c == 'q') break;
+    // if (c == 'f') DB9Update(0, 0x10);
+    // if (c == 'F') DB9Update(0, 0x00);
 #ifdef ZXUNO
     if (c == 'j') {
       void ConfigureFPGAStdin();
@@ -492,10 +494,6 @@ int main() {
       while (getchar_timeout_us(2) >= 0);
     }
 #endif
-    if (c == 'm') {
-      extern int menu;
-      menu = !menu;
-    }
 #ifdef USBFAKE
 #ifdef FAKE_KBD
     if (c == 'k') {

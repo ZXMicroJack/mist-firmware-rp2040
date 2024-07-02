@@ -79,25 +79,6 @@ char s[FF_LFN_BUF + 1];
 
 unsigned long storage_size = 0;
 
-#if 0
-void FatalError(unsigned long error) {
-  unsigned long i;
-  
-  iprintf("Fatal error: %lu\r", error);
-  
-  while (1) {
-    for (i = 0; i < error; i++) {
-      DISKLED_ON;
-      WaitTimer(250);
-      DISKLED_OFF;
-      WaitTimer(250);
-    }
-    WaitTimer(1000);
-    MCUReset();
-  }
-}
-#endif
-
 void HandleFpga(void) {
   unsigned char  c1, c2;
   
@@ -123,8 +104,8 @@ uint8_t legacy_mode = DEFAULT_MODE;
 void set_legacy_mode(uint8_t mode) {
   if (mode != legacy_mode) {
     printf("Setting legacy mode to %d\n", mode);
-#ifdef ZXUNO
-#else
+    DB9SetLegacy(mode == LEGACY_MODE);
+#ifndef ZXUNO
 #ifdef MB2
     ipc_Command(IPC_SETMISTER, &mode, sizeof mode);
 #else
@@ -326,8 +307,9 @@ int mist_init() {
     }
 
     usb_dev_open();
+
 #ifdef ZXUNO
-  //TODO joystick
+  DB9SetLegacy(0);
 #else
 #ifndef MB2
     jamma_InitEx(1);
@@ -352,9 +334,6 @@ int mist_init() {
 #endif
 
     set_legacy_mode(user_io_core_type() == CORE_TYPE_UNKNOWN ? LEGACY_MODE : MIST_MODE);
-
-
-    // set_legacy_mode(user_io_core_type() == CORE_TYPE_UNKNOWN ? LEGACY_MODE : MIST_MODE);
     return 0;
 }
 
@@ -382,13 +361,8 @@ uint8_t sysex_buffer[MAX_SYSEX];
 #define CMD_INITFPGA        0x0C
 #define CMD_INITFPGAFN      0x0D
 #define CMD_BOOTSTRAP       0x0E
-#define CMD_STARTMIST       0x0F
-
-uint8_t old_coretype = 0;
 
 extern uint8_t stop_watchdog;
-
-uint64_t check_core_at = 0;
 
 #ifndef USBFAKE
 uint64_t lastBeep = 0;
@@ -419,27 +393,6 @@ void sysex_Process() {
       break;
     }
 
-#if 0
-    case CMD_INITFPGA: {
-      uint32_t lba = (sysex_buffer[1] << 28) 
-        | (sysex_buffer[2] << 21)
-        | (sysex_buffer[3] << 14) 
-        | (sysex_buffer[4] << 7) | sysex_buffer[5];
-      main_Active(1);
-      spi = sd_hw_init();
-      fpga_load_bitfile(spi, lba, NULL);
-      sd_hw_kill(spi);
-      main_Active(0);
-      break;
-    }
-#endif
-
-#ifdef ZXUNO
-    case CMD_STARTMIST: {
-      break;
-    }
-#endif
-
     case CMD_INITFPGAFN: {
       char fn[256];
       extern unsigned char ConfigureFpgaEx(const char *bitfile, uint8_t fatal, uint8_t reset);
@@ -451,7 +404,6 @@ void sysex_Process() {
       
       printf("fn = %s\n", fn);
       // skip initial separator, reset before load
-      // ConfigureFpgaEx(fn, false, true);
       ResetFPGA();
 
 #ifdef ZXUNO
@@ -463,13 +415,6 @@ void sysex_Process() {
 #endif
 
       fpga_init(fn);
-      // check_core_at = time_us_64() + 100000;
-
-      // main_Active(1);
-      // spi = sd_hw_init();
-      // fpga_load_bitfile(spi, 0, fn);
-      // sd_hw_kill(spi);
-      // main_Active(0);
       break;
     }
     
@@ -528,7 +473,7 @@ void midi_loop() {
     
     thisread = midi_get(uartbuff, thisread);
 
-#if 1 // disabled for debug
+#if 0 // disabled for debug
     printf("MidiIn: ");
     for (int i=0; i<thisread; i++) {
       printf("%02X %c", uartbuff[i], (uartbuff[i] >= ' ' && uartbuff[i] < 128) ? uartbuff[i] : '?');
@@ -566,37 +511,17 @@ int mist_loop() {
     cdc_control_poll();
     storage_control_poll();
 
-    if (check_core_at && time_us_64() > check_core_at) {
-      user_io_detect_core_type();
-      user_io_detect_core_type();
-      user_io_detect_core_type();
-      check_core_at = 0;
-    }
-
     if (legacy_mode == LEGACY_MODE) {
       if (user_io_core_type() != CORE_TYPE_UNKNOWN) {
         set_legacy_mode(MIST_MODE);
       }
-  // beep(1);
     } else {
-  // beep(2);
       user_io_poll();
 
-#if 0
-      if (old_coretype != user_io_core_type()) {
-        old_coretype = user_io_core_type();
-        printf("user_io_core_type() %02X\n", old_coretype);
-      }
-#endif
-
       // MJ: check for legacy core and switch support on
-#if 1
       if (user_io_core_type() == CORE_TYPE_UNKNOWN) {
         set_legacy_mode(LEGACY_MODE);
       }
-#endif
-      // printf("[%d]\n", __LINE__);
-
 
       // MIST (atari) core supports the same UI as Minimig
       if((user_io_core_type() == CORE_TYPE_MIST) || (user_io_core_type() == CORE_TYPE_MIST2)) {
@@ -605,7 +530,6 @@ int mist_loop() {
 
         HandleUI();
       }
-      // printf("[%d]\n", __LINE__);
 
       // call original minimig handlers if minimig core is found
       if((user_io_core_type() == CORE_TYPE_MINIMIG) || (user_io_core_type() == CORE_TYPE_MINIMIG2)) {
@@ -615,15 +539,12 @@ int mist_loop() {
         HandleFpga();
         HandleUI();
       }
-      // printf("[%d]\n", __LINE__);
 
       // 8 bit cores can also have a ui if a valid config string can be read from it
       if((user_io_core_type() == CORE_TYPE_8BIT) && user_io_is_8bit_with_config_string()) HandleUI();
-      // printf("[%d]\n", __LINE__);
 
       // Archie core will get its own treatment one day ...
       if(user_io_core_type() == CORE_TYPE_ARCHIE) HandleUI();
-      // printf("[%d]\n", __LINE__);
     }
     return 0;
 }

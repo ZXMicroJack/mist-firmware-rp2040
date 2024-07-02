@@ -85,6 +85,7 @@ unsigned char UserButton();
 // TODO MJ no DB9s unless routed
 void InitDB9();
 char GetDB9(char index, unsigned char *joy_map);
+void DB9SetLegacy(uint8_t on);
 
 // the MiST has the user inout on the arm controller
 void EnableIO(void);

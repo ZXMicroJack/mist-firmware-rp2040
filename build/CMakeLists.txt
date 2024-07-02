@@ -219,6 +219,21 @@ target_compile_options(mistfirmwarezx1 PUBLIC
   "-DCOREEXTOTHER=\"ZX1\""
   )
 
+  # mist library
+add_library(mistfirmwareusbzx1 STATIC ${mistfirmware_src} ${mistfirmwareusb_src})
+target_compile_options(mistfirmwareusbzx1 PUBLIC
+  "-DVDATE=\"\""
+  "-DNO_FILE_INDEX"
+  "-DUSB_STORAGE"
+  "-DEXCL_XBOX_JPAD"
+  "-DMIST"
+  "-DXILINX"
+  "-DZXUNO"
+  "-DMIST_ROOT=\"/MIST\""
+  "-DCOREEXT=\"BIT\""
+  "-DCOREEXTOTHER=\"ZX1\""
+  )
+
 ####################################################################################
 # Main build RAM test build for functionality Xilinx ZXTres
 # set(testarch xilinx)
@@ -548,7 +563,7 @@ pico_enable_stdio_usb(mistmb2xilinx 0)
 pico_enable_stdio_uart(mistmb2xilinx 0)
 pico_add_extra_outputs(mistmb2xilinx)
 example_auto_set_url(mistmb2xilinx)
-set_target_properties(mistmb2xilinx PROPERTIES PICO_TARGET_LINKER_SCRIPT "./standalone.ld")
+set_target_properties(mistmb2xilinx PROPERTIES PICO_TARGET_LINKER_SCRIPT "${PROJECT_SOURCE_DIR}/standalone.ld")
 # pico_set_binary_type(mistmb2xilinx no_flash)
 target_compile_options(mistmb2xilinx PUBLIC
   "-DVDATE=\"\""
@@ -612,8 +627,14 @@ add_executable(mistzx1ram
   ${picosynth_src}
   )
 
-target_link_libraries(mistzx1ram pico_stdlib mistfirmwarezx1 hardware_spi hardware_pio pico_multicore 
-${picosynth_lib})
+target_link_libraries(mistzx1ram 
+  pico_stdlib 
+  mistfirmwarezx1 
+  hardware_spi 
+  hardware_pio 
+  pico_multicore 
+  ${picosynth_lib})
+  
 add_compile_options(-O2)
 target_include_directories(mistzx1ram PUBLIC ../picosynth)
 #pico_generate_pio_header(mistzx1ram ../drivers/fpga.pio)
@@ -680,3 +701,55 @@ target_compile_options(mistzx1 PUBLIC
   # "-DPICOSYNTH"
   #"-DTEST_BUILD"
 )
+
+####################################################################################
+# Main build RAM test build for ZXUno
+add_executable(mistusbzx1
+  ${driver_zx1_src}
+  ${mainzx1_src}
+  ${usb_src}
+  ${picosynth_src}
+  )
+
+target_link_libraries(mistusbzx1 
+  pico_stdlib 
+  mistfirmwareusbzx1 
+  hardware_spi 
+  hardware_pio 
+  pico_multicore 
+  tinyusb_host 
+  tinyusb_board
+  ${picosynth_lib})
+add_compile_options(-O2)
+target_include_directories(mistusbzx1 PUBLIC ../picosynth)
+target_include_directories(mistusbzx1 PUBLIC ../usbhost)
+pico_generate_pio_header(mistusbzx1 ../drivers/spi.pio)
+pico_generate_pio_header(mistusbzx1 ../drivers/ps2.pio)
+pico_generate_pio_header(mistusbzx1 ../drivers/audio_i2s.pio)
+pico_generate_pio_header(mistusbzx1 ../drivers/ps2tx.pio)
+pico_enable_stdio_usb(mistusbzx1 0)
+pico_enable_stdio_uart(mistusbzx1 0)
+pico_add_extra_outputs(mistusbzx1)
+example_auto_set_url(mistusbzx1)
+#pico_set_binary_type(mistzx1 no_flash)
+target_compile_options(mistusbzx1 PUBLIC
+  "-DVDATE=\"\""
+  "-Dhexdump=driver_hexdump"
+  "-DPS2HOST"
+  "-DZXUNO"
+  "-DXILINX"
+  "-DJAMMADB9"
+  "-DNO_PS2_TX"
+  "-DSD_DIRECT_MODE_GPIO=19"
+  "-DMIST_ROOT=\"/MIST\""
+  "-DNO_LEGACY_MODE"
+  "-DUSB"
+  "-DMIST_USB"
+  "-DUSB_DEBUG_OFF"
+  "-DUSB_STORAGE"
+  # "-DPICOSYNTH"
+  #"-DTEST_BUILD"
+)
+
+
+

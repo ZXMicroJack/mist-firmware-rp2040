@@ -6,7 +6,6 @@
 
 #include "hardware/clocks.h"
 #include "hardware/structs/clocks.h"
-#include "hardware/flash.h"
 #include "hardware/resets.h"
 
 #include "pico/bootrom.h"

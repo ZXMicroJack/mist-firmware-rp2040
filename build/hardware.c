@@ -161,13 +161,11 @@ unsigned long GetTimer(unsigned long offset)
   return (time_us_64() / 1000) + offset;
 }
 
-//TODO MJ has time expired? - in ms
 unsigned long CheckTimer(unsigned long time)
 {
   return (time_us_64() / 1000) >= time;
 }
 
-//TODO wait for
 void WaitTimer(unsigned long time)
 {
     time = GetTimer(time);
@@ -183,15 +181,12 @@ int GetSPICLK() {
 
 // TODO MJ There are no switches or buttons on NeptUno
 // user, menu, DIP1, DIP2
-int menu = 0; // TODO remove me
 unsigned char Buttons() {
   return 0;
-  // return menu ? 0x04 : 0;
 }
 
 unsigned char MenuButton() {
   return 0;
-  // return menu ? 0x05 : 0;
 }
 
 unsigned char UserButton() {
@@ -199,6 +194,15 @@ unsigned char UserButton() {
 }
 
 // poll db9 joysticks
+#define DB9_UP          0x80
+#define DB9_DOWN        0x40
+#define DB9_LEFT        0x20
+#define DB9_RIGHT       0x10
+#define DB9_BTN1        0x08
+#define DB9_BTN2        0x04
+#define DB9_BTN3        0x02
+#define DB9_BTN4        0x01
+
 #ifdef ZXUNO
 #define GPIO_JRT        28
 #define GPIO_JLT        15
@@ -235,7 +239,28 @@ char GetDB9(char index, unsigned char *joy_map) {
   *joy_map = data;
   return 1;
 }
+
+static uint8_t legacy_mode = 0;
+static void SetGpio(uint8_t usbjoy, uint8_t mask, uint8_t gpio) {
+  gpio_put(gpio, (usbjoy & mask) ? 0 : 1);
+  gpio_set_dir(gpio, (usbjoy & mask) ? GPIO_OUT : GPIO_IN);
+}
+
+void DB9SetLegacy(uint8_t on) {
+  DB9Update(0, 0);
+  legacy_mode = on;
+}
+
+void DB9Update(uint8_t joy_num, uint8_t usbjoy) {
+  if (!legacy_mode) return;
+  SetGpio(usbjoy, JOY_UP, GPIO_JUP);
+  SetGpio(usbjoy, JOY_DOWN, GPIO_JDN);
+  SetGpio(usbjoy, JOY_LEFT, GPIO_JLT);
+  SetGpio(usbjoy, JOY_RIGHT, GPIO_JRT);
+  SetGpio(usbjoy, JOY_BTN1, GPIO_JF1);
+}
 #else
+void InitDB9() {}
 const static uint8_t joylut[] = {0, JOY_UP, JOY_DOWN, JOY_LEFT, JOY_RIGHT, JOY_BTN1, JOY_BTN2, 0};
 char GetDB9(char index, unsigned char *joy_map) {
   // *joy_map is set to a combination of the following bitmapped values
@@ -261,16 +286,6 @@ char GetDB9(char index, unsigned char *joy_map) {
   *joy_map = d == 0xff ? 0 : j;
   return 1;
 }
-#endif
-
-#define DB9_UP          0x80
-#define DB9_DOWN        0x40
-#define DB9_LEFT        0x20
-#define DB9_RIGHT       0x10
-#define DB9_BTN1        0x08
-#define DB9_BTN2        0x04
-#define DB9_BTN3        0x02
-#define DB9_BTN4        0x01
 
 const static uint8_t inv_joylut[] = {DB9_BTN4, DB9_BTN3, DB9_BTN2, DB9_BTN1, DB9_UP, DB9_DOWN, DB9_LEFT, DB9_RIGHT};
 void DB9Update(uint8_t joy_num, uint8_t usbjoy) {
@@ -284,11 +299,12 @@ void DB9Update(uint8_t joy_num, uint8_t usbjoy) {
     mask >>= 1;
   }
 
-#ifdef ZXUNO
-#else
   jamma_SetData(joy_num & 1, joydata);
-#endif
 }
+
+void DB9SetLegacy(uint8_t on) {
+}
+#endif
 
 // TODO MJ implement RTC
 char GetRTC(unsigned char *d) {

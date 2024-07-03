@@ -8,7 +8,7 @@
 #include "pins.h"
 #include "ps2.h"
 #include "jamma.h"
-// #define DEBUG
+#define DEBUG
 #include "debug.h"
 
 

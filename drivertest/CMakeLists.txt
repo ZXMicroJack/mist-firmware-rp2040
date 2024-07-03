@@ -22,10 +22,34 @@ include(example_auto_set_url.cmake)
 
 # Build project
 
-include_directories(../drivers .)
+include_directories(../drivers . ../zlib)
 
 # fpga program  
-add_executable(drivertest drivertest.c ../drivers/fpga.c ../drivers/pio_spi.c ../drivers/ps2.c ../drivers/sdcard.c ../drivers/bitfile.c ../drivers/ipc.c ../drivers/flash.c ../drivers/debug.c ../drivers/fifo.c ../drivers/kbd.c ../drivers/jamma.c ../drivers/crc16.c)
+add_executable(drivertest drivertest.c ../drivers/fpga.c
+  ../drivers/pio_spi.c 
+  ../drivers/ps2.c 
+  ../drivers/sdcard.c 
+  ../drivers/bitfile.c 
+  ../drivers/ipc.c 
+  ../drivers/flash.c 
+  ../drivers/debug.c 
+  ../drivers/fifo.c 
+  ../drivers/kbd.c 
+  ../drivers/jamma.c 
+  ../drivers/jtag.c
+  ../drivers/crc16.c
+  ../drivers/bitstore.c
+  # ../zlib/inflate.c
+  # ../zlib/deflate.c
+  # ../zlib/adler32.c
+  # ../zlib/inffast.c
+  # ../zlib/inftrees.c
+  # ../zlib/crc32.c
+  # ../zlib/deflate.c
+  # ../zlib/trees.c
+  # ../zlib/zutil.c
+)
+
 target_link_libraries(drivertest pico_stdlib hardware_spi hardware_pio hardware_flash hardware_i2c pico_i2c_slave)
 add_compile_options(-O2)
 pico_generate_pio_header(drivertest ../drivers/fpga.pio)
@@ -37,6 +61,14 @@ pico_generate_pio_header(drivertest ../drivers/ps2.pio)
 pico_generate_pio_header(drivertest ../drivers/ps2tx.pio)
 pico_enable_stdio_usb(drivertest 1)
 pico_enable_stdio_uart(drivertest 0)
+
+target_compile_options(drivertest PUBLIC
+  "-DNO_PS2_TX"
+  "-DNO_LEGACY_MODE"
+  "-DZXUNO"
+)
+
+
 pico_add_extra_outputs(drivertest)
 example_auto_set_url(drivertest)
 pico_set_binary_type(drivertest no_flash)

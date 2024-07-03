@@ -9,6 +9,7 @@
 
 #include "drivers/jamma.h"
 #include <pico/time.h>
+#include "hardware/gpio.h"
 // #include "usbrtc.h"
 
 uint32_t systimer;
@@ -160,13 +161,11 @@ unsigned long GetTimer(unsigned long offset)
   return (time_us_64() / 1000) + offset;
 }
 
-//TODO MJ has time expired? - in ms
 unsigned long CheckTimer(unsigned long time)
 {
   return (time_us_64() / 1000) >= time;
 }
 
-//TODO wait for
 void WaitTimer(unsigned long time)
 {
     time = GetTimer(time);
@@ -182,25 +181,86 @@ int GetSPICLK() {
 
 // TODO MJ There are no switches or buttons on NeptUno
 // user, menu, DIP1, DIP2
-int menu = 0; // TODO remove me
 unsigned char Buttons() {
   return 0;
-  // return menu ? 0x04 : 0;
 }
 
 unsigned char MenuButton() {
   return 0;
-  // return menu ? 0x05 : 0;
 }
 
 unsigned char UserButton() {
   return 0;
 }
 
+// poll db9 joysticks
+#define DB9_UP          0x80
+#define DB9_DOWN        0x40
+#define DB9_LEFT        0x20
+#define DB9_RIGHT       0x10
+#define DB9_BTN1        0x08
+#define DB9_BTN2        0x04
+#define DB9_BTN3        0x02
+#define DB9_BTN4        0x01
+
+#ifdef ZXUNO
+#define GPIO_JRT        28
+#define GPIO_JLT        15
+#define GPIO_JDN        14
+#define GPIO_JUP        12
+#define GPIO_JF1        11
+
 void InitDB9() {
+  uint8_t lut[] = { GPIO_JRT, GPIO_JLT, GPIO_JDN, GPIO_JUP, GPIO_JF1 };
+  for (int i=0; i<sizeof lut; i++) {
+    gpio_init(lut[i]);
+    gpio_set_dir(lut[i], GPIO_IN);
+  }
 }
 
-// poll db9 joysticks
+#define JOY_ALL   (JOY_RIGHT|JOY_LEFT|JOY_UP|JOY_DOWN|JOY_BTN1)
+
+char GetDB9(char index, unsigned char *joy_map) {
+  char data = 0;
+
+  if (!index) {
+    data |= gpio_get(GPIO_JRT) ? 0 : JOY_RIGHT;
+    data |= gpio_get(GPIO_JLT) ? 0 : JOY_LEFT;
+    data |= gpio_get(GPIO_JDN) ? 0 : JOY_DOWN;
+    data |= gpio_get(GPIO_JUP) ? 0 : JOY_UP;
+    data |= gpio_get(GPIO_JF1) ? 0 : JOY_BTN1;
+  }
+
+  if ((data & JOY_ALL) == JOY_ALL) {
+    /* pins pobably not reflected */
+    return 0;
+  }
+
+  *joy_map = data;
+  return 1;
+}
+
+static uint8_t legacy_mode = 0;
+static void SetGpio(uint8_t usbjoy, uint8_t mask, uint8_t gpio) {
+  gpio_put(gpio, (usbjoy & mask) ? 0 : 1);
+  gpio_set_dir(gpio, (usbjoy & mask) ? GPIO_OUT : GPIO_IN);
+}
+
+void DB9SetLegacy(uint8_t on) {
+  DB9Update(0, 0);
+  legacy_mode = on;
+}
+
+void DB9Update(uint8_t joy_num, uint8_t usbjoy) {
+  if (!legacy_mode) return;
+  SetGpio(usbjoy, JOY_UP, GPIO_JUP);
+  SetGpio(usbjoy, JOY_DOWN, GPIO_JDN);
+  SetGpio(usbjoy, JOY_LEFT, GPIO_JLT);
+  SetGpio(usbjoy, JOY_RIGHT, GPIO_JRT);
+  SetGpio(usbjoy, JOY_BTN1, GPIO_JF1);
+}
+#else
+void InitDB9() {}
 const static uint8_t joylut[] = {0, JOY_UP, JOY_DOWN, JOY_LEFT, JOY_RIGHT, JOY_BTN1, JOY_BTN2, 0};
 char GetDB9(char index, unsigned char *joy_map) {
   // *joy_map is set to a combination of the following bitmapped values
@@ -210,14 +270,6 @@ char GetDB9(char index, unsigned char *joy_map) {
   uint8_t mask = 0x80;
   uint8_t ndx = 0;
   char j = 0;
-
-#if 0
-  if (d == 0xff) {
-    // DB9 is not reflected - report no movement
-    *joy_map = 0;
-    return 0;
-  }
-#endif
 
   while (mask) {
     if (d & mask) j |= joylut[ndx];
@@ -232,18 +284,8 @@ char GetDB9(char index, unsigned char *joy_map) {
   }
   
   *joy_map = d == 0xff ? 0 : j;
-  // *joy_map = 0;
   return 1;
 }
-
-#define DB9_UP          0x80
-#define DB9_DOWN        0x40
-#define DB9_LEFT        0x20
-#define DB9_RIGHT       0x10
-#define DB9_BTN1        0x08
-#define DB9_BTN2        0x04
-#define DB9_BTN3        0x02
-#define DB9_BTN4        0x01
 
 const static uint8_t inv_joylut[] = {DB9_BTN4, DB9_BTN3, DB9_BTN2, DB9_BTN1, DB9_UP, DB9_DOWN, DB9_LEFT, DB9_RIGHT};
 void DB9Update(uint8_t joy_num, uint8_t usbjoy) {
@@ -259,6 +301,10 @@ void DB9Update(uint8_t joy_num, uint8_t usbjoy) {
 
   jamma_SetData(joy_num & 1, joydata);
 }
+
+void DB9SetLegacy(uint8_t on) {
+}
+#endif
 
 // TODO MJ implement RTC
 char GetRTC(unsigned char *d) {

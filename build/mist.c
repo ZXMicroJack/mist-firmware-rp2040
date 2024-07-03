@@ -9,7 +9,7 @@
 
 #include "hardware/clocks.h"
 #include "hardware/structs/clocks.h"
-#include "hardware/flash.h"
+// #include "hardware/flash.h"
 #include "hardware/resets.h"
 #include "hardware/spi.h"
 
@@ -433,8 +433,11 @@ static bool watchdog_Callback(struct repeating_timer *t) {
 
 
 int main() {
+#ifdef ZXUNO
+#else
   // hold FPGA in reset until we decide what to do with it - (ZXTRES only)
   fpga_holdreset();
+#endif
 
   stdio_init_all();
 
@@ -482,10 +485,15 @@ int main() {
 //     int c = getchar();
 //     if (forceexit) break;
     if (c == 'q') break;
-    if (c == 'm') {
-      extern int menu;
-      menu = !menu;
+    // if (c == 'f') DB9Update(0, 0x10);
+    // if (c == 'F') DB9Update(0, 0x00);
+#ifdef ZXUNO
+    if (c == 'j') {
+      void ConfigureFPGAStdin();
+      ConfigureFPGAStdin();
+      while (getchar_timeout_us(2) >= 0);
     }
+#endif
 #ifdef USBFAKE
 #ifdef FAKE_KBD
     if (c == 'k') {

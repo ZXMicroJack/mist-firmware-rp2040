@@ -73,10 +73,18 @@
 #define GPIO_PS2_CLK2     1
 #define GPIO_PS2_DATA2    0
 #else
+
+#ifdef ZXUNO
+#define GPIO_PS2_CLK2     26
+#define GPIO_PS2_DATA2    27
+#define GPIO_PS2_CLK      23
+#define GPIO_PS2_DATA     24
+#else
 #define GPIO_PS2_CLK      11
 #define GPIO_PS2_DATA     12
 #define GPIO_PS2_CLK2     14
 #define GPIO_PS2_DATA2    15
+#endif
 #endif
 
 #define GPIO_RP2U_PS2_CLK   GPIO_RP2M_COM4
@@ -96,6 +104,18 @@
 #define GPIO_FPGA_DCLK    0
 #define GPIO_FPGA_DATA0   1
 #define GPIO_FPGA_MSEL1   25
+
+// ZXUno+
+#define GPIO_JTAG_TCK     0 //p32
+#define GPIO_JTAG_TDO     25 //p67
+#define GPIO_JTAG_TDI     1 //p30
+#define GPIO_JTAG_TMS     13 //p29
+
+// #define GPIO_JTAG_TCK     13
+// #define GPIO_JTAG_TDO     1
+// #define GPIO_JTAG_TDI     25
+// #define GPIO_JTAG_TMS     0
+
 
 #define MSEL1_AS          1
 #define MSEL1_PS          0
@@ -204,6 +224,14 @@
  (SPI1 CSN) (I2C0 SCL) (UART0 RX) GP13 - COM7 - GP15 (SPI1 TX)  (I2C1 SCL)
 */
 
+
+#define GPIO_JRT        28
+#define GPIO_JLT        15
+#define GPIO_JDN        14
+#define GPIO_JUP        12
+#define GPIO_JF1        11
+
+
 #define RP2X_MIDIAPP    0x1CE07AC1
 #define RP2X_USBAPP     0xE31F853E
 #define RP2X_MIDILUTS   0xed27055a
@@ -223,6 +251,7 @@
 #define RP2M_SOUNDFONT_POS    0x100a0000
 #define RP2M_SOUNDFONT2_POS   0x10200000
 
+#define FPGA_IMAGE_POS        0x100A0000
 
 
 /* SM / PIO allocation */
@@ -255,7 +284,6 @@
 #define SDCARD_PIO pio0
 #define SDCARD_SM 1
 #define SDCARD_OFFSET  30
-
 
 
 

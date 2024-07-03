@@ -61,6 +61,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "storage_control.h"
 #include "FatFs/diskio.h"
 #include "mistmain.h"
+#include "settings.h"
 
 #include "drivers/ipc.h"
 #include "drivers/midi.h"
@@ -80,25 +81,6 @@ unsigned char Error;
 char s[FF_LFN_BUF + 1];
 
 unsigned long storage_size = 0;
-
-#if 0
-void FatalError(unsigned long error) {
-  unsigned long i;
-  
-  iprintf("Fatal error: %lu\r", error);
-  
-  while (1) {
-    for (i = 0; i < error; i++) {
-      DISKLED_ON;
-      WaitTimer(250);
-      DISKLED_OFF;
-      WaitTimer(250);
-    }
-    WaitTimer(1000);
-    MCUReset();
-  }
-}
-#endif
 
 void HandleFpga(void) {
   unsigned char  c1, c2;
@@ -125,11 +107,14 @@ uint8_t legacy_mode = DEFAULT_MODE;
 void set_legacy_mode(uint8_t mode) {
   if (mode != legacy_mode) {
     printf("Setting legacy mode to %d\n", mode);
+    DB9SetLegacy(mode == LEGACY_MODE);
+#ifndef ZXUNO
 #ifdef MB2
     ipc_Command(IPC_SETMISTER, &mode, sizeof mode);
 #else
     jamma_Kill();
     jamma_InitEx(mode == MIST_MODE);
+#endif
 #endif
   }
   legacy_mode = mode;
@@ -204,10 +189,24 @@ int mist_init() {
 
     mist_spi_init();
 
+#if defined(ZXUNO) && PICO_NO_FLASH
+    {
+      extern void ConfigureFPGAStdin();
+      ConfigureFPGAStdin();
+    }
+#endif
+
+#ifdef ZXUNO
+  {
+    void ConfigureFPGAFlash();
+    ConfigureFPGAFlash();
+  }
+#else
 #ifdef XILINX
     fpga_initialise();
     fpga_claim(true);
     fpga_reset(0);
+#endif
 #endif
 
     if(MMC_Init()) mmc_ok = 1;
@@ -220,6 +219,7 @@ int mist_init() {
     iprintf("spiclk: %u MHz\r", GetSPICLK());
 
     usb_init();
+    InitDB9();
 
     InitADC();
 
@@ -272,7 +272,7 @@ int mist_init() {
     disk_ioctl(fs.pdrv, GET_SECTOR_COUNT, &storage_size);
     storage_size >>= 11;
 
-#ifdef XILINX
+#if defined(XILINX) && !defined(ZXUNO)
     mb_ini_parse();
     fpga_SetType(mb_cfg.fpga_type);
 #endif
@@ -315,8 +315,13 @@ int mist_init() {
     }
 
     usb_dev_open();
+
+#ifdef ZXUNO
+  DB9SetLegacy(0);
+#else
 #ifndef MB2
     jamma_InitEx(1);
+#endif
 #endif
 
 #if defined(XILINX) && !defined(USBFAKE)
@@ -326,6 +331,16 @@ int mist_init() {
 #ifdef PICOSYNTH
     picosynth_Init();
 #endif
+
+#ifdef ZXUNO
+    settings_board_load();
+    settings_load(1);
+    if (!settings_boot_menu()) {
+      jtag_ResetFPGA();
+      user_io_detect_core_type();
+    }
+#endif
+
     set_legacy_mode(user_io_core_type() == CORE_TYPE_UNKNOWN ? LEGACY_MODE : MIST_MODE);
     return 0;
 }
@@ -354,8 +369,6 @@ uint8_t sysex_buffer[MAX_SYSEX];
 #define CMD_INITFPGA        0x0C
 #define CMD_INITFPGAFN      0x0D
 #define CMD_BOOTSTRAP       0x0E
-
-uint8_t old_coretype = 0;
 
 extern uint8_t stop_watchdog;
 
@@ -388,21 +401,6 @@ void sysex_Process() {
       break;
     }
 
-#if 0
-    case CMD_INITFPGA: {
-      uint32_t lba = (sysex_buffer[1] << 28) 
-        | (sysex_buffer[2] << 21)
-        | (sysex_buffer[3] << 14) 
-        | (sysex_buffer[4] << 7) | sysex_buffer[5];
-      main_Active(1);
-      spi = sd_hw_init();
-      fpga_load_bitfile(spi, lba, NULL);
-      sd_hw_kill(spi);
-      main_Active(0);
-      break;
-    }
-#endif
-
     case CMD_INITFPGAFN: {
       char fn[256];
       int i = 0;
@@ -412,7 +410,17 @@ void sysex_Process() {
       }
       
       printf("fn = %s\n", fn);
+      // skip initial separator, reset before load
       ResetFPGA();
+
+#ifdef ZXUNO
+      /* ZXUNO version has no direct access to SD card - need to reset to menu first  */
+      if (legacy_mode == LEGACY_MODE) {
+        void ConfigureFPGAFlash();
+        ConfigureFPGAFlash();
+      }
+#endif
+
       fpga_init(fn);
       break;
     }
@@ -496,6 +504,7 @@ int mist_loop() {
   midi_loop();
 #endif
 
+#ifndef ZXUNO
 #ifndef USBFAKE
   if (fpga_ResetButtonState()) {
 #ifdef MB2
@@ -503,6 +512,7 @@ int mist_loop() {
 #endif
     watchdog_enable(1, 1);
   }
+#endif
 #endif
 
     cdc_control_poll();
@@ -515,10 +525,11 @@ int mist_loop() {
     } else {
       user_io_poll();
 
+      // MJ: check for legacy core and switch support on
       if (user_io_core_type() == CORE_TYPE_UNKNOWN) {
         set_legacy_mode(LEGACY_MODE);
       } else {
-#ifdef XILINX
+#if defined(XILINX) && !defined(ZXUNO)
         fpga_ConfirmType();
 #endif
       }

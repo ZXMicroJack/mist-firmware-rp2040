@@ -30,3 +30,6 @@ v5 (v2.6)
 - support for ZXT files
 - mb.ini file for FPGA_TYPE for the ZXT file. 
 
+v6 (v2.7)
+---------
+- Added ZXUno+ MiSTLita board support.

@@ -118,6 +118,8 @@ static int bitstore_get(uint8_t *data, int len) {
 }
 
 static int get_byte(void) {
+  if (store == NULL) return -1;
+  
   if (cursor >= (store->next == NULL ? lastblock : CHUNKSIZE)) {
     chunk_t *this_one = store;
     store = store->next;
@@ -131,7 +133,7 @@ static int get_byte(void) {
 
 ////////////////////////////////////////////////////////////////////
 // Huffman state variables
-static uint8_t byte_order[256];
+// static uint8_t byte_order[256];
 static uint8_t reverse_order[256];
 static uint8_t huff_l = 0;
 static uint8_t huff_d = 0;
@@ -147,12 +149,30 @@ static uint8_t r;
 static uint32_t reallen = 0;
 
 
+/*
+  data => huff_byteorder[i] 
+  reverse_order[data] => i
+*/
+static void promote_byte(uint8_t b) {
+  uint8_t i = reverse_order[b];
+
+  if (i > 0) {
+    uint8_t s = huff_byteorder[i-1];
+    huff_byteorder[i-1] = huff_byteorder[i];
+    huff_byteorder[i] = s;
+
+    reverse_order[huff_byteorder[i-1]] = i-1;
+    reverse_order[huff_byteorder[i]] = i;
+  }
+}
+
+
 static void reset_byteorder()
 {
     int i;
     for (i=0; i<N_SYMBOLS; i++)
     {
-        byte_order[i] = i;
+        // byte_order[i] = i;
         reverse_order[i] = i;
 	      huff_byteorder[i] = i;
     }
@@ -214,7 +234,9 @@ int huff_get(void) {
           printf("D:%04X (%02X) (%02X)\n", std_hcodes[p], p, huff_byteorder[p]);
 #endif
           huff_size--;
-          return huff_byteorder[p];
+          uint8_t data = huff_byteorder[p];
+          promote_byte(data);
+          return data;
       }
   }
   return -1;
@@ -226,7 +248,8 @@ static void huff_put(int data)
       r = data;
 	    r = reverse_order[r];
       code = std_hcodes[r];
-    } else {
+      promote_byte(data);
+ } else {
       code = std_hcodes[255] | 0xfff;
     }
     mask = 0x1 << ((code>>12)-1);
@@ -539,6 +562,7 @@ int main(int argc, char **argv) {
     bitstore_InitRetrieve();
     while (!bitstore_GetBlock(&out[outlen])) {
       outlen += 512;
+      if (outlen >= sizeof out) { fprintf(stderr, "OVERFLOW!"); break; }
     }
     outlen += lastblock;
 
@@ -556,8 +580,9 @@ int main(int argc, char **argv) {
 
     }
 
-    fprintf(stderr, "%s: blks:%d incrc:%04X outcrc:%04X\n", argv[1], nr_chunks, incrc, outcrc);
+    // fprintf(stderr, "%s: blks:%d incrc:%04X outcrc:%04X\n", argv[1], nr_chunks, incrc, outcrc);
 
+    fprintf(stderr, ",%d,%s\n", nr_chunks, incrc == outcrc ? "ok": "!BAD!");
   }
 
   return 0;

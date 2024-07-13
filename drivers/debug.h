@@ -14,6 +14,7 @@ int dbgprintf(const char *fmt, ...);
 #else
 #define debuginit()
 #define debug(a)
+#undef hexdump
 #define hexdump(a,b)
 #endif
 

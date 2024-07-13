@@ -503,13 +503,14 @@ uint8_t get_block(void *user_data, uint8_t *block) {
 
 int main(int argc, char **argv) {
   FILE *fin = fopen(argv[1], "rb");
+  uint16_t incrc, outcrc;
   if (fin) {
     inlen = fread(in, 1, sizeof in, fin);
 
     memset(&in[inlen], 0xff, 512-(inlen & 511));
     // inlen = (inlen + 511) & ~511;
 
-    printf("in len %d crc %04X\n", inlen, crc16iv(in, inlen, 0xffff));
+    printf("in len %d crc %04X\n", inlen, incrc=crc16iv(in, inlen, 0xffff));
     fclose(fin);
 
     uint32_t cursor = 0;
@@ -541,7 +542,7 @@ int main(int argc, char **argv) {
     }
     outlen += lastblock;
 
-    printf("out len %d crc %04X crcinlen %04X\n", outlen, crc16iv(out, outlen, 0xffff), crc16iv(out, inlen, 0xffff));
+    printf("out len %d crc %04X crcinlen %04X\n", outlen, crc16iv(out, outlen, 0xffff), outcrc=crc16iv(out, inlen, 0xffff));
 
 
     printf("out  "); for (int i=0; i<16; i++) printf("%02X ", out[i]); printf("\n");
@@ -554,6 +555,8 @@ int main(int argc, char **argv) {
 	    }
 
     }
+
+    fprintf(stderr, "%s: blks:%d incrc:%04X outcrc:%04X\n", argv[1], nr_chunks, incrc, outcrc);
 
   }
 

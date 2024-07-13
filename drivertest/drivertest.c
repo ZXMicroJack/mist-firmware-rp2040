@@ -35,9 +35,9 @@
 // #define TEST_FPGA
 // #define TEST_MATRIX
 // #define TEST_FLASH
-// #define TEST_USERIO
+#define TEST_USERIO
 // #define TEST_JAMMA
-#define TEST_JOYPAD
+// #define TEST_JOYPAD
 // #define TEST_DEBUG
 #define TEST_JTAG
 // #define TEST_DB9
@@ -338,6 +338,90 @@ void test_UserIOSPI_ConfigStr() {
   gpio_put(17, 1);
 }
 
+char *day_text[] = {
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday"
+};
+
+char *month_text[] = {
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December"
+};
+
+uint8_t bcd(uint8_t n) {
+  return (10 * (n >> 4)) + (n&0xf);
+}
+
+void decodeDate(uint8_t *data) {
+  uint8_t seconds = bcd(data[2] & 0x7f);
+  uint8_t minutes = bcd(data[3] & 0x7f);
+  uint8_t hour = bcd(data[4] & 0x3f);
+  uint8_t day = bcd(data[5] & 0x3f);
+  uint8_t weekday = data[6] & 0x7;
+  uint8_t month = data[7] & 0x1f;
+  uint8_t year = bcd(data[8]);
+
+  printf("%s, %d %s %d %02d:%02d:%02d\n", day_text[weekday], day, month_text[month-1], 2000+year, hour, minutes, seconds);
+
+}
+
+void test_UserIOSPI_RTC(int n) {
+  uint8_t data[10];
+  gpio_put(17, 0);
+
+  uint8_t d = n;
+  // switch(n) {
+  //   case 0: d = 0; break;
+  //   case 1: d = 1; break;
+  //   case 2: d = 2; break;
+  //   case 3: d = 3; break;
+  // }
+
+  // uint8_t d = n == 0 ? 0x00 : n == 1
+
+  data[2] = 0x12;
+  data[3] = 0x34;
+  data[4] = 0x03;
+  data[5] = 0x04;
+  data[6] = 0x01;
+  data[7] = 0x02;
+  data[8] = 0x76;
+  data[9] = 0x00;
+
+
+  // memset(data, 0, sizeof data);
+  data[1] = n;
+  data[0] = 0xfe;
+  // data[1] = n ? 0x03 : 0x00;
+  printf("Input  : ");
+  for (int i=0; i<sizeof data; i++) {
+    printf("%02X ", data[i]);
+  }
+  spi_write_read_blocking(spi0, data, data, sizeof data);
+  printf("Returns: ");
+  for (int i=0; i<sizeof data; i++) {
+    printf("%02X ", data[i]);
+  }
+  printf("\n");
+  decodeDate(data);
+  gpio_put(17, 1);
+}
+
 void test_UserIOSPI_CoreId() {
   uint8_t data[6];
 // int spi_write_read_blocking (spi_inst_t *spi, const uint8_t *src, uint8_t *dst, size_t len)
@@ -352,6 +436,7 @@ void test_UserIOSPI_CoreId() {
     printf("%02X ", data[i]);
   }
   printf("\n");
+  decodeDate(data);
   gpio_put(17, 1);
 }
 
@@ -944,6 +1029,23 @@ int main()
         break;
       case 'x':
         test_UserIOSPI(0x55);
+        break;
+      case 'o': // on
+        test_UserIOSPI_RTC(0);
+        break;
+      case 'O': // off
+        test_UserIOSPI_RTC(1);
+        break;
+
+      case '0': // on
+      case '1': // on
+      case '2': // on
+      case '3': // on
+      case '4': // on
+      case '5': // on
+      case '6': // on
+      case '7': // on
+        test_UserIOSPI_RTC(c - '0');
         break;
 #endif
     }

@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+
+#include "pico/stdlib.h"
+
 #include "errors.h"
 #include "hardware.h"
 #include "fdd.h"
@@ -13,6 +16,7 @@
 #include "tos.h"
 #include "mist_cfg.h"
 #include "settings.h"
+#include "rtc.h"
 #include "usb/joymapping.h"
 
 #include "drivers/fpga.h"
@@ -63,13 +67,13 @@ uint8_t read_next_block_stdin(void *user_data, uint8_t *data) {
   return true;
 }
 
-static int bitstore_GetBlockJTAG(void *user_data, uint8_t *blk) {
+static uint8_t bitstore_GetBlockJTAG(void *user_data, uint8_t *blk) {
   return bitstore_GetBlock(blk) ? false : true;
 }
 
 uint32_t fpga_image_size;
 
-static bool test_fpga_get_next_block(void *user_data, uint8_t *data) {
+static uint8_t test_fpga_get_next_block(void *user_data, uint8_t *data) {
   int j;
   int thislen;
   int o = 0;
@@ -120,6 +124,7 @@ void ConfigureFPGAStdin() {
 
   jtag_init();
   printf("fpga_program returns %d\n", jtag_configure(&cf, read_next_block_stdin, len));
+  rtc_AttemptSync();
 }
 
 unsigned char ConfigureFpga(const char *bitfile) {
@@ -156,6 +161,7 @@ unsigned char ConfigureFpga(const char *bitfile) {
 
   bitstore_InitRetrieve();
   jtag_configure(NULL, bitstore_GetBlockJTAG, size);
+  rtc_AttemptSync();
 #endif
   return 1;
 }

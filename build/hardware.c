@@ -305,22 +305,3 @@ void DB9Update(uint8_t joy_num, uint8_t usbjoy) {
 void DB9SetLegacy(uint8_t on) {
 }
 #endif
-
-// TODO MJ implement RTC
-char GetRTC(unsigned char *d) {
-  // implemented as d[0-7] -
-  //   [y-100] [m] [d] [H] [M] [S] [Day1-7]
-  d[0] = 23;
-  d[1] = 12;
-  d[2] = 12;
-  d[3] = 23;
-  d[4] = 58;
-  d[5] = 34;
-  d[6] = 4;
-  return 0;
-}
-
-// TODO MJ implement RTC
-char SetRTC(unsigned char *d) {
-  return 0;
-}

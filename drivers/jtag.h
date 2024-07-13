@@ -25,6 +25,7 @@ void jtag_detect(void);
 
 int jtag_configure(void *user_data, uint8_t (*next_block)(void *, uint8_t *), uint32_t assumelength);
 
+int jtag_get_length(uint8_t *data, uint32_t filesize, uint32_t *size, uint32_t *offset);
 void reset_SetCallback(void (*callback)(void));
 void jtag_ResetFPGA();
 

@@ -81,6 +81,7 @@ set(main_src
   mist.c
   mistmain.c
   mmc.c
+  rtc.c
   keyboard.c
   fpgaconfig.c
   mbconfig.c
@@ -93,6 +94,7 @@ set(mainzx1_src
   hardware.c
   mist.c
   mistmain.c
+  rtc.c
   mmc.c
   keyboard.c
   fpgaconfigzx1.c
@@ -249,8 +251,14 @@ add_executable(mistram
   ${picosynth_src}
   )
 
-target_link_libraries(mistram pico_stdlib mistfirmware${testarch} hardware_spi hardware_pio pico_multicore 
-${picosynth_lib})
+target_link_libraries(mistram
+  pico_stdlib
+  mistfirmware${testarch}
+  hardware_spi
+  hardware_pio
+  hardware_rtc 
+  pico_multicore 
+  ${picosynth_lib})
 add_compile_options(-O2)
 target_include_directories(mistram PUBLIC ../picosynth)
 pico_generate_pio_header(mistram ../drivers/fpga.pio)
@@ -323,6 +331,7 @@ target_link_libraries(mistxilinx
   hardware_spi 
   hardware_pio 
   hardware_flash 
+  hardware_rtc 
   pico_multicore 
   ${picosynth_lib}
   hardware_i2c)
@@ -375,6 +384,7 @@ target_link_libraries(mistusbxilinx
   hardware_spi 
   hardware_pio 
   hardware_flash 
+  hardware_rtc 
   hardware_i2c 
   pico_multicore 
   ${picosynth_lib}
@@ -431,6 +441,7 @@ target_link_libraries(mistusb
   hardware_pio 
   hardware_flash 
   hardware_i2c 
+  hardware_rtc 
   pico_multicore
   ${picosynth_lib}
   tinyusb_host 
@@ -490,6 +501,7 @@ target_link_libraries(mistmb2xilinxram
   # mistfirmwareusbxilinx
   hardware_spi 
   hardware_pio 
+  hardware_rtc 
   # hardware_flash 
   # ${picosynth_lib}
   hardware_i2c
@@ -550,6 +562,7 @@ target_link_libraries(mistmb2xilinx
   hardware_spi 
   hardware_pio 
   hardware_flash 
+  hardware_rtc 
   ${picosynth_lib}
   # pico_multicore)
   pico_multicore tinyusb_host tinyusb_board)
@@ -593,7 +606,17 @@ add_executable(mistusbn1p
   ${usb_src}
   )
 
-target_link_libraries(mistusbn1p pico_stdlib mistfirmwareusb hardware_spi hardware_pio hardware_flash hardware_i2c tinyusb_host tinyusb_board)
+target_link_libraries(mistusbn1p
+  pico_stdlib 
+  mistfirmwareusb 
+  hardware_spi 
+  hardware_pio 
+  hardware_flash 
+  hardware_i2c 
+  hardware_rtc 
+  tinyusb_host 
+  tinyusb_board
+  )
 target_include_directories(mistusbn1p PUBLIC ../usbhost)
 add_compile_options(-O2)
 pico_generate_pio_header(mistusbn1p ../drivers/fpga.pio)
@@ -633,6 +656,7 @@ target_link_libraries(mistzx1ram
   mistfirmwarezx1 
   hardware_spi 
   hardware_pio 
+  hardware_rtc 
   pico_multicore 
   ${picosynth_lib})
   
@@ -674,8 +698,14 @@ add_executable(mistzx1
   ${picosynth_src}
   )
 
-target_link_libraries(mistzx1 pico_stdlib mistfirmwarezx1 hardware_spi hardware_pio pico_multicore 
-${picosynth_lib})
+target_link_libraries(mistzx1
+  pico_stdlib 
+  mistfirmwarezx1
+  hardware_spi 
+  hardware_pio 
+  hardware_rtc 
+  pico_multicore 
+  ${picosynth_lib})
 add_compile_options(-O2)
 target_include_directories(mistzx1 PUBLIC ../picosynth)
 pico_generate_pio_header(mistzx1 ../drivers/spi.pio)
@@ -717,6 +747,7 @@ target_link_libraries(mistusbzx1
   mistfirmwareusbzx1 
   hardware_spi 
   hardware_pio 
+  hardware_rtc 
   pico_multicore 
   tinyusb_host 
   tinyusb_board

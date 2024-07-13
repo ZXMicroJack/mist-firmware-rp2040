@@ -13,6 +13,7 @@
 #include "tos.h"
 #include "mist_cfg.h"
 #include "settings.h"
+#include "rtc.h"
 #include "usb/joymapping.h"
 
 #include "drivers/fpga.h"
@@ -253,6 +254,7 @@ unsigned char ConfigureFpga(const char *bitfile) {
   fpga_configure(cf, read_next_block, fileSize);
 #endif
   fpga_claim(false);
+  rtc_AttemptSync();
 
   int result = !cf->error;
   free(cf);

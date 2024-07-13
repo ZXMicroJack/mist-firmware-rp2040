@@ -4,19 +4,14 @@
 #include <string.h>
 
 #include "bitstore.h"
-#define DEBUG
+// #define DEBUG
 #include "debug.h"
-
-#define HUFF
 
 #define CHUNKSIZE   1024
 #define N_SYMBOLS 256
+
 //#define TRACE_CODES
 //#define TRACE_CODES_D
-
-#undef PICO_NO_FLASH
-#define PICO_NO_FLASH 0
-
 
 static const uint16_t std_hcodes[N_SYMBOLS] = {
 0x3000, 0x4005, 0x500C, 0x500E, 0x5018, 0x501D, 0x501F, 0x6008,
@@ -66,7 +61,6 @@ static int cursor = 0;
 
 static void bitstore_add() {
   nr_chunks ++;
-#if !PICO_NO_FLASH
   chunk_t *chunk = (chunk_t *)malloc(sizeof(chunk_t));
   chunk->next = NULL;
 
@@ -76,28 +70,15 @@ static void bitstore_add() {
     latest->next = chunk;
     latest = latest->next;
   }
-#else
-  latest = (chunk_t *)nr_chunks;
-#endif
-  printf("chunk %d\n", nr_chunks);
+  debug(("chunk %d\n", nr_chunks));
 }
 
 static void bitstore_put(uint8_t data) {
-#if 0
-  static int q = 0;
-  printf("[%02X]", data);
-  q++;
-  if (q > 32) { q = 0; printf("\n"); }
-#endif
   if (latest == NULL || lastblock == CHUNKSIZE) {
     bitstore_add();
     lastblock = 0;
   }
-#if !PICO_NO_FLASH
   latest->data[lastblock++] = data;
-#else
-  lastblock++;
-#endif
 }
 
 static int bitstore_get(uint8_t *data, int len) {
@@ -117,7 +98,7 @@ static int bitstore_get(uint8_t *data, int len) {
   return read;
 }
 
-static int get_byte(void) {
+static int huff_get(void) {
   if (store == NULL) return -1;
   
   if (cursor >= (store->next == NULL ? lastblock : CHUNKSIZE)) {
@@ -133,7 +114,6 @@ static int get_byte(void) {
 
 ////////////////////////////////////////////////////////////////////
 // Huffman state variables
-// static uint8_t byte_order[256];
 static uint8_t reverse_order[256];
 static uint8_t huff_l = 0;
 static uint8_t huff_d = 0;
@@ -148,6 +128,8 @@ static unsigned short mask;
 static uint8_t r;
 static uint32_t reallen = 0;
 
+////////////////////////////////////////////////////////////////////
+// Huffman functions
 
 /*
   data => huff_byteorder[i] 
@@ -166,28 +148,19 @@ static void promote_byte(uint8_t b) {
   }
 }
 
-
-static void reset_byteorder()
-{
-    int i;
-    for (i=0; i<N_SYMBOLS; i++)
-    {
-        // byte_order[i] = i;
-        reverse_order[i] = i;
-	      huff_byteorder[i] = i;
-    }
-
-}
-
 static void huff_reset(void) {
   huff_l = huff_d = huff_size = huff_init = 0;
   d = 0x00;
   l = 8;
   reallen = 0;
-  reset_byteorder();
+
+  for (int i=0; i<N_SYMBOLS; i++)
+  {
+      reverse_order[i] = i;
+      huff_byteorder[i] = i;
+  }
 }
 
-// Huffman method
 int huff_get(void) {
   int p1, p2, p;
   unsigned short code = 0;
@@ -197,7 +170,7 @@ int huff_get(void) {
   for(;;) {
       // fetch new byte if needed
       if (huff_l<0x1) {
-        int c = get_byte();
+        int c = huff_get();
         if (c < 0) return -1;
 
         huff_d = c;
@@ -210,7 +183,7 @@ int huff_get(void) {
 
       // has reached max bitsize - reached error
       if ((code & 0xf000)==0xf000) {
-          printf("Error in decompression.\n");
+          debug(("Error in decompression.\n"));
           return -1;
       }
 
@@ -231,7 +204,7 @@ int huff_get(void) {
       // did we find a code in the search?
       if (code==std_hcodes[p]) {
 #ifdef TRACE_CODES_D
-          printf("D:%04X (%02X) (%02X)\n", std_hcodes[p], p, huff_byteorder[p]);
+          debug(("D:%04X (%02X) (%02X)\n", std_hcodes[p], p, huff_byteorder[p]));
 #endif
           huff_size--;
           uint8_t data = huff_byteorder[p];
@@ -254,7 +227,7 @@ static void huff_put(int data)
     }
     mask = 0x1 << ((code>>12)-1);
 #ifdef TRACE_CODES
-    printf("C:%04X - mask = %04X\n", code, mask);
+    debug(("C:%04X - mask = %04X\n", code, mask));
 #endif
     while (mask>0x0)
     {
@@ -276,16 +249,16 @@ static void huff_put(int data)
   }
 }
 
-int bitstore_InitRetrieve() {
-  cursor = 0;
-  huff_reset();
-  return 0;
-}
+////////////////////////////////////////////////////////////////////
+// RLE state variables
 
-#ifdef HUFF
-#define bitstore_put huff_put
-#endif
+static uint8_t flag_byte;
+static uint8_t f_got_flag_byte = 0;
+static uint8_t f_cont = 0x00;
+static uint8_t f_rep = 0x00;
 
+////////////////////////////////////////////////////////////////////
+// RLE functions
 static int leastused(uint8_t *in, uint32_t inlen)
 {
 	uint8_t buffer[1024];
@@ -309,28 +282,75 @@ static int process_rle(int cont, uint8_t data, uint8_t flag_byte, uint8_t *out)
 	uint8_t d;
 	if (cont==1 && data==flag_byte)
 	{
-		bitstore_put(flag_byte);
+		huff_put(flag_byte);
 		d = 0xff;
-		bitstore_put(d);
+		huff_put(d);
 		return 2;
 	}
 	else if (cont>3 || (cont>1 && flag_byte == data))
 	{
-		bitstore_put(flag_byte);
-		bitstore_put(cont - 1);
-		bitstore_put(data);
+		huff_put(flag_byte);
+		huff_put(cont - 1);
+		huff_put(data);
 		return 3;
 	}
 	else
 	{
 
-		for (int i=0; i<cont; i++) bitstore_put(data);
+		for (int i=0; i<cont; i++) huff_put(data);
 		return cont;
 	}
 }
 
+static void rle_reset(void) {
+	f_rep = f_cont = f_got_flag_byte = 0;
+}
+
+/* decompress */
+static int rle_get(void) {
+	int c;
+	if (!f_got_flag_byte) {
+		c = huff_get();
+		if (c<0) return c;
+
+		flag_byte = c;
+		f_got_flag_byte = 1;
+	}
+
+	if (!f_cont) {
+		c = huff_get();
+		if (c<0) return c;
+
+		if (c == flag_byte) {
+			c = huff_get();
+			if (c<0) return c;
+
+			if (c == 0xff) {
+				return flag_byte;
+			} else {
+				f_cont = c;
+				c = huff_get();
+				if (c<0) return c;
+
+				f_rep = c;
+				return f_rep;
+			}
+		} else {
+			return c;
+		}
+	} else {
+		f_cont --;
+		return f_rep;
+	}
+}
+
+int bitstore_InitRetrieve() {
+  cursor = 0;
+  huff_reset();
+  return 0;
+}
+
 int bitstore_Size() {
-  //return nr_chunks * CHUNKSIZE - (CHUNKSIZE - lastblock);
   return reallen;
 }
 
@@ -357,12 +377,10 @@ int bitstore_Store(void *user_data, uint8_t (*get_block)(void *user_data, uint8_
     return 0;
 	}
 
-  // hexdump(buffer, 512);
-
   buf = 0;
   flag_byte = leastused(buffer, 512);
 
-	bitstore_put(flag_byte);
+	huff_put(flag_byte);
 
 	while (buf < 512)
 	{
@@ -372,10 +390,10 @@ int bitstore_Store(void *user_data, uint8_t (*get_block)(void *user_data, uint8_
 			cont ++;
 			if (cont >= 255)
 			{
-				bitstore_put(flag_byte);
+				huff_put(flag_byte);
 				d = 0xfe;
-				bitstore_put(d);
-				bitstore_put(data);
+				huff_put(d);
+				huff_put(data);
 				outlen += 3;
 				cont -=255;
 			}
@@ -396,71 +414,12 @@ int bitstore_Store(void *user_data, uint8_t (*get_block)(void *user_data, uint8_
 			}
 			buf = 0;
       reallen += 512;
-      // printf("read block\n");
-      // break;
 		}
 	}
 	int l = process_rle(cont, data, flag_byte, NULL);
 	outlen += l;
   return nr_chunks;
 }
-
-static uint8_t *rle_inbuff;
-static uint32_t rle_inlen;
-
-#ifdef HUFF
-#define get_byte() huff_get()
-#endif
-
-static uint8_t flag_byte;
-static uint8_t f_got_flag_byte = 0;
-static uint8_t f_cont = 0x00;
-static uint8_t f_rep = 0x00;
-
-static void rle_reset(void) {
-	f_rep = f_cont = f_got_flag_byte = 0;
-}
-
-/* decompress */
-static int rle_get(void) {
-	int c;
-	if (!f_got_flag_byte) {
-		c = get_byte();
-		if (c<0) return c;
-
-		flag_byte = c;
-		f_got_flag_byte = 1;
-	}
-
-	if (!f_cont) {
-		c = get_byte();
-		if (c<0) return c;
-
-		if (c == flag_byte) {
-			c = get_byte();
-			if (c<0) return c;
-
-			if (c == 0xff) {
-				return flag_byte;
-			} else {
-				f_cont = c;
-				c = get_byte();
-				if (c<0) return c;
-
-				f_rep = c;
-				return f_rep;
-			}
-		} else {
-			return c;
-		}
-	} else {
-		f_cont --;
-		return f_rep;
-	}
-}
-
-
-
 int bitstore_GetBlock(uint8_t *blk) {
   int i;
   for (i = 0; i<512; i++) {
@@ -468,19 +427,15 @@ int bitstore_GetBlock(uint8_t *blk) {
     if (c < 0) break;
     blk[i] = c;
   }
-  // hexdump(blk, 512);
   return i == 0;
 }
 
 void bitstore_Free() {
-#if !PICO_NO_FLASH
   while (store) {
     chunk_t *chunk = store;
     store = store->next;
     free(chunk);
   }
-#else
-#endif
   store = latest = NULL;
   lastblock = 0;
   nr_chunks = 0;
@@ -537,13 +492,7 @@ int main(int argc, char **argv) {
     fclose(fin);
 
     uint32_t cursor = 0;
-#ifdef HUFF
-    huff_reset();
-#endif
     bitstore_Store(&cursor, get_block);
-#ifdef HUFF
-    huff_put(-1);
-#endif
 #if 0
     bitstore_init_store();
     for (int i=0; i<inlen; i+=512) {

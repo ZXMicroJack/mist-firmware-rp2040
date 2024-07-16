@@ -188,6 +188,7 @@ int mist_init() {
     iprintf("Version %s\r\r", version+5);
 
     mist_spi_init();
+    rtc_Init();
 
 #if defined(ZXUNO) && PICO_NO_FLASH
     {
@@ -219,7 +220,6 @@ int mist_init() {
     iprintf("spiclk: %u MHz\r", GetSPICLK());
 
     usb_init();
-    rtc_Init();
     InitDB9();
 
     InitADC();

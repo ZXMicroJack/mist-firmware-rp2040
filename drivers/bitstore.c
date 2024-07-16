@@ -98,6 +98,7 @@ static int bitstore_get(uint8_t *data, int len) {
   return read;
 }
 
+#if 0
 static int huff_get(void) {
   if (store == NULL) return -1;
   
@@ -111,6 +112,7 @@ static int huff_get(void) {
   }
   return store->data[cursor++];
 }
+#endif
 
 ////////////////////////////////////////////////////////////////////
 // Huffman state variables
@@ -161,7 +163,7 @@ static void huff_reset(void) {
   }
 }
 
-int huff_get(void) {
+static int huff_get(void) {
   int p1, p2, p;
   unsigned short code = 0;
   unsigned short len;

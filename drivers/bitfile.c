@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 #include "bitfile.h"
-// #define DEBUG
+#define DEBUG
 #include "debug.h"
 
 #define BLOCKSIZE 512

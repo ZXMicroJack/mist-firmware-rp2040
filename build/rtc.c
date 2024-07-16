@@ -9,7 +9,7 @@
 #include "pico/stdlib.h"
 #include "hardware/pio.h"
 
-#define DEBUG
+// #define DEBUG
 #include "drivers/debug.h"
 
 #include "rtc.h"
@@ -75,7 +75,7 @@ void debugDate(uint8_t *data) {
 static uint8_t RTCSPI(uint8_t ctrl, uint8_t rtc[7]) {
   uint8_t data[10];
 
-  debug(("RTCSPI: ctrl:%02X rtc:"));
+  debug(("RTCSPI: ctrl:%02X rtc:", ctrl));
   debugDate(rtc);
 
   EnableIO();
@@ -92,7 +92,7 @@ static uint8_t RTCSPI(uint8_t ctrl, uint8_t rtc[7]) {
   SPI(0x00); // last byte
   DisableIO();
 
-  debug(("RTCSPI: ret:%02X rtc:"));
+  debug(("RTCSPI: ret:%02X rtc:", ctrl));
   debugDate(rtc);
 
   return ctrl;
@@ -102,13 +102,26 @@ static uint8_t sync_hw_get_pending = 0;
 static uint8_t sync_hw_set_pending = 0;
 
 void rtc_Init() {
+  debug(("rtc_Init: startup rp2040 RTC\n"));
   // Start the RTC
   rtc_init();
+
+  // Start on Friday 5th of June 2020 15:45:00
+  datetime_t t = {
+    .year= 2020,
+    .month = 06,
+    .day= 05,
+    .dotw= 5, // 0 is Sunday, so 5 is Friday
+    .hour= 15,
+    .min= 45,
+    .sec= 00
+  };
+  rtc_set_datetime(&t);
   sync_hw_get_pending = 1;
 }
 
 uint8_t rtc_SetInternal() {
-  uint8_t d[7];
+  uint8_t d[7], od[7];
   datetime_t t;
 
   memset(d, 0, sizeof d);
@@ -128,11 +141,15 @@ uint8_t rtc_SetInternal() {
   d[4] = t.dotw + 1;
   d[5] = t.month;
   d[6] = bcd(t.year - 2000);
+  memcpy(od, d, sizeof od);
   RTCSPI(NRST, d);
+  sleep_us(100);
+  memcpy(d, od, sizeof od);
   RTCSPI(NRST|RTCSET, d);
 
   sleep_ms(10);
 
+  memcpy(d, od, sizeof od);
   RTCSPI(0, d);
   debug(("rtc_SetInternal: All good, return RTC control to reset state\n", ctrl));
   return 0;
@@ -154,15 +171,16 @@ uint8_t rtc_GetInternal() {
   sleep_ms(10);
   RTCSPI(NRST, d);
 
-  t.sec = unbcd(d[0]);
-  t.min = unbcd(d[1]);
-  t.hour = unbcd(d[2]);
-  t.day = unbcd(d[3]);
-  t.dotw = d[4] - 1;
-  t.month = d[5];
+  t.sec = unbcd(d[0] & 0x7f);
+  t.min = unbcd(d[1] & 0x7f);
+  t.hour = unbcd(d[2] & 0x3f);
+  t.day = unbcd(d[3] & 0x3f);
+  t.dotw = (d[4] & 0x7) - 1;
+  t.month = d[5] & 0x1f;
   t.year = unbcd(d[6]) + 2000;
   RTCSPI(0, d);
-  rtc_set_datetime(&t);
+  bool ret = rtc_set_datetime(&t);
+  debug(("SetRTC: %x %x %x %x %d %d %x %s\n", d[0], d[1], d[2], d[3], d[4], d[5], d[6], ret ? "OK" : "FAILED"));
   debug(("rtc_GetInternal: All good, return RTC control to reset state\n", ctrl));
   return 0;
 }
@@ -172,11 +190,13 @@ void rtc_AttemptSync() {
   if (sync_hw_set_pending) {
     debug(("rtc_AttemptSync: Attempting to set HW RTC...\n"));
     if (!rtc_SetInternal()) sync_hw_set_pending = 0;
+    // sync_hw_set_pending = 0;
   }
 
   if (sync_hw_get_pending) {
     debug(("rtc_AttemptSync: Attempting to get HW RTC...\n"));
-    if (!rtc_GetInternal()) sync_hw_set_pending = 0;
+    if (!rtc_GetInternal()) sync_hw_get_pending = 0;
+    // sync_hw_get_pending = 0;
   }
 }
 
@@ -186,20 +206,25 @@ char GetRTC(unsigned char *d) {
   // implemented as d[0-7] -
   //   [y-100] [m] [d] [H] [M] [S] [Day1-7]
 
-  rtc_get_datetime(&t);
-  d[0] = t.year - 2000;
-  d[1] = t.month;
-  d[2] = t.day;
-  d[3] = t.hour;
-  d[4] = t.min;
-  d[5] = t.sec;
-  d[6] = t.dotw + 1;
+  if (rtc_get_datetime(&t)) {
+    d[0] = t.year - 1900;
+    d[1] = t.month;
+    d[2] = t.day;
+    d[3] = t.hour;
+    d[4] = t.min;
+    d[5] = t.sec;
+    d[6] = t.dotw + 1;
+  } else {
+    memset(d, 0, 7);
+  }
+  debug(("GetRTC: %d %d %d %d %d %d %d\n", d[0], d[1], d[2], d[3], d[4], d[5], d[6]));
   return 1;
 }
 
 char SetRTC(unsigned char *d) {
+  debug(("SetRTC: %d %d %d %d %d %d %d\n", d[0], d[1], d[2], d[3], d[4], d[5], d[6]));
   datetime_t t = {
-    .year = d[0] + 2000,
+    .year = d[0] + 1900,
     .month = d[1],
     .day= d[2],
     .dotw= d[6] - 1, // 0 is Sunday, so 5 is Friday

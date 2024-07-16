@@ -81,6 +81,7 @@ static void bitstore_put(uint8_t data) {
   latest->data[lastblock++] = data;
 }
 
+#if 0
 static int bitstore_get(uint8_t *data, int len) {
   int read = 0;
   while (len--) {
@@ -97,9 +98,9 @@ static int bitstore_get(uint8_t *data, int len) {
   }
   return read;
 }
+#endif
 
-#if 0
-static int huff_get(void) {
+static int bitstore_get(void) {
   if (store == NULL) return -1;
   
   if (cursor >= (store->next == NULL ? lastblock : CHUNKSIZE)) {
@@ -112,7 +113,6 @@ static int huff_get(void) {
   }
   return store->data[cursor++];
 }
-#endif
 
 ////////////////////////////////////////////////////////////////////
 // Huffman state variables
@@ -172,7 +172,7 @@ static int huff_get(void) {
   for(;;) {
       // fetch new byte if needed
       if (huff_l<0x1) {
-        int c = huff_get();
+        int c = bitstore_get();
         if (c < 0) return -1;
 
         huff_d = c;

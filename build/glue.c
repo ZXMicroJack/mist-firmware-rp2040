@@ -94,7 +94,9 @@ void WriteFirmware(char *name) {
 }
 
 #ifdef XILINX
-#ifdef MB2
+#ifdef ZXUNO
+#define ARCH "XZX1"
+#elif defined(MB2)
 #define ARCH "XMB2"
 #else
 #define ARCH "XMB1"

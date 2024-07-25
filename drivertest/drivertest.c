@@ -406,6 +406,7 @@ void test_UserIOSPI_RTC(int n) {
 
   // memset(data, 0, sizeof data);
   data[1] = n;
+  data[2] = n;
   data[0] = 0xfe;
   // data[1] = n ? 0x03 : 0x00;
   printf("Input  : ");

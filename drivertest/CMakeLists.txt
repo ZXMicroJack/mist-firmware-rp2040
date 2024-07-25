@@ -63,9 +63,9 @@ pico_enable_stdio_usb(drivertest 1)
 pico_enable_stdio_uart(drivertest 0)
 
 target_compile_options(drivertest PUBLIC
-  "-DNO_PS2_TX"
-  "-DNO_LEGACY_MODE"
-  "-DZXUNO"
+  # "-DNO_PS2_TX"
+  # "-DNO_LEGACY_MODE"
+  # "-DZXUNO"
 )
 
 

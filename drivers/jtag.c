@@ -467,6 +467,7 @@ int jtag_configure(void *user_data, uint8_t (*next_block)(void *, uint8_t *), ui
   return 0;
 }
 
+#if 0
 void jtag_ResetFPGA() {
   gpio_init(10);
   gpio_put(10, 1);
@@ -477,6 +478,7 @@ void jtag_ResetFPGA() {
   gpio_put(10, 1);
   gpio_init(10);
 }
+#endif
 
 //   gpio_set_irq_enabled(10, GPIO_IRQ_EDGE_FALL, true);
 

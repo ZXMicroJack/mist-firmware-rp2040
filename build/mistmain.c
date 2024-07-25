@@ -190,12 +190,12 @@ int mist_init() {
     mist_spi_init();
     rtc_Init();
 
-#if defined(ZXUNO) && PICO_NO_FLASH
-    {
-      extern void ConfigureFPGAStdin();
-      ConfigureFPGAStdin();
-    }
-#endif
+// #if defined(ZXUNO) && PICO_NO_FLASH
+//     {
+//       extern void ConfigureFPGAStdin();
+//       ConfigureFPGAStdin();
+//     }
+// #endif
 
 #ifdef ZXUNO
   {
@@ -278,6 +278,9 @@ int mist_init() {
     fpga_SetType(mb_cfg.fpga_type);
 #endif
 
+#ifdef ZXUNO
+    DWORD prev_cdir = fs.cdir;
+#endif
     ChangeDirectoryName(MIST_ROOT);
 
     arc_reset();
@@ -336,8 +339,8 @@ int mist_init() {
 #ifdef ZXUNO
     settings_board_load();
     settings_load(1);
-    if (!settings_boot_menu()) {
-      jtag_ResetFPGA();
+    if (!settings_boot_menu() || (prev_cdir == fs.cdir)) {
+      BootFromFlash();
       user_io_detect_core_type();
     }
 #endif
@@ -499,7 +502,16 @@ void midi_loop() {
 }
 #endif
 
+static uint64_t lastRtcSync = 0;
+#define RTC_SYNC    1000000
+
 int mist_loop() {
+  uint64_t now = time_us_64();
+  if (!lastRtcSync || now > (lastRtcSync + RTC_SYNC)) {
+    lastRtcSync = now;
+    rtc_AttemptSync();
+  }
+
   ps2_Poll();
 #if defined(XILINX) && !defined(USBFAKE)
   midi_loop();

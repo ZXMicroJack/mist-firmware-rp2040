@@ -182,7 +182,7 @@ uint8_t rtc_GetInternal() {
   bool ret = rtc_set_datetime(&t);
   debug(("SetRTC: %x %x %x %x %d %d %x %s\n", d[0], d[1], d[2], d[3], d[4], d[5], d[6], ret ? "OK" : "FAILED"));
   debug(("rtc_GetInternal: All good, return RTC control to reset state\n", ctrl));
-  return 0;
+  return ret ? 0 : 1;
 }
 
 

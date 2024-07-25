@@ -254,7 +254,7 @@ unsigned char ConfigureFpga(const char *bitfile) {
   fpga_configure(cf, read_next_block, fileSize);
 #endif
   fpga_claim(false);
-  rtc_AttemptSync();
+  // rtc_AttemptSync();
 
   int result = !cf->error;
   free(cf);

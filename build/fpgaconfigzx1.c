@@ -127,11 +127,33 @@ void ConfigureFPGAStdin() {
   rtc_AttemptSync();
 }
 
+#ifdef BOOT_FLASH_ON_ERROR
+void BootFromFlash() {
+  gpio_put(GPIO_FPGA_RESET, 1);
+  gpio_init(GPIO_FPGA_RESET);
+  gpio_set_dir(GPIO_FPGA_RESET, GPIO_OUT);
+  gpio_put(GPIO_FPGA_RESET, 0);
+  sleep_ms(100);
+  gpio_put(GPIO_FPGA_RESET, 1);
+}
+#endif
+
 unsigned char ConfigureFpga(const char *bitfile) {
   configFpga cf;
   uint32_t size;
 
 #if PICO_NO_FLASH
+  printf("ConfigureFpga: bitfile=%s\n", bitfile);
+  if (!bitfile || !strcmp(bitfile, "CORE.BIT")) {
+    ConfigureFPGAFlash();
+    return 1;
+  }
+
+  if (bitfile && !strcmp(bitfile, "ZXUNO.BIT")) {
+    BootFromFlash();
+    return 1;
+  }
+
   ConfigureFPGAStdin();
 #else
 
@@ -145,8 +167,15 @@ unsigned char ConfigureFpga(const char *bitfile) {
     return 1;
   }
 
+  if (bitfile && !strcmp(bitfile, "ZXUNO.BIT")) {
+    BootFromFlash();
+    return 1;
+  }
+
   if (f_open(&cf.file, bitfile ? bitfile : "CORE.BIT", FA_READ) != FR_OK) {
-    FatalError(4);
+    ConfigureFPGAFlash();
+    return 1; // return to menu
+//  FatalError(4);
   }
 
   size = cf.size = f_size(&cf.file);
@@ -161,7 +190,7 @@ unsigned char ConfigureFpga(const char *bitfile) {
 
   bitstore_InitRetrieve();
   jtag_configure(NULL, bitstore_GetBlockJTAG, size);
-  rtc_AttemptSync();
+  // rtc_AttemptSync();
 #endif
   return 1;
 }

@@ -33,3 +33,8 @@ v5 (v2.6)
 v6 (v2.7)
 ---------
 - Added ZXUno+ MiSTLita board support.
+
+v7 (v2.8)
+---------
+- Support for RTC on middle boards / add  on card
+- Improved reliability of core loading.

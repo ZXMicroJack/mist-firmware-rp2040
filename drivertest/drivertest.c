@@ -35,11 +35,11 @@
 // #define TEST_FPGA
 // #define TEST_MATRIX
 // #define TEST_FLASH
-#define TEST_USERIO
-// #define TEST_JAMMA
+// #define TEST_USERIO
+#define TEST_JAMMA
 // #define TEST_JOYPAD
 // #define TEST_DEBUG
-#define TEST_JTAG
+// #define TEST_JTAG
 // #define TEST_DB9
 
 // KEY ACTION ALLOCATION

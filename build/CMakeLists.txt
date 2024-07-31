@@ -163,7 +163,6 @@ set(picosynth_lib
   picosynth
 )
 
-
 # mist library
 add_library(mistfirmware STATIC ${mistfirmware_src})
 target_compile_options(mistfirmware PUBLIC
@@ -238,6 +237,56 @@ target_compile_options(mistfirmwareusbzx1 PUBLIC
   )
 
 ####################################################################################
+# Main build generic options
+set(common_opts
+  "-DVDATE=\"\""
+  "-Dhexdump=driver_hexdump"
+  "-DUSB_DEBUG_OFF"
+)
+set(altera_opts
+  "-DALTERA_FPGA"
+  "-DQMTECH"
+)
+set(xilinx_opts
+  "-DXILINX"
+)
+set(flash_opts
+"-DPICOSYNTH"
+"-DBUFFER_FPGA"
+)
+set(ram_opts
+  "-DBUFFER_FPGA"
+  "-DNO_FILE_INDEX"
+)
+set(zxtres_opts
+  "-DMIST_ROOT=\"/MIST\""
+  "-DSD_DIRECT_MODE_GPIO=22"
+  "-DBOOT_FLASH_ON_ERROR"
+)
+set(neptuno_opts
+  "-DSD_DIRECT_MODE_GPIO=22"
+  "-DMIST_ROOT=\"/\""
+)
+set(zxuno_opts
+  "-DNO_PS2_TX"
+  "-DBOOT_FLASH_ON_ERROR"
+  "-DNO_LEGACY_MODE"
+  "-DSD_DIRECT_MODE_GPIO=19"
+  "-DMIST_ROOT=\"/MIST\""
+  "-DZXUNO"
+  "-DCHECK_MIST_DIR"
+)
+set(usb_opts
+  "-DUSB"
+  "-DMIST_USB"
+  "-DUSB_STORAGE"
+)
+set(mb2_opts
+  "-DMB2"
+  "-DIPC_MASTER"
+)
+
+####################################################################################
 # Main build RAM test build for functionality Xilinx ZXTres
 # set(testarch xilinx)
 # set(archdefs "-DXILINX")
@@ -273,16 +322,30 @@ pico_enable_stdio_uart(mistram 0)
 pico_add_extra_outputs(mistram)
 example_auto_set_url(mistram)
 pico_set_binary_type(mistram no_flash)
+
+# ${common_opts}
+# ${altera_opts}
+# ${xilinx_opts}
+# ${flash_opts}
+# ${ram_opts}
+# ${zxtres_opts}
+# ${neptuno_opts}
+# ${zxuno_opts}
+# ${usb_opts}
+# ${mb2_opts}
+
 target_compile_options(mistram PUBLIC
-  "-DVDATE=\"\""
-  "-Dhexdump=driver_hexdump"
-  "-DPS2HOST"
-  ${archdefs}
-  "-DJAMMADB9"
-  "-DSD_DIRECT_MODE_GPIO=22"
-  # "-DPICOSYNTH"
-  #"-DTEST_BUILD"
-  "-DBUFFER_FPGA"
+  ${common_opts}
+  ${altera_opts}
+  ${ram_opts}
+  ${neptuno_opts}
+  # "-DVDATE=\"\""
+  # "-Dhexdump=driver_hexdump"
+  # "-DPS2HOST"
+  # ${archdefs}
+  # "-DJAMMADB9"
+  # "-DSD_DIRECT_MODE_GPIO=22"
+  # "-DBUFFER_FPGA"
 )
 
 
@@ -351,23 +414,21 @@ pico_add_extra_outputs(mistxilinx)
 example_auto_set_url(mistxilinx)
 #pico_set_binary_type(mistusb no_flash)
 target_compile_options(mistxilinx PUBLIC
-  "-DVDATE=\"\""
-  "-Dhexdump=driver_hexdump"
-  "-DPS2HOST"
-  "-DXILINX"
-  "-DJAMMADB9"
-  "-DMIST_ROOT=\"/MIST\""
-  "-DBUFFER_FPGA"
-  "-DSD_DIRECT_MODE_GPIO=22"
-  # "-DUSBFAKE"
-  # "-DUSB"
-  # "-DMIST_USB"
-  # "-DUSB_STORAGE"
-  #"-DDEVKIT_DEBUG"
-  "-DUSB_DEBUG_OFF"
-#  "-DALTERA_FPGA"
-  "-DPICOSYNTH"
-)
+  # "-DVDATE=\"\""
+  # "-Dhexdump=driver_hexdump"
+  # "-DPS2HOST"
+  # "-DXILINX"
+  # "-DJAMMADB9"
+  # "-DMIST_ROOT=\"/MIST\""
+  # "-DBUFFER_FPGA"
+  # "-DSD_DIRECT_MODE_GPIO=22"
+  # "-DUSB_DEBUG_OFF"
+  # "-DPICOSYNTH"
+  ${common_opts}
+  ${xilinx_opts}
+  ${flash_opts}
+  ${zxtres_opts}
+  )
 
 ####################################################################################
 # FLASH build - release binary for Xilinx ZXTres board -with single CPU middleboard.
@@ -406,23 +467,25 @@ pico_add_extra_outputs(mistusbxilinx)
 example_auto_set_url(mistusbxilinx)
 #pico_set_binary_type(mistusb no_flash)
 target_compile_options(mistusbxilinx PUBLIC
-  "-DVDATE=\"\""
-  "-Dhexdump=driver_hexdump"
-  "-DPS2HOST"
-  "-DXILINX"
-  # "-DMB2"
-  "-DJAMMADB9"
-  "-DUSB"
-  "-DBUFFER_FPGA"
-  "-DMIST_USB"
-  "-DUSB_STORAGE"
-  "-DBOOT_FLASH_ON_ERROR"
-  "-DSD_DIRECT_MODE_GPIO=22"
-  #"-DDEVKIT_DEBUG"
-  "-DUSB_DEBUG_OFF"
-  "-DMIST_ROOT=\"/MIST\""
-  "-DPICOSYNTH"
-#  "-DALTERA_FPGA"
+  ${common_opts}
+  ${xilinx_opts}
+  ${flash_opts}
+  ${zxtres_opts}
+  ${usb_opts}
+  # "-DVDATE=\"\""
+  # "-Dhexdump=driver_hexdump"
+  # "-DPS2HOST"
+  # "-DXILINX"
+  # "-DJAMMADB9"
+  # "-DUSB"
+  # "-DBUFFER_FPGA"
+  # "-DMIST_USB"
+  # "-DUSB_STORAGE"
+  # "-DBOOT_FLASH_ON_ERROR"
+  # "-DSD_DIRECT_MODE_GPIO=22"
+  # "-DUSB_DEBUG_OFF"
+  # "-DMIST_ROOT=\"/MIST\""
+  # "-DPICOSYNTH"
 )
 
 ####################################################################################
@@ -462,21 +525,24 @@ pico_add_extra_outputs(mistusb)
 example_auto_set_url(mistusb)
 # pico_set_binary_type(mistusb no_flash)
 target_compile_options(mistusb PUBLIC
-  "-DVDATE=\"\""
-  "-Dhexdump=driver_hexdump"
-  "-DPS2HOST"
-  # "-DXILINX"
-  "-DJAMMADB9"
-  "-DUSB"
-  "-DSD_DIRECT_MODE_GPIO=22"
-  "-DMIST_USB"
-  "-DALTERA_FPGA"
-  "-DQMTECH"
-  "-DUSB_STORAGE"
-  "-DPICOSYNTH"
-  "-DUSB_DEBUG_OFF"
-#  "-DBUFFER_FPGA"
-)
+  # "-DVDATE=\"\""
+  # "-Dhexdump=driver_hexdump"
+  # "-DPS2HOST"
+  # "-DJAMMADB9"
+  # "-DUSB"
+  # "-DSD_DIRECT_MODE_GPIO=22"
+  # "-DMIST_USB"
+  # "-DALTERA_FPGA"
+  # "-DQMTECH"
+  # "-DUSB_STORAGE"
+  # "-DPICOSYNTH"
+  # "-DUSB_DEBUG_OFF"
+  ${common_opts}
+  ${altera_opts}
+  ${flash_opts}
+  ${neptuno_opts}
+  ${usb_opts}
+  )
 
 ####################################################################################
 # RAM build - release binary for Xilinx ZXTres board -with single CPU middleboard.
@@ -525,30 +591,26 @@ pico_add_extra_outputs(mistmb2xilinxram)
 example_auto_set_url(mistmb2xilinxram)
 pico_set_binary_type(mistmb2xilinxram no_flash)
 target_compile_options(mistmb2xilinxram PUBLIC
-  "-DVDATE=\"\""
-  "-Dhexdump=driver_hexdump"
-  "-DBUFFER_FPGA"
-  "-DXILINX"
-  "-DMB2"
-  "-DIPC_MASTER"
-  "-DUSB_DEBUG_OFF"
-  "-DBOOT_FLASH_ON_ERROR"
-  "-DSD_DIRECT_MODE_GPIO=22"
-  # "-DPICOSYNTH"
-  # "-DMB2USB"
-
-  # USB
-  # "-DUSB"
-  # "-DMIST_USB"
-  # "-DUSB_STORAGE"
-  # "-DTEST_BUILD"
-)
+  # "-DVDATE=\"\""
+  # "-Dhexdump=driver_hexdump"
+  # "-DBUFFER_FPGA"
+  # "-DXILINX"
+  # "-DMB2"
+  # "-DIPC_MASTER"
+  # "-DUSB_DEBUG_OFF"
+  # "-DBOOT_FLASH_ON_ERROR"
+  # "-DSD_DIRECT_MODE_GPIO=22"
+  ${common_opts}
+  ${ram_opts}
+  ${xilinx_opts}
+  ${zxtres_opts}
+  ${mb2_opts}
+  )
 
 ####################################################################################
 # FLASH build - release binary for Xilinx ZXTres board -with single CPU middleboard.
 add_executable(mistmb2xilinx
   ${driver_mb2_src}
-#  ../drivers/debug.c
   ${main_src}
   ${usb_src}
   ${picosynth_src}
@@ -581,22 +643,26 @@ example_auto_set_url(mistmb2xilinx)
 set_target_properties(mistmb2xilinx PROPERTIES PICO_TARGET_LINKER_SCRIPT "${PROJECT_SOURCE_DIR}/standalone.ld")
 # pico_set_binary_type(mistmb2xilinx no_flash)
 target_compile_options(mistmb2xilinx PUBLIC
-  "-DVDATE=\"\""
-  "-Dhexdump=driver_hexdump"
-  "-DXILINX"
-  "-DUSB"
-  "-DMIST_USB"
-  "-DUSB_STORAGE"
-  "-DMB2"
-  "-DBUFFER_FPGA"
-  # "-DMB2USB"
-  "-DIPC_MASTER"
-  "-DUSB_DEBUG_OFF"
-  "-DBOOT_FLASH_ON_ERROR"
-  "-DPICOSYNTH"
-  "-DSD_DIRECT_MODE_GPIO=22"
-  # "-DPIODEBUG"
-)
+  # "-DVDATE=\"\""
+  # "-Dhexdump=driver_hexdump"
+  # "-DXILINX"
+  # "-DUSB"
+  # "-DMIST_USB"
+  # "-DUSB_STORAGE"
+  # "-DMB2"
+  # "-DBUFFER_FPGA"
+  # "-DIPC_MASTER"
+  # "-DUSB_DEBUG_OFF"
+  # "-DBOOT_FLASH_ON_ERROR"
+  # "-DPICOSYNTH"
+  # "-DSD_DIRECT_MODE_GPIO=22"
+  ${common_opts}
+  ${xilinx_opts}
+  ${flash_opts}
+  ${zxtres_opts}
+  ${mb2_opts}
+  ${usb_opts}
+  )
 
 ####################################################################################
 # FLASH build - release binary for Altera NeptUno board -with single CPU middleboard.
@@ -604,6 +670,7 @@ add_executable(mistusbn1p
   ${driver_src}
   ${main_src}
   ${usb_src}
+  ${picosynth_src}
   )
 
 target_link_libraries(mistusbn1p
@@ -614,10 +681,13 @@ target_link_libraries(mistusbn1p
   hardware_flash 
   hardware_i2c 
   hardware_rtc 
+  pico_multicore
   tinyusb_host 
   tinyusb_board
+  ${picosynth_lib}
   )
 target_include_directories(mistusbn1p PUBLIC ../usbhost)
+target_include_directories(mistusbn1p PUBLIC ../picosynth)
 add_compile_options(-O2)
 pico_generate_pio_header(mistusbn1p ../drivers/fpga.pio)
 pico_generate_pio_header(mistusbn1p ../drivers/spi.pio)
@@ -631,17 +701,22 @@ pico_add_extra_outputs(mistusbn1p)
 example_auto_set_url(mistusbn1p)
 #pico_set_binary_type(mistusb no_flash)
 target_compile_options(mistusbn1p PUBLIC
-  "-DVDATE=\"\""
-  "-Dhexdump=driver_hexdump"
-  "-DPS2HOST"
-  "-DJAMMADB9"
-  "-DUSB"
-  "-DMIST_USB"
-  "-DALTERA_FPGA"
-  "-DSD_DIRECT_MODE_GPIO=22"
-  "-DUSB_STORAGE"
-  "-DUSB_DEBUG_OFF"
-)
+  # "-DVDATE=\"\""
+  # "-Dhexdump=driver_hexdump"
+  # "-DPS2HOST"
+  # "-DJAMMADB9"
+  # "-DUSB"
+  # "-DMIST_USB"
+  # "-DALTERA_FPGA"
+  # "-DSD_DIRECT_MODE_GPIO=22"
+  # "-DUSB_STORAGE"
+  # "-DUSB_DEBUG_OFF"
+  ${common_opts}
+  ${altera_opts}
+  ${flash_opts}
+  ${neptuno_opts}
+  ${usb_opts}
+  )
 
 ####################################################################################
 # Main build RAM test build for ZXUno
@@ -675,20 +750,22 @@ pico_add_extra_outputs(mistzx1ram)
 example_auto_set_url(mistzx1ram)
 pico_set_binary_type(mistzx1ram no_flash)
 target_compile_options(mistzx1ram PUBLIC
-  "-DVDATE=\"\""
-  "-Dhexdump=driver_hexdump"
-  "-DPS2HOST"
-  "-DXILINX"
-  "-DJAMMADB9"
-  "-DNO_PS2_TX"
-  "-DBOOT_FLASH_ON_ERROR"
-  "-DNO_LEGACY_MODE"
-  "-DSD_DIRECT_MODE_GPIO=19"
-  "-DMIST_ROOT=\"/MIST\""
-  "-DZXUNO"
-  "-DNO_FILE_INDEX"
-  # "-DPICOSYNTH"
-  #"-DTEST_BUILD"
+  # "-DVDATE=\"\""
+  # "-Dhexdump=driver_hexdump"
+  # "-DPS2HOST"
+  # "-DXILINX"
+  # "-DJAMMADB9"
+  # "-DNO_PS2_TX"
+  # "-DBOOT_FLASH_ON_ERROR"
+  # "-DNO_LEGACY_MODE"
+  # "-DSD_DIRECT_MODE_GPIO=19"
+  # "-DMIST_ROOT=\"/MIST\""
+  # "-DZXUNO"
+  # "-DNO_FILE_INDEX"
+  ${common_opts}
+  ${xilinx_opts}
+  ${ram_opts}
+  ${zxuno_opts}
 )
 
 ####################################################################################
@@ -719,22 +796,24 @@ pico_add_extra_outputs(mistzx1)
 example_auto_set_url(mistzx1)
 #pico_set_binary_type(mistzx1 no_flash)
 target_compile_options(mistzx1 PUBLIC
-  "-DVDATE=\"\""
-  "-Dhexdump=driver_hexdump"
-  "-DPS2HOST"
-  "-DZXUNO"
-  "-DXILINX"
-  "-DBOOT_FLASH_ON_ERROR"
-  "-DJAMMADB9"
-  "-DNO_PS2_TX"
-  "-DSD_DIRECT_MODE_GPIO=19"
-  "-DCHECK_MIST_DIR"
-  "-DMIST_ROOT=\"/MIST\""
-  "-DNO_LEGACY_MODE"
-  "-DZXUNO"
-  # "-DPICOSYNTH"
-  #"-DTEST_BUILD"
-)
+  # "-DVDATE=\"\""
+  # "-Dhexdump=driver_hexdump"
+  # "-DPS2HOST"
+  # "-DZXUNO"
+  # "-DXILINX"
+  # "-DBOOT_FLASH_ON_ERROR"
+  # "-DJAMMADB9"
+  # "-DNO_PS2_TX"
+  # "-DSD_DIRECT_MODE_GPIO=19"
+  # "-DCHECK_MIST_DIR"
+  # "-DMIST_ROOT=\"/MIST\""
+  # "-DNO_LEGACY_MODE"
+  # "-DZXUNO"
+  ${common_opts}
+  ${xilinx_opts}
+  ${flash_opts}
+  ${zxuno_opts}
+  )
 
 ####################################################################################
 # Main build RAM test build for ZXUno
@@ -768,25 +847,118 @@ pico_add_extra_outputs(mistusbzx1)
 example_auto_set_url(mistusbzx1)
 #pico_set_binary_type(mistzx1 no_flash)
 target_compile_options(mistusbzx1 PUBLIC
-  "-DVDATE=\"\""
-  "-Dhexdump=driver_hexdump"
-  "-DPS2HOST"
-  "-DZXUNO"
-  "-DXILINX"
-  "-DJAMMADB9"
-  "-DNO_PS2_TX"
-  "-DBOOT_FLASH_ON_ERROR"
-  "-DSD_DIRECT_MODE_GPIO=19"
-  "-DMIST_ROOT=\"/MIST\""
-  "-DNO_LEGACY_MODE"
-  "-DCHECK_MIST_DIR"
-  "-DUSB"
-  "-DMIST_USB"
-  "-DUSB_DEBUG_OFF"
-  "-DUSB_STORAGE"
-  # "-DPICOSYNTH"
-  #"-DTEST_BUILD"
-)
+  # "-DVDATE=\"\""
+  # "-Dhexdump=driver_hexdump"
+  # "-DPS2HOST"
+  # "-DZXUNO"
+  # "-DXILINX"
+  # "-DJAMMADB9"
+  # "-DNO_PS2_TX"
+  # "-DBOOT_FLASH_ON_ERROR"
+  # "-DSD_DIRECT_MODE_GPIO=19"
+  # "-DMIST_ROOT=\"/MIST\""
+  # "-DNO_LEGACY_MODE"
+  # "-DCHECK_MIST_DIR"
+  # "-DUSB"
+  # "-DMIST_USB"
+  # "-DUSB_DEBUG_OFF"
+  # "-DUSB_STORAGE"
+  ${common_opts}
+  ${xilinx_opts}
+  ${flash_opts}
+  ${zxuno_opts}
+  ${usb_opts}
+  )
+
+  # ${common_opts}
+  # ${altera_opts}
+  # ${xilinx_opts}
+  # ${flash_opts}
+  # ${ram_opts}
+  # ${zxtres_opts}
+  # ${neptuno_opts}
+  # ${zxuno_opts}
+  # ${usb_opts}
+  # ${mb2_opts}
+  
 
 
 
+####################################################################################
+# RAM build - release binary for Xilinx ZXTres board -with single CPU middleboard.
+add_executable(mistmb2ram
+  ${driver_mb2_src}
+  ${main_src}
+  ${usb_src}
+  )
+
+target_link_libraries(mistmb2ram 
+  pico_stdlib 
+  mistfirmware
+  hardware_spi 
+  hardware_pio 
+  hardware_rtc 
+  hardware_i2c
+  pico_multicore)
+add_compile_options(-O2)
+pico_generate_pio_header(mistmb2ram ../drivers/fpga.pio)
+pico_generate_pio_header(mistmb2ram ../drivers/spi.pio)
+pico_generate_pio_header(mistmb2ram ../drivers/audio_i2s.pio)
+pico_generate_pio_header(mistmb2ram ../drivers/uart_tx.pio)
+pico_enable_stdio_usb(mistmb2ram 1)
+
+target_include_directories(mistmb2ram PUBLIC ../picosynth)
+
+pico_enable_stdio_uart(mistmb2ram 0)
+pico_add_extra_outputs(mistmb2ram)
+example_auto_set_url(mistmb2ram)
+pico_set_binary_type(mistmb2ram no_flash)
+target_compile_options(mistmb2ram PUBLIC
+  ${common_opts}
+  ${altera_opts}
+  ${ram_opts}
+  ${neptuno_opts}
+  ${mb2_opts}
+  )
+
+
+
+####################################################################################
+# FLASH build - release binary for Neptuno with dual mb
+add_executable(mistmb2
+  ${driver_mb2_src}
+  ${main_src}
+  ${usb_src}
+  ${picosynth_src}
+  )
+
+# mistfirmwareusbxilinx
+target_link_libraries(mistmb2 
+  pico_stdlib
+  mistfirmwareusb
+  hardware_spi 
+  hardware_pio 
+  hardware_flash 
+  hardware_rtc 
+  ${picosynth_lib}
+  pico_multicore tinyusb_host tinyusb_board)
+target_include_directories(mistmb2 PUBLIC ../usbhost)
+target_include_directories(mistmb2 PUBLIC ../picosynth)
+add_compile_options(-O2)
+pico_generate_pio_header(mistmb2 ../drivers/fpga.pio)
+pico_generate_pio_header(mistmb2 ../drivers/spi.pio)
+pico_generate_pio_header(mistmb2 ../drivers/audio_i2s.pio)
+pico_generate_pio_header(mistmb2 ../drivers/uart_tx.pio)
+pico_enable_stdio_usb(mistmb2 0)
+pico_enable_stdio_uart(mistmb2 0)
+pico_add_extra_outputs(mistmb2)
+example_auto_set_url(mistmb2)
+set_target_properties(mistmb2 PROPERTIES PICO_TARGET_LINKER_SCRIPT "${PROJECT_SOURCE_DIR}/standalone.ld")
+target_compile_options(mistmb2 PUBLIC
+  ${common_opts}
+  ${altera_opts}
+  ${flash_opts}
+  ${neptuno_opts}
+  ${mb2_opts}
+  ${usb_opts}
+  )

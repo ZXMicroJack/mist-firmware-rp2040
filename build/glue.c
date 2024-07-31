@@ -102,7 +102,11 @@ void WriteFirmware(char *name) {
 #define ARCH "XMB1"
 #endif
 #else
+#if defined(MB2)
+#define ARCH "AN+2"
+#else
 #define ARCH "AN+"
+#endif
 #endif
 
 

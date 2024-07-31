@@ -391,7 +391,7 @@ void beep(int n) {
 #endif
 
 
-#if defined(XILINX) && !defined(USBFAKE)
+#if !defined(USBFAKE)
 void sysex_Process() {
   switch(sysex_buffer[0]) {
     case CMD_RESET: {
@@ -513,7 +513,7 @@ int mist_loop() {
   }
 
   ps2_Poll();
-#if defined(XILINX) && !defined(USBFAKE)
+#ifndef USBFAKE
   midi_loop();
 #endif
 

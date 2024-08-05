@@ -65,6 +65,9 @@ void spi_uio_cmd64(unsigned char cmd, unsigned long long parm);
 void spi_max_start();
 void spi_max_end();
 
+unsigned char SPI(unsigned char outByte);
+
+#if 0
 static inline unsigned char SPI(unsigned char outByte) {
 #if 0
       	while (!(*AT91C_SPI_SR & AT91C_SPI_TDRE));
@@ -75,6 +78,7 @@ static inline unsigned char SPI(unsigned char outByte) {
   return 0xff;
 #endif
 }
+#endif
 
 #define SPI_SDC_CLK_VALUE 2     // 24 MHz
 #define SPI_MMC_CLK_VALUE 3     // 16 MHz

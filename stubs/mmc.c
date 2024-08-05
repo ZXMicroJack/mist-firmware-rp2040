@@ -241,6 +241,7 @@ static unsigned char MMC_GetCXD(unsigned char cmd, unsigned char *ptr) {
   return(1);
 }
 
+
 // Read CSD register
 unsigned char MMC_GetCSD(unsigned char *csd) {
   return MMC_GetCXD(CMD9, csd);

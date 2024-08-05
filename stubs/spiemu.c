@@ -1,7 +1,13 @@
 #include "spi.h"
 #include "hardware.h"
+#include "user_io.h"
+#include "tos.h"
+#include "osd.h"
+#include "screen.h"
 
 // TODO MJ interface to FPGA via SPI and all the nCS for different bits.
+
+void updateScreenCallback();
 
 void spi_init() {
 #if 0
@@ -28,49 +34,251 @@ void spi_init() {
     // Set them to high level by default.
     *AT91C_PIOA_SODR = FPGA0 | MMC_SEL;
 #endif
-}
-unsigned char SPI(unsigned char outByte) {
-	return 0xff;
+  initScreen(updateScreenCallback);
 }
 
 RAMFUNC void spi_wait4xfer_end() {
 }
 
+#define COREID 0xa4
+
+static uint8_t cmd[4096];
+static uint8_t io = 0;
+static uint8_t fpga = 0;
+static uint8_t osd = 0;
+static int cmd_pos = 0;
+static uint8_t next_spi = 0xff;
+static uint32_t system_control = 0;
+static uint8_t butt_state = 0;
+
+const uint16_t features = FEAT_MENU;
+const char *CONF_STR = 
+        "MENU;;"
+        "O1,Video mode,PAL,NTSC;"
+        "O23,Rotate,Off,Left,Right;"
+        "V,12341234";
+;
+char *confptr;
+static uint8_t io_status = 0;
+static uint32_t io_status2 = 0;
+
+uint8_t react_io() {
+
+	if (cmd_pos > 1) {
+		switch (cmd[0]) {
+			case UIO_GET_SDSTAT:
+			case UIO_KEYBOARD_IN:
+			case UIO_MOUSE_IN:
+			case UIO_SET_MOD:
+				return 0x00;
+			case UIO_SIO_IN:
+				return 0x80;
+			case UIO_GET_STRING:
+				if (cmd_pos == 2) {
+					confptr = CONF_STR;
+				}
+				return *confptr++;
+			case UIO_SET_STATUS:
+				io_status = cmd[1];
+				printf("IO: Status set %02X\n", cmd[1]);
+				break;
+			case UIO_SET_STATUS2:
+				io_status2 = (cmd[1]<<24)|(cmd[2]<<16)|(cmd[3]<<8)|cmd[4];
+				printf("IO: Status set %08X\n", io_status2);
+				break;
+			case UIO_BUT_SW:
+				butt_state = cmd[1];
+				printf("IO: Button state set to %02X\n", butt_state);
+				break;
+			case UIO_GET_FEATS:
+        if (cmd_pos == 2) return 0x80;
+        if (cmd_pos == 3) return features >> 24;
+				if (cmd_pos == 4) return features >> 16;
+        if (cmd_pos == 5) return features >> 8;
+				else return features & 0xff;
+				break;
+
+
+			default:
+				printf("IO: Unknown command %02X\n", cmd[0]);
+				return 0x00;
+		}
+	} else {
+		return COREID;
+	}
+//	return 0xff;
+}
+
+uint8_t react_fpga() {
+	if (cmd_pos > 1) {
+		switch (cmd[0]) {
+			case MIST_SET_CONTROL:
+				if (cmd_pos == 5) {
+					system_control = (cmd[1]<<24)|(cmd[2]<<16)|(cmd[3]<<8)|cmd[4];
+					printf("Mist: System control %08x\n", system_control);
+				}
+				return 0x00;
+			default:
+				printf("IO: Unknown command %02X\n", cmd[0]);
+				return 0x00;
+		}
+	}
+	return 0xff;
+}
+
+uint8_t react_osd() {
+	if (cmd_pos > 1) {
+		switch (cmd[0]) {
+			case MM1_OSDCMDENABLE:
+//				printf("OSD: Enable OSD\n");
+				return 0x00;
+
+			case MM1_OSDCMDDISABLE:
+//				printf("OSD: Disable OSD\n");
+				return 0x00;
+		
+			default:
+				if ((cmd[0] & 0xe0) == MM1_OSDCMDWRITE) {
+//					printf("OSD: Write to OSD\n");
+				} else {
+//					printf("OSD: Unknown command %02X\n", cmd[0]);
+				}
+				return 0x00;
+		}
+	}
+	return 0xff;
+}
+
+extern void putpixel(int x, int y, uint32_t pixel);
+
+void write_to_screen() {
+  updateScreen();
+}
+
+void updateScreenCallback() {
+  int line = (cmd[0] & 0x1f) * 8;
+
+  for (int x=1; x<cmd_pos; x++) {
+    for (int y=0; y<8; y++) {
+      uint8_t mask = 0x80;
+      for (int b=0; b<8; b++) {
+        putpixel(x, line+(8-b), (cmd[x] & mask) ? 0xffffff : 0x000000);
+        mask >>= 1;
+      }
+    }
+  }
+  // printf("cmd_pos %d: ", cmd_pos);
+  // for (int i=0; i<cmd_pos; i++) {
+  //   printf("%02X ", cmd[i]);
+  // }
+  // printf("\n)");
+}
+
+void react_osd_end() {
+	switch (cmd[0]) {
+		case MM1_OSDCMDENABLE|DISABLE_KEYBOARD:
+			printf("OSD: Enable OSD (disabling keyboard)\n");
+			break;
+
+		case MM1_OSDCMDDISABLE:
+			printf("OSD: Disable OSD\n");
+			break;
+	
+		default:
+			if ((cmd[0] & 0xe0) == MM1_OSDCMDWRITE) {
+				if ((cmd[0] & 0x1f) == 0x18) {
+					printf("OSD: Clear\n");
+				} else {
+					printf("OSD: Write to OSD line %d\n", cmd[0] & 0x1f);
+          write_to_screen();
+				}
+			} else {
+				printf("OSD: Unknown command %02X\n", cmd[0]);
+			}
+			return 0x00;
+	}
+
+}
+
+
+
+unsigned char SPI(unsigned char outByte) {
+//	uint8_t ret = 0xff;
+
+//	ret = cmd_pos == 0 ? 0xb4 : next_spi;
+
+	if (io || fpga || osd)
+	{
+		if (cmd_pos < sizeof cmd) {
+			cmd[cmd_pos++] = outByte;
+		} else printf("Error: Overwriting command buffer\n");
+
+		if (io) return react_io();
+		if (fpga) return react_fpga();
+		if (osd) return react_osd();
+	}
+
+
+//	printf("SPI(%02X)\n", outByte);
+	return 0xff;
+}
+
 void EnableFpga()
 {
+	fpga = 1;
+	cmd_pos = 0;
+	printf("EnableFPGA();\n");
 }
 
 void DisableFpga()
 {
+	fpga = 0;
+	printf("DisableFPGA();\n");
     spi_wait4xfer_end();
 }
 
 void EnableOsd()
 {
+	osd = 1;
+	cmd_pos = 0;
+	printf("EnableOsd();\n");
 }
 
 void DisableOsd()
 {
+	osd = 0;
+	react_osd_end();
+	printf("DisableOsd();\n");
     spi_wait4xfer_end();
 }
 
 void EnableIO() {
+	io = 1;
+	cmd_pos = 0;
+	next_spi = 0xff;
+//	printf("EnableIO();\n");
 }
 
 void DisableIO() {
+	io = 0;
+//	printf("DisableIO();\n");
     spi_wait4xfer_end();
 }
 
 void EnableDMode() {
+	printf("EnableDMode();\n");
 }
 
 void DisableDMode() {
+	printf("DisableDMode();\n");
 }
 
 RAMFUNC void EnableCard() {
+	printf("EnableCard();\n");
 }
 
 RAMFUNC void DisableCard() {
+	printf("DisableCard();\n");
 }
 
 void spi_max_start() {

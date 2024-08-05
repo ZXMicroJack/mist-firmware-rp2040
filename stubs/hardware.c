@@ -10,6 +10,8 @@
 
 uint32_t systimer;
 
+uint8_t store_vars[256];
+
 //TODO MJ all hardware initialisation here
 void __init_hardware(void)
 {

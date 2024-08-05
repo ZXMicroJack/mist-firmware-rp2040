@@ -7,7 +7,8 @@
 #define DISKLED_ON    {}
 #define DISKLED_OFF   {}
 
-#define STORE_VARS_POS      0x0020FF00
+extern uint8_t store_vars[];
+#define STORE_VARS_POS       (&store_vars[0])
 #define USB_LOAD_VAR         *(int*)(STORE_VARS_POS+4)
 #define USB_LOAD_VALUE       12345678
 
@@ -23,7 +24,7 @@
 
 // TODO MJ should never be invoked - because we have no buttons
 #define USB_BOOT_VALUE       0x8007F007
-#define USB_BOOT_VAR         (*(int*)0x0020FF18)
+#define USB_BOOT_VAR         (*(int32_t *)store_vars[0x20])
 
 #define SECTOR_BUFFER_SIZE   4096
 

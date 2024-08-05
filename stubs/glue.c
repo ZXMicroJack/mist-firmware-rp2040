@@ -26,7 +26,9 @@ void siprintf(char *str, const char *fmt, ...) {
 }
 
 //TODO MJ non USB stuff here
-void MCUReset() {}
+void MCUReset() {
+	exit(1);
+}
 
 void PollADC() {
 }
@@ -81,9 +83,6 @@ void hid_set_kbd_led(unsigned char led, bool on) {
 }
 void SPIN() {}
 
-void usb_poll() {
-}
-
 int8_t hid_keyboard_present(void) {
   return 0;
 }
@@ -129,5 +128,8 @@ unsigned char CheckFirmware(char *name) {
 
 unsigned char ConfigureFpga(const char*) {
   // returns 1 if success / 0 on fail
-  return 0;
+  return 1;
 }
+
+void DB9Update(int n, uint8_t d) {}
+

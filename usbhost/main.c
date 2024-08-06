@@ -33,7 +33,7 @@
 #include "ps2.h"
 #include "joypad.h"
 
-#define CFG_TUH_CDC 0
+// #define CFG_TUH_CDC 0
 
 // #include <stdio.h>
 // #include <stdint.h>
@@ -228,6 +228,7 @@ void tuh_msc_umount_cb(uint8_t dev_addr) {
 //--------------------------------------------------------------------+
 // USB CDC
 //--------------------------------------------------------------------+
+#if 0
 #if CFG_TUH_CDC
 CFG_TUSB_MEM_SECTION static char serial_in_buffer[64] = { 0 };
 
@@ -263,6 +264,7 @@ void cdc_task(void)
 
 }
 
+#endif
 #endif
 
 //--------------------------------------------------------------------+

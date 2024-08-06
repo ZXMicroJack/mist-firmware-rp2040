@@ -3,6 +3,7 @@
 
 void usb_poll() {
   pollKeyboard();
+  fakeusb_poll();
 }
 
 

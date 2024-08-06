@@ -53,6 +53,7 @@ void usb_handle_data(uint8_t dev, uint8_t *desc, uint16_t desclen);
 
 #ifdef PIODEBUG
 #define printf dbgprintf
+#define uprintf dbgprintf
 #else
 // #define printf debugprintf
 #endif

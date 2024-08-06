@@ -9,6 +9,16 @@
 #define DEBUG
 #include "debug.h"
 
+#ifdef MIST_USB
+void usb_attached(uint8_t dev, uint8_t idx, uint16_t vid, uint16_t pid, uint8_t *desc, uint16_t desclen);
+void usb_detached(uint8_t dev);
+void usb_handle_data(uint8_t dev, uint8_t *desc, uint16_t desclen);
+#else
+#endif
+
+#define XBOX_VID                                0x045E // Microsoft Corporation
+#define XBOX_WIRED_PID                          0x028E // Microsoft 360 Wired controller
+
 #if 0
 //Since https://github.com/hathach/tinyusb/pull/2222, we can add in custom vendor drivers easily
 usbh_class_driver_t const* usbh_app_driver_get_cb(uint8_t* driver_count){
@@ -16,6 +26,12 @@ usbh_class_driver_t const* usbh_app_driver_get_cb(uint8_t* driver_count){
     return &usbh_xinput_driver;
 }
 #endif
+
+#if 0
+void usb_detached(uint8_t dev);
+void usb_handle_data(uint8_t dev, uint8_t *desc, uint16_t desclen);
+#endif
+
 
 
 #undef TU_LOG1
@@ -51,6 +67,14 @@ void tuh_xinput_report_received_cb(uint8_t dev_addr, uint8_t instance, xinputh_i
 
 void tuh_xinput_mount_cb(uint8_t dev_addr, uint8_t instance, const xinputh_interface_t *xinput_itf)
 {
+#if 0
+      	usb_attached(dev_addr, instance, XBOX_VID, XBOX_WIRED_PID, xinput_itf, uint16_t desclen);
+
+  usb_attached(dev_addr, uint8_t idx, uint16_t vid, uint16_t pid, uint8_t *desc, uint16_t desclen);
+void usb_detached(uint8_t dev);
+void usb_handle_data(uint8_t dev, uint8_t *desc, uint16_t desclen);
+#endif
+
     TU_LOG1("XINPUT MOUNTED %02x %d\n", dev_addr, instance);
     // If this is a Xbox 360 Wireless controller we need to wait for a connection packet
     // on the in pipe before setting LEDs etc. So just start getting data until a controller is connected.

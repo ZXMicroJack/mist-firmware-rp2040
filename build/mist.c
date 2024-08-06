@@ -107,8 +107,8 @@ static void enable_xip(void) {
 #define JOY1_DN   1
 #define KBD_DN   0
 
-// #define FAKE_KBD
-#define FAKE_JOY1
+#define FAKE_KBD
+//#define FAKE_JOY1
 // #define FAKE_JOY2
 // #define FAKE_JOY3
 

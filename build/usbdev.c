@@ -68,44 +68,114 @@ struct {
   uint16_t report_size;
   uint8_t *desc_stored;
   uint16_t desc_len;
+  usb_device_class_config_t *usb_dev;
+  uint8_t dev_addr;
+  uint8_t inst;
 } report[MAX_USB] = {
-  {0,0}
+  {0,0,0,0,NULL}
 };
+
+#define MAX_TUSB_DEVS	8
+
+uint8_t dev_tusb[MAX_TUSB_DEVS];
 
 
 uint8_t tuh_descriptor_get_device_sync(uint8_t dev_addr, uint8_t *dd, uint16_t len);
+
+static void myusb_init() {
+  static uint8_t usb_inited = 0;
+  if (usb_inited) return;
+
+  for (int i=0; i<MAX_TUSB_DEVS; i++) {
+    dev_tusb[i] = 0xff;
+  }
+  memset(device, 0, sizeof device);
+  memset(report, 0, sizeof report);
+  usb_inited = 1;
+}
+
+
+void fakeusb_poll() {
+#if 0
+  for (int i=0; i<MAX_USB; i++) {
+    if (report[i].usb_dev != NULL) {
+      report[i].usb_dev->poll(&device[i]);
+    }
+  }
+#endif
+}
 
 // uint8_t dd[128];
 
 void usb_attached(uint8_t dev, uint8_t idx, uint16_t vid, uint16_t pid, uint8_t *desc, uint16_t desclen) {
   usb_device_descriptor_t dd;
   uint8_t r;
+
+  myusb_init();
+
+  int n;
+  for (n=0; n<MAX_USB; n++) {
+    if (report[n].usb_dev == NULL) {
+      break;
+    }
+  }
+
+  if (n >= MAX_USB) {
+    printf("Error: Too many USB devices...\n");
+    return;
+  }
+
+  dev_tusb[dev] = n;
+  report[n].dev_addr = dev;
+  report[n].inst = idx;
+
   tuh_descriptor_get_device_sync(dev, &dd, sizeof dd);
-  report[dev].desc_stored = desc;
-  report[dev].desc_len = desclen;
-  report[dev].report_size = 0;
-  device[dev].vid = vid;
-  device[dev].pid = pid;
-  r = usb_hid_class.init(&device[dev], &dd);
+  report[n].desc_stored = desc;
+  report[n].desc_len = desclen;
+  report[n].report_size = 0;
+  device[n].vid = vid;
+  device[n].pid = pid;
+  device[n].bAddress = 1;
+
+  r = usb_hid_class.init(&device[n], &dd);
+  if (!r) {
+    report[n].usb_dev = &usb_hid_class;
+//    report[n].usb_dev->poll(&device[n]);
+  }
+  printf("r returns %d\n", r);
+  
   //TODO MJ maybe do more at this point?
 }
 
 void usb_detached(uint8_t dev) {
-  if (report[dev].report_size) {
-    free(report[dev].last_report);
-    report[dev].report_size = 0;
-    usb_hid_class.release(&device[dev]);
+  uint8_t n;
+
+  myusb_init();
+  n = dev_tusb[dev];
+  if (n > MAX_USB || report[n].usb_dev == NULL) return;
+
+  if (report[n].report_size) {
+    free(report[n].last_report);
+    report[n].report_size = 0;
   }
+  report[n].usb_dev->release(&device[n]);
+  report[n].usb_dev = NULL;
 }
 
 void usb_handle_data(uint8_t dev, uint8_t *desc, uint16_t desclen) {
-  if (report[dev].report_size != desclen) {
-    if (report[dev].report_size) free(report[dev].last_report);
-    if (desclen) report[dev].last_report = (uint8_t *)malloc(desclen);
-    report[dev].report_size = desclen;
+  uint8_t n;
+  
+  myusb_init();
+  n = dev_tusb[dev];
+  if (n > MAX_USB || report[n].usb_dev == NULL) return;
+
+  if (report[n].report_size != desclen) {
+    if (report[n].report_size) free(report[dev].last_report);
+    if (desclen) report[n].last_report = (uint8_t *)malloc(desclen);
+    report[n].report_size = desclen;
   }
-  memcpy(report[dev].last_report, desc, desclen);
-  usb_hid_class.poll(&device[dev]);
+  memcpy(report[n].last_report, desc, desclen);
+  report[n].usb_dev->poll(&device[n]);
 }
 
 // PL2303
@@ -141,21 +211,36 @@ uint8_t usb_ctrl_req( usb_device_t *dev, uint8_t bmReqType,
                       uint16_t wInd, uint16_t nbytes, uint8_t* dataptr) {
   debug(("usb_ctrl_req: dev %08x reqt %02X req %02X wValLo %02X wValHi %02X wInd %04X nbytes %04X dataptr %08x\n",
          dev, bmReqType, bRequest, wValLo, wValHi, wInd, nbytes, dataptr));
+  uint8_t n = dev - device;
 
   if (bmReqType == HID_REQ_HIDREPORT && bRequest == USB_REQUEST_GET_DESCRIPTOR && wValLo == 0 && wValHi == HID_DESCRIPTOR_REPORT) {
-    uint8_t n = dev - device;
     memcpy(dataptr, report[n].desc_stored, lowest(report[n].desc_len, nbytes));
+  // } else if (bmReqType == HID_REQ_HIDIN && bRequest == HID_REQUEST_GET_IDLE) {
+  } else if (bmReqType == HID_REQ_HIDIN && bRequest == HID_REQUEST_GET_PROTOCOL) {
+    *dataptr = tuh_hid_get_protocol(report[n].dev_addr, report[n].inst);
+  // } else if (bmReqType == HID_REQ_HIDOUT && bRequest == HID_REQUEST_SET_IDLE) {
+  } else if (bmReqType == HID_REQ_HIDOUT && bRequest == HID_REQUEST_SET_PROTOCOL) {
+    tuh_hid_set_protocol(report[n].dev_addr, report[n].inst, *dataptr);
+  } else if (bmReqType == HID_REQ_HIDOUT && bRequest == HID_REQUEST_SET_REPORT) {
+    tuh_hid_set_report(report[n].dev_addr, report[n].inst, wValLo, wValHi, dataptr, nbytes);
   }
 
   return 0;
-}
+}`
 
 // TODO MJ implement usb_ctrl_req
 // NOTE: Faked purely to pass on the last report.
 uint8_t usb_in_transfer( usb_device_t *dev, ep_t *ep, uint16_t *nbytesptr, uint8_t* data) {
-  debug(("usb_in_transfer: dev %08x, ep %08x, ptr %08X data %08X\n", dev, ep, nbytesptr, data));
   uint8_t n = dev - device;
+  debug(("usb_in_transfer(%04X:%04X:%02X): dev %08x, ep %08x, ptr %08X data %08X\n", 
+			  device[n].vid, device[n].pid, device[n].bAddress,
+			  dev, ep, nbytesptr, data));
   if (report[n].report_size) {
+    debug(("usb_in_transfer(%04X:%04X:%02X): %d %d\n", 
+			    device[n].vid, device[n].pid, device[n].bAddress,
+			    *nbytesptr, report[n].report_size));
+
+
     uint16_t this_copy = lowest(report[n].report_size, *nbytesptr);
     memcpy(data, report[n].last_report, this_copy);
     *nbytesptr = this_copy;
@@ -178,16 +263,17 @@ usb_device_t *usb_get_devices() {
 
 uint8_t usb_get_conf_descr( usb_device_t *dev, uint16_t nbytes, uint8_t conf, usb_configuration_descriptor_t* dataptr ) {
   debug(("usb_get_conf_descr: dev %08x, nbytes %04X conf %02X data %08X\n", dev, nbytes, conf, dataptr));
-#ifndef USBFAKE
-  tuh_descriptor_get_configuration_sync(dev - device, conf, dataptr, nbytes);
-#endif
+//#ifndef USBFAKE
+  uint8_t dev_addr = report[dev - device].dev_addr;
+  tuh_descriptor_get_configuration_sync(dev_addr, conf, dataptr, nbytes);
+//#endif
   return 0;
 }
 
 uint8_t usb_set_conf( usb_device_t *dev, uint8_t conf_value ) {
   debug(("usb_set_conf: dev %08x conf %02X\n", dev, conf_value));
 #ifndef USBFAKE
-  uint8_t dev_addr = dev - device;
+  uint8_t dev_addr = report[dev - device].dev_addr;
   tuh_configuration_set(dev_addr, conf_value, NULL, NULL);
 #endif
   return 0;

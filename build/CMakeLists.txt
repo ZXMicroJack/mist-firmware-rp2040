@@ -12,6 +12,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DIPC_MASTER -DPICO_XOSC_STARTUP_DELAY_MULTI
 
 set(PICO_EXAMPLES_PATH ${PROJECT_SOURCE_DIR})
 set(CMAKE_BUILD_TYPE "Debug")
+#set(CMAKE_BUILD_TYPE "Release")
 
 # Initialize the SDK
 pico_sdk_init()
@@ -351,33 +352,49 @@ target_compile_options(mistram PUBLIC
 
 ####################################################################################
 # RAM build - for testing USB interface to USB host module.
-# add_executable(mistusbfake
-#   ${driver_src}
-#   ${main_src}
-#   )
+add_executable(mistusbfake
+  ${driver_mb2_src}
+  ${main_src}
+  ${usb_src}
+  )
 
-# target_link_libraries(mistusbfake pico_stdlib mistfirmwareusb${testarch} hardware_spi hardware_pio)
-# add_compile_options(-O2)
-# pico_generate_pio_header(mistusbfake ../drivers/fpga.pio)
-# pico_generate_pio_header(mistusbfake ../drivers/spi.pio)
-# pico_generate_pio_header(mistusbfake ../drivers/jamma.pio)
-# pico_generate_pio_header(mistusbfake ../drivers/jammadb9.pio)
-# pico_enable_stdio_usb(mistusbfake 1)
-# pico_enable_stdio_uart(mistusbfake 0)
-# pico_add_extra_outputs(mistusbfake)
-# example_auto_set_url(mistusbfake)
-# pico_set_binary_type(mistusbfake no_flash)
-# target_compile_options(mistusbfake PUBLIC
-#   "-DVDATE=\"\""
-#   "-Dhexdump=driver_hexdump"
-#   "-DPS2HOST"
-#   ${archdefs}
-#   "-DJAMMADB9"
-#   "-DUSB"
-#   "-DUSBFAKE"
-#   "-DSD_DIRECT_MODE_GPIO=22"
-#   "-DTEST_BUILD"
-# )
+target_link_libraries(mistusbfake 
+  pico_stdlib 
+  mistfirmwareusb${testarch} 
+  hardware_spi 
+  hardware_i2c
+  pico_multicore 
+  hardware_rtc 
+  hardware_pio)
+add_compile_options(-O2)
+pico_generate_pio_header(mistusbfake ../drivers/fpga.pio)
+pico_generate_pio_header(mistusbfake ../drivers/spi.pio)
+#pico_generate_pio_header(mistusbfake ../drivers/jamma.pio)
+#pico_generate_pio_header(mistusbfake ../drivers/jammadb9.pio)
+pico_enable_stdio_usb(mistusbfake 1)
+pico_enable_stdio_uart(mistusbfake 0)
+pico_add_extra_outputs(mistusbfake)
+example_auto_set_url(mistusbfake)
+pico_set_binary_type(mistusbfake no_flash)
+target_compile_options(mistusbfake PUBLIC
+	#  "-DVDATE=\"\""
+	#  "-Dhexdump=driver_hexdump"
+	#  "-DPS2HOST"
+	#  ${archdefs}
+	#  "-DJAMMADB9"
+	#  "-DUSB"
+	#  "-DUSBFAKE"
+	#  "-DSD_DIRECT_MODE_GPIO=22"
+	#  "-DTEST_BUILD"
+	#  "-DNO_FILE_INDEX"
+  ${common_opts}
+  ${xilinx_opts}
+  ${ram_opts}
+  ${zxtres_opts}
+  ${mb2_opts}
+  "-DUSBFAKE"
+  "-DUSB"
+)
 
 ####################################################################################
 # FLASH build - release binary for Xilinx ZXTres board -with single CPU middleboard.
@@ -962,3 +979,5 @@ target_compile_options(mistmb2 PUBLIC
   ${mb2_opts}
   ${usb_opts}
   )
+
+

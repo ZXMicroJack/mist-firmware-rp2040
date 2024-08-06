@@ -30,6 +30,7 @@ target_sources(host_cdc_msc_hid PUBLIC
         ${CMAKE_CURRENT_LIST_DIR}/main.c
         ${CMAKE_CURRENT_LIST_DIR}/msc_app.c
         ${CMAKE_CURRENT_LIST_DIR}/joypad.c
+        ${CMAKE_CURRENT_LIST_DIR}/cdc_app.c
         ${CMAKE_CURRENT_LIST_DIR}/xinput.c
         ../drivers/ps2.c
         ../drivers/fifo.c

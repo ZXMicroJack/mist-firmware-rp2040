@@ -15,6 +15,7 @@
 #include "rtc.h"
 
 //RTC function
+#ifndef USBFAKE
 static uint8_t RTCSPI(uint8_t ctrl, uint8_t rtc[7]);
 
 static uint8_t unbcd(uint8_t n) {
@@ -66,12 +67,14 @@ void debugDate(uint8_t *data) {
 #else
 #define debugDate(d)
 #endif
+#endif
 
 #define NRST    1
 #define RTCGET  2
 #define RTCSET  4
 
 // rtc = ss mm hh DD WD MM YY, where WD MM is decimal, the rest are BCD
+#ifndef USBFAKE
 static uint8_t RTCSPI(uint8_t ctrl, uint8_t rtc[7]) {
   uint8_t data[10];
 
@@ -100,8 +103,12 @@ static uint8_t RTCSPI(uint8_t ctrl, uint8_t rtc[7]) {
 
 static uint8_t sync_hw_get_pending = 0;
 static uint8_t sync_hw_set_pending = 0;
+#endif
 
 void rtc_Init() {
+#ifdef USBFAKE
+  return 0;
+#else
   debug(("rtc_Init: startup rp2040 RTC\n"));
   // Start the RTC
   rtc_init();
@@ -118,9 +125,13 @@ void rtc_Init() {
   };
   rtc_set_datetime(&t);
   sync_hw_get_pending = 1;
+#endif
 }
 
 uint8_t rtc_SetInternal() {
+#ifdef USBFAKE
+  return 0;
+#else
   uint8_t d[7], od[7];
   datetime_t t;
 
@@ -153,9 +164,13 @@ uint8_t rtc_SetInternal() {
   RTCSPI(0, d);
   debug(("rtc_SetInternal: All good, return RTC control to reset state\n", ctrl));
   return 0;
+#endif
 }
 
 uint8_t rtc_GetInternal() {
+#ifdef USBFAKE
+  return 0;
+#else
   uint8_t d[7];
   datetime_t t;
 
@@ -183,10 +198,14 @@ uint8_t rtc_GetInternal() {
   debug(("SetRTC: %x %x %x %x %d %d %x %s\n", d[0], d[1], d[2], d[3], d[4], d[5], d[6], ret ? "OK" : "FAILED"));
   debug(("rtc_GetInternal: All good, return RTC control to reset state\n", ctrl));
   return ret ? 0 : 1;
+#endif
 }
 
 
 void rtc_AttemptSync() {
+#ifdef USBFAKE
+  return 0;
+#else
   if (sync_hw_set_pending) {
     debug(("rtc_AttemptSync: Attempting to set HW RTC...\n"));
     if (!rtc_SetInternal()) sync_hw_set_pending = 0;
@@ -198,10 +217,14 @@ void rtc_AttemptSync() {
     if (!rtc_GetInternal()) sync_hw_get_pending = 0;
     // sync_hw_get_pending = 0;
   }
+#endif
 }
 
 // MiST layer set/get rtc functions
 char GetRTC(unsigned char *d) {
+#ifdef USBFAKE
+  return 0;
+#else
   datetime_t t;
   // implemented as d[0-7] -
   //   [y-100] [m] [d] [H] [M] [S] [Day1-7]
@@ -219,9 +242,13 @@ char GetRTC(unsigned char *d) {
   }
   debug(("GetRTC: %d %d %d %d %d %d %d\n", d[0], d[1], d[2], d[3], d[4], d[5], d[6]));
   return 1;
+#endif
 }
 
 char SetRTC(unsigned char *d) {
+#ifdef USBFAKE
+  return 0;
+#else
   debug(("SetRTC: %d %d %d %d %d %d %d\n", d[0], d[1], d[2], d[3], d[4], d[5], d[6]));
   datetime_t t = {
     .year = d[0] + 1900,
@@ -236,4 +263,5 @@ char SetRTC(unsigned char *d) {
   sync_hw_set_pending = 1;
   rtc_AttemptSync();
   return 1;
+#endif
 }

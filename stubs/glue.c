@@ -2,6 +2,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <sys/time.h>
 
 #include "usb/usb.h"
 
@@ -37,7 +38,33 @@ void InitADC() {
 }
 
 void InitRTTC() {}
+
+
+#ifdef EMU
+int GetRTTC() { 
+   struct timeval tv;
+   static uint32_t offset_time = 0;
+   static uint32_t base_time = 0;
+   static uint32_t last_time = 0;
+
+
+   gettimeofday(&tv, NULL);
+
+   if (base_time == 0) base_time = tv.tv_sec;
+   tv.tv_sec -= base_time;
+
+   uint32_t curr_time = (tv.tv_sec * 1000) + (tv.tv_usec / 1000);
+
+   if (last_time > curr_time)
+   {
+      offset_time = last_time;
+   }
+   last_time = curr_time;
+   return curr_time + offset_time;
+}
+#else
 int GetRTTC() { return 0; }
+#endif
 
 void arch_irq_disable() {}
 

@@ -36,6 +36,7 @@ void PollADC() {
 void InitADC() {
 }
 
+void InitRTTC() {}
 int GetRTTC() { return 0; }
 
 void arch_irq_disable() {}
@@ -76,12 +77,14 @@ uint8_t get_pl2303s(void) {
 // TODO MJ - USB stuff
 void usb_init() {}
 
+void SPIN() {}
+
 // return number of joysticks
+#ifndef EMU
 uint8_t joystick_count() { return 0; }
 
 void hid_set_kbd_led(unsigned char led, bool on) {
 }
-void SPIN() {}
 
 int8_t hid_keyboard_present(void) {
   return 0;
@@ -94,9 +97,10 @@ unsigned char get_keyboards(void) {
 unsigned char get_mice() {
   return 0;
 }
-
+#endif
 void usb_hw_init() {}
 
+#ifndef EMU
 // uint32_t timer_get_msec() { return 0; }
 void hid_joystick_button_remap_init() {}
 
@@ -105,6 +109,7 @@ void hid_joystick_button_remap_init() {}
 char hid_joystick_button_remap(char *s, char action, int tag) {
   return 0;
 }
+#endif
 
 void dmb() {}
 

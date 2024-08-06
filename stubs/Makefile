@@ -1,13 +1,30 @@
-default: mist-firmware
+default: mist-firmware mist-emu
 
 # fat.o \
 
+commonhwobjs=\
+hardware.o
+
 hwobjs=\
-spi.o \
-usbdev.o \
 mmc.o \
 glue.o \
-hardware.o
+spi.o \
+usbstub.o \
+usbdev.o
+
+emuobjs=\
+mmcemu.o \
+glueemu.o \
+spiemu.o \
+screen.o \
+usbdevx.o \
+usbemu.o \
+hid.o \
+hidparser.o \
+joystick.o \
+timer.o \
+usbdebug.o \
+usbfake.o
 
 mistobjs=\
 arc_file.o \
@@ -25,12 +42,12 @@ hdd.o \
 idxfile.o \
 ikbd.o \
 ini_parser.o \
-main.o \
 menu-8bit.o \
 menu.o \
 menu-minimig.o \
 mist_cfg.o \
 neocd.o \
+main.o \
 osd.o \
 pcecd.o \
 settings.o \
@@ -46,13 +63,16 @@ ffsystem.o \
 ffunicode.o \
 joymapping.o
 
-objs=$(hwobjs) $(mistobjs)
-
+objs1=$(hwobjs) $(commonhwobjs) $(mistobjs)
+objs2=$(emuobjs) $(commonhwobjs) $(mistobjs) 
+objs=$(hwobjs) $(emuobjs) $(commonhwobjs) $(mistobjs)
 
 # syscalls.o \
 
-
-copts=-I. -I../mist-firmware -I../mist-firmware/arch -I../mist-firmware/usb -D_WANT_IO_LONG_LONG -DVDATE="" -DRAMFUNC= -DATTRS_H -DFAST=
+copts=-m32 -I. -I../mist-firmware -I../mist-firmware/arch -I../mist-firmware/usb \
+	-D_WANT_IO_LONG_LONG -DUSB -DUSBFAKE \
+	-DVDATE="" -DRAMFUNC= -DATTRS_H -DFAST= -DMIST_ROOT=\"\" -DNOSPIN -DCOREEXT=\"BIT\" \
+	-DCOREEXTOTHER=\"RBF\" -g -DEXCL_XBOX_JPAD
 
 %.o : ../mist-firmware/%.c
 	gcc $(copts) -c -o$@ $<
@@ -64,6 +84,9 @@ copts=-I. -I../mist-firmware -I../mist-firmware/arch -I../mist-firmware/usb -D_W
 	gcc $(copts) -c -o$@ $<
 
 %.o : %.c
+	gcc $(copts) -c -o$@ $<
+
+%.o : ../build/%.c
 	gcc $(copts) -c -o$@ $<
 
 %.d : ../mist-firmware/%.c
@@ -78,10 +101,16 @@ copts=-I. -I../mist-firmware -I../mist-firmware/arch -I../mist-firmware/usb -D_W
 %.d : %.c
 	gcc $(copts) -M -o$@ $<
 
+%.d : ../build/%.c
+	gcc $(copts) -M -o$@ $<
+
 include $(objs:.o=.d)
 
-mist-firmware: $(objs)
-	gcc -o$@ $(objs)
+mist-firmware: $(objs1)
+	gcc -m32 -g -o$@ $(objs1)
+
+mist-emu: $(objs2)
+	gcc -m32 -g -o$@ $(objs2) -lSDL
 
 clean:
-	-rm *.o *.d mist-firmware
+	-rm *.o *.d mist-firmware mist-emu

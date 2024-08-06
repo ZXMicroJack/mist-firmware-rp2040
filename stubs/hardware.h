@@ -3,6 +3,9 @@
 
 #include <inttypes.h>
 
+#define lowest(a,b) ((a) < (b) ? (a) : (b))
+
+
 // TODO MJ - MB has no LEDs for disks - maybe can route one through the FPGA cores?
 #define DISKLED_ON    {}
 #define DISKLED_OFF   {}

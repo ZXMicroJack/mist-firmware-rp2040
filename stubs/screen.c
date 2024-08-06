@@ -134,14 +134,6 @@ void putpixel(int x, int y, uint32_t pixel) {
   for (int x1=0; x1<SCX; x1++)
     for (int y1=0; y1<SCY; y1++)
       putpixel_ll(screen, 16+x*SCX+x1, y*SCY+y1, pixel);
-  // putpixel_ll(screen, 16+x*2, y*2, pixel);
-  // putpixel_ll(screen, 16+x*2+1, y*2, pixel);
-  // putpixel_ll(screen, 16+x*2, y*2+1, pixel);
-  // putpixel_ll(screen, 16+x*2+1, y*2+1, pixel);
-  // putpixel_ll(screen, 16+x*2, y*2+2, pixel);
-  // putpixel_ll(screen, 16+x*2+1, y*2+2, pixel);
-  // putpixel_ll(screen, 16+x*2, y*2+3, pixel);
-  // putpixel_ll(screen, 16+x*2+1, y*2+3, pixel);
 }
 
 
@@ -186,6 +178,8 @@ static uint8_t hidreport[6];
 uint8_t kbdkeys[6] = {0};
 uint8_t modifier = 0;
 
+void usbaction(char c);
+
 void processKey(uint16_t scancode, int pressed) {
   uint8_t d = 0;
 	printf("processKey %02X pressed %d\n", scancode, pressed);
@@ -211,6 +205,16 @@ void processKey(uint16_t scancode, int pressed) {
     case SDLK_SPACE:
       d = 0x2C;
       break;
+    case SDLK_a: if (pressed) usbaction('a'); break;
+    case SDLK_b: if (pressed) usbaction('b'); break;
+    case SDLK_c: if (pressed) usbaction('c'); break;
+    case SDLK_d: if (pressed) usbaction('d'); break;
+    case SDLK_r: if (pressed) usbaction('r'); break;
+    case SDLK_i: if (pressed) usbaction('i'); break;
+    case SDLK_1: if (pressed) usbaction('1'); break;
+    case SDLK_2: if (pressed) usbaction('2'); break;
+    case SDLK_3: if (pressed) usbaction('3'); break;
+    case SDLK_4: if (pressed) usbaction('4'); break;
   }
 
     uint8_t keys[6];

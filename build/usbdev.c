@@ -220,13 +220,13 @@ uint8_t usb_ctrl_req( usb_device_t *dev, uint8_t bmReqType,
     *dataptr = tuh_hid_get_protocol(report[n].dev_addr, report[n].inst);
   // } else if (bmReqType == HID_REQ_HIDOUT && bRequest == HID_REQUEST_SET_IDLE) {
   } else if (bmReqType == HID_REQ_HIDOUT && bRequest == HID_REQUEST_SET_PROTOCOL) {
-    tuh_hid_set_protocol(report[n].dev_addr, report[n].inst, *dataptr);
+    tuh_hid_set_protocol(report[n].dev_addr, report[n].inst, wValLo);
   } else if (bmReqType == HID_REQ_HIDOUT && bRequest == HID_REQUEST_SET_REPORT) {
     tuh_hid_set_report(report[n].dev_addr, report[n].inst, wValLo, wValHi, dataptr, nbytes);
   }
 
   return 0;
-}`
+}
 
 // TODO MJ implement usb_ctrl_req
 // NOTE: Faked purely to pass on the last report.

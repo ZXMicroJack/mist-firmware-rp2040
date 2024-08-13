@@ -209,6 +209,7 @@ void processKey(uint16_t scancode, int pressed) {
     case SDLK_b: if (pressed) usbaction('b'); break;
     case SDLK_c: if (pressed) usbaction('c'); break;
     case SDLK_d: if (pressed) usbaction('d'); break;
+    case SDLK_e: if (pressed) usbaction('e'); break;
     case SDLK_r: if (pressed) usbaction('r'); break;
     case SDLK_i: if (pressed) usbaction('i'); break;
     case SDLK_1: if (pressed) usbaction('1'); break;

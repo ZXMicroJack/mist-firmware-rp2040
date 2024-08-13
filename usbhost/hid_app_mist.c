@@ -29,8 +29,9 @@
 #define DEBUG
 #include "debug.h"
 // #include "joypad.h"
+#include "usbhost.h"
 
-
+#if 0
 #ifdef MIST_USB
 void usb_attached(uint8_t dev, uint8_t idx, uint16_t vid, uint16_t pid, uint8_t *desc, uint16_t desclen);
 void usb_detached(uint8_t dev);
@@ -40,6 +41,7 @@ void usb_handle_data(uint8_t dev, uint8_t *desc, uint16_t desclen);
 
 #ifdef MIST_USB
 #else
+#endif
 #endif
 
 //--------------------------------------------------------------------+
@@ -75,6 +77,7 @@ void dumphex(char *s, uint8_t *data, int len) {
 #endif
 
 // Each HID instance can has multiple reports
+#if 0
 static struct hid_info
 {
   uint8_t report_count;
@@ -82,6 +85,7 @@ static struct hid_info
   
   uint16_t vid, pid;
 } hid_info[CFG_TUSB_HOST_DEVICE_MAX];
+#endif
 
 void hid_app_task(void)
 {
@@ -114,13 +118,13 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
   printf("tuh_hid_mount_cb(dev_addr:%d inst:%d)\n", dev_addr, instance);
   dumphex("report", desc_report, desc_len);
 #endif
-
-  tuh_vid_pid_get(dev_addr, &hid_info[dev_addr].vid, &hid_info[dev_addr].pid);
+  uint16_t vid, pid;
+  tuh_vid_pid_get(dev_addr, &vid, &pid);
 
 #ifdef MIST_USB
-  usb_attached(dev_addr, instance, hid_info[dev_addr].vid, hid_info[dev_addr].pid, desc_report, desc_len);
+  usb_attached(dev_addr, instance, vid, pid, desc_report, desc_len, USB_TYPE_HID);
 #else
-  uprintf("\tvid %04X pid %04X\n", hid_info[dev_addr].vid, hid_info[dev_addr].pid);
+  uprintf("\tvid %04X pid %04X\n", vid, pid);
 
   uint8_t dd[128];
   memset(dd, 0xff, sizeof dd);
@@ -223,5 +227,37 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
 #endif
   tuh_hid_receive_report(dev_addr, instance);
 }
+
+
+
+#if 0
+void tuh_hid_receive_report_sony_ds(uint8_t dev_addr, uint8_t instance) {
+        tusb_control_request_t setup_packet = 
+        {
+            .bmRequestType = 0xA1,  
+            .bRequest = 0x01, // GET_REPORT
+            .wValue = (HID_REPORT_TYPE_FEATURE << 8) | 0xF2, 
+            .wIndex = 0x0000,    
+            .wLength = 17     
+        };
+
+        tuh_xfer_t transfer = 
+        {
+            .daddr = dev_addr,
+            .ep_addr = 0x00,
+            .setup = &setup_packet, 
+            .buffer = (uint8_t*)&dualshock3.en_buffer,
+            .complete_cb = NULL, 
+            .user_data = 0
+        };
+
+        if (tuh_control_xfer(&transfer))
+        {
+            dualshock3.response_count++;
+            get_report_complete_cb(dev_addr, instance);
+            return;
+        }
+}
+#endif
 
 #endif

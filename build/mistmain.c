@@ -332,9 +332,9 @@ int mist_init() {
     midi_init();
 #endif
 
-#ifdef PICOSYNTH
-    picosynth_Init();
-#endif
+// #ifdef PICOSYNTH
+    // picosynth_Init();
+// #endif
 
 #ifdef ZXUNO
     settings_board_load();
@@ -346,6 +346,10 @@ int mist_init() {
 #endif
 
     set_legacy_mode(user_io_core_type() == CORE_TYPE_UNKNOWN ? LEGACY_MODE : MIST_MODE);
+
+#ifdef PIODEBUG
+    debuginit();
+#endif
     return 0;
 }
 

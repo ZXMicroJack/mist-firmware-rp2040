@@ -272,8 +272,11 @@
 #define AUDIO_I2S_OFFSET    0
 #define AUDIO_I2S_INSTR     20
 
-#define DEBUG_PIO pio0
-#define DEBUG_SM 3
+// debug PIO is only on dual for now
+#define DEBUG_PIO       pio0
+#define DEBUG_SM        2
+#define DEBUG_OFFSET    0
+#define DEBUG_INSTR     4
 
 #define PS2HOST_PIO pio0
 #define PS2HOST_OFFSET  0

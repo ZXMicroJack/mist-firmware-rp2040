@@ -24,7 +24,7 @@ set_target_properties(picosynth PROPERTIES IMPORTED_LOCATION ../picosynth/libpic
 include(example_auto_set_url.cmake)
 
 # Build project
-include_directories(. ../mist-firmware ../mist-firmware/usb ..)
+include_directories(. ../mist-firmware ../mist-firmware/usb .. ../contrib/tusb_xinput)
 
 set(driver_src
   ../drivers/fpga.c
@@ -104,6 +104,9 @@ set(mainzx1_src
 set(usb_src
   ../usbhost/hid_app_mist.c
   ../usbhost/msc_app.c
+  ../usbhost/xinput.c
+  ../contrib/tusb_xinput/xinput_host.c
+  xboxusb.c
 )
 
 set(mistfirmware_src
@@ -151,7 +154,7 @@ set(mistfirmwareusb_src
   #../mist-firmware/usb/xboxusb.c
   ../mist-firmware/usb/usbdebug.c
   #../mist-firmware/usb/pl2303.c
-)
+  )
 
 set(picosynth_src
   picosynth.c
@@ -352,49 +355,49 @@ target_compile_options(mistram PUBLIC
 
 ####################################################################################
 # RAM build - for testing USB interface to USB host module.
-add_executable(mistusbfake
-  ${driver_mb2_src}
-  ${main_src}
-  ${usb_src}
-  )
+# add_executable(mistusbfake
+#   ${driver_mb2_src}
+#   ${main_src}
+#   ${usb_src}
+#   )
 
-target_link_libraries(mistusbfake 
-  pico_stdlib 
-  mistfirmwareusb${testarch} 
-  hardware_spi 
-  hardware_i2c
-  pico_multicore 
-  hardware_rtc 
-  hardware_pio)
-add_compile_options(-O2)
-pico_generate_pio_header(mistusbfake ../drivers/fpga.pio)
-pico_generate_pio_header(mistusbfake ../drivers/spi.pio)
-#pico_generate_pio_header(mistusbfake ../drivers/jamma.pio)
-#pico_generate_pio_header(mistusbfake ../drivers/jammadb9.pio)
-pico_enable_stdio_usb(mistusbfake 1)
-pico_enable_stdio_uart(mistusbfake 0)
-pico_add_extra_outputs(mistusbfake)
-example_auto_set_url(mistusbfake)
-pico_set_binary_type(mistusbfake no_flash)
-target_compile_options(mistusbfake PUBLIC
-	#  "-DVDATE=\"\""
-	#  "-Dhexdump=driver_hexdump"
-	#  "-DPS2HOST"
-	#  ${archdefs}
-	#  "-DJAMMADB9"
-	#  "-DUSB"
-	#  "-DUSBFAKE"
-	#  "-DSD_DIRECT_MODE_GPIO=22"
-	#  "-DTEST_BUILD"
-	#  "-DNO_FILE_INDEX"
-  ${common_opts}
-  ${xilinx_opts}
-  ${ram_opts}
-  ${zxtres_opts}
-  ${mb2_opts}
-  "-DUSBFAKE"
-  "-DUSB"
-)
+# target_link_libraries(mistusbfake 
+#   pico_stdlib 
+#   mistfirmwareusb${testarch} 
+#   hardware_spi 
+#   hardware_i2c
+#   pico_multicore 
+#   hardware_rtc 
+#   hardware_pio)
+# add_compile_options(-O2)
+# pico_generate_pio_header(mistusbfake ../drivers/fpga.pio)
+# pico_generate_pio_header(mistusbfake ../drivers/spi.pio)
+# #pico_generate_pio_header(mistusbfake ../drivers/jamma.pio)
+# #pico_generate_pio_header(mistusbfake ../drivers/jammadb9.pio)
+# pico_enable_stdio_usb(mistusbfake 1)
+# pico_enable_stdio_uart(mistusbfake 0)
+# pico_add_extra_outputs(mistusbfake)
+# example_auto_set_url(mistusbfake)
+# pico_set_binary_type(mistusbfake no_flash)
+# target_compile_options(mistusbfake PUBLIC
+# 	#  "-DVDATE=\"\""
+# 	#  "-Dhexdump=driver_hexdump"
+# 	#  "-DPS2HOST"
+# 	#  ${archdefs}
+# 	#  "-DJAMMADB9"
+# 	#  "-DUSB"
+# 	#  "-DUSBFAKE"
+# 	#  "-DSD_DIRECT_MODE_GPIO=22"
+# 	#  "-DTEST_BUILD"
+# 	#  "-DNO_FILE_INDEX"
+#   ${common_opts}
+#   ${xilinx_opts}
+#   ${ram_opts}
+#   ${zxtres_opts}
+#   ${mb2_opts}
+#   "-DUSBFAKE"
+#   "-DUSB"
+# )
 
 ####################################################################################
 # FLASH build - release binary for Xilinx ZXTres board -with single CPU middleboard.
@@ -679,6 +682,7 @@ target_compile_options(mistmb2xilinx PUBLIC
   ${zxtres_opts}
   ${mb2_opts}
   ${usb_opts}
+  "-DPIODEBUG"
   )
 
 ####################################################################################
@@ -978,6 +982,7 @@ target_compile_options(mistmb2 PUBLIC
   ${neptuno_opts}
   ${mb2_opts}
   ${usb_opts}
+  "-DPIODEBUG"
   )
 
 

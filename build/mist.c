@@ -13,6 +13,7 @@
 #include "hardware/resets.h"
 #include "hardware/spi.h"
 
+#include "pico/multicore.h"
 #include "pico/bootrom.h"
 #include "pico/stdlib.h"
 
@@ -387,8 +388,8 @@ void joy3_usbaction(char c) {
 
 #if defined(USB) && !defined(USBFAKE)
 void usb_poll() {
-  tuh_task();
-  hid_app_task();
+  // tuh_task();
+  // hid_app_task();
 }
 #else
 void usb_poll() {
@@ -431,6 +432,25 @@ static bool watchdog_Callback(struct repeating_timer *t) {
 }
 #endif
 
+
+#ifdef PICOSYNTH
+static int picosynth_inited = 0;
+#endif
+
+static void usb_and_audio_core() {
+#ifdef PICOSYNTH
+  picosynth_Init();
+#endif
+
+  for(;;) {
+#ifdef PICOSYNTH
+    picosynth_Loop();
+#endif
+#ifdef USB
+    tuh_task();
+#endif
+  }
+}
 
 int main() {
 #ifdef ZXUNO
@@ -477,7 +497,15 @@ int main() {
   ipc_InitMaster();
 #endif
 
+  /* initialise MiST software */
   mist_init();
+
+  /* start usb and sound process */
+#if defined(PICOSYNTH) || defined(USB)
+  multicore_reset_core1();
+  multicore_launch_core1(usb_and_audio_core);
+#endif
+
 
   char lastch = 0;
   for(;;) {

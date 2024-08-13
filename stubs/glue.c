@@ -102,13 +102,13 @@ uint8_t get_pl2303s(void) {
 }
 
 // TODO MJ - USB stuff
-void usb_init() {}
+// void usb_init() {}
 
 void SPIN() {}
 
 // return number of joysticks
 #ifndef EMU
-uint8_t joystick_count() { return 0; }
+// uint8_t joystick_count() { return 0; }
 
 void hid_set_kbd_led(unsigned char led, bool on) {
 }
@@ -130,6 +130,8 @@ void usb_hw_init() {}
 #ifndef EMU
 // uint32_t timer_get_msec() { return 0; }
 void hid_joystick_button_remap_init() {}
+
+usb_device_t *usb_get_devices() { return NULL; }
 
 // void hid_joystick_button_remap_init(void) {
 // }

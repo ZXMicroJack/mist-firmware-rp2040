@@ -5,6 +5,9 @@
 #include "osd.h"
 #include "screen.h"
 
+// #define DEBUG
+#include "drivers/debug.h"
+
 // TODO MJ interface to FPGA via SPI and all the nCS for different bits.
 
 void updateScreenCallback();
@@ -187,9 +190,9 @@ void react_osd_end() {
 		default:
 			if ((cmd[0] & 0xe0) == MM1_OSDCMDWRITE) {
 				if ((cmd[0] & 0x1f) == 0x18) {
-					printf("OSD: Clear\n");
+					debug(("OSD: Clear\n"));
 				} else {
-					printf("OSD: Write to OSD line %d\n", cmd[0] & 0x1f);
+					debug(("OSD: Write to OSD line %d\n", cmd[0] & 0x1f));
           write_to_screen();
 				}
 			} else {

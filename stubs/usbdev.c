@@ -26,6 +26,7 @@
 
 #define WORD(a) (a)&0xff, ((a)>>8)&0xff
 
+void usb_init() {}
 
 void usb_dev_open(void) {}
 void usb_dev_reconnect(void) {}
@@ -41,4 +42,5 @@ uint16_t usb_cdc_read(char *pData, uint16_t length) { return 0; }
 uint8_t  usb_storage_is_configured(void) { return 0; }
 uint16_t usb_storage_write(const char *pData, uint16_t length) { return 0; }
 uint16_t usb_storage_read(char *pData, uint16_t length) { return 0; }
+
 

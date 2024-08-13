@@ -1,9 +1,11 @@
-default: mist-firmware mist-emu
+default: mist-emu
+#mist-firmware 
 
 # fat.o \
 
 commonhwobjs=\
-hardware.o
+hardware.o \
+xboxusb.o
 
 hwobjs=\
 mmc.o \
@@ -69,10 +71,16 @@ objs=$(hwobjs) $(emuobjs) $(commonhwobjs) $(mistobjs)
 
 # syscalls.o \
 
-copts=-m32 -I. -I../mist-firmware -I../mist-firmware/arch -I../mist-firmware/usb \
+copts=-m32 -I. -I../mist-firmware -I../mist-firmware/arch -I../mist-firmware/usb -I../usbhost -I../contrib/tusb_xinput/ -I..\
 	-D_WANT_IO_LONG_LONG -DUSB -DUSBFAKE \
 	-DVDATE="" -DRAMFUNC= -DATTRS_H -DFAST= -DMIST_ROOT=\"\" -DNOSPIN -DCOREEXT=\"BIT\" \
-	-DCOREEXTOTHER=\"RBF\" -g -DEXCL_XBOX_JPAD
+	-DCOREEXTOTHER=\"RBF\" -g -DEXCL_XBOX_JPAD -DTU_ATTR_WEAK= -Dxfer_result_t=int
+
+%.o : %.c
+	gcc $(copts) -c -o$@ $<
+
+%.o : ../build/%.c
+	gcc $(copts) -c -o$@ $<
 
 %.o : ../mist-firmware/%.c
 	gcc $(copts) -c -o$@ $<
@@ -81,12 +89,6 @@ copts=-m32 -I. -I../mist-firmware -I../mist-firmware/arch -I../mist-firmware/usb
 	gcc $(copts) -c -o$@ $<
 
 %.o : ../mist-firmware/usb/%.c
-	gcc $(copts) -c -o$@ $<
-
-%.o : %.c
-	gcc $(copts) -c -o$@ $<
-
-%.o : ../build/%.c
 	gcc $(copts) -c -o$@ $<
 
 %.d : ../mist-firmware/%.c

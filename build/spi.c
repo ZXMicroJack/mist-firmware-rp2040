@@ -10,6 +10,11 @@
 #include "pico/stdlib.h"
 #include "hardware/pio.h"
 
+// #define DEBUG
+#include "drivers/debug.h"
+
+
+
 // TODO MJ interface to FPGA via SPI and all the nCS for different bits.
 
 #define MIST_CSN    17 // user io

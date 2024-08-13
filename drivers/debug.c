@@ -31,7 +31,12 @@ void debuginit() {
   static uint8_t started = 0;
   const uint SERIAL_BAUD = 115200;
   if (!started) {
+#ifdef DEBUG_OFFSET
+    pio_add_program_at_offset(dbg_pio, &uart_tx_program, DEBUG_OFFSET);
+    uint offset = DEBUG_OFFSET;
+#else
     uint offset = pio_add_program(dbg_pio, &uart_tx_program);
+#endif
     uart_tx_program_init(dbg_pio, dbg_sm, offset, GPIO_DEBUG_TX_PIN, SERIAL_BAUD);
     started = 1;
   }

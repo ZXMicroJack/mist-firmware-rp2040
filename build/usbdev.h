@@ -36,9 +36,4 @@ uint8_t  usb_storage_is_configured(void);
 uint16_t usb_storage_write(const char *pData, uint16_t length);
 uint16_t usb_storage_read(char *pData, uint16_t length);
 
-void usb_attached(uint8_t dev, uint8_t idx, uint16_t vid, uint16_t pid, uint8_t *desc, uint16_t desclen);
-void usb_detached(uint8_t dev);
-void usb_handle_data(uint8_t dev, uint8_t *desc, uint16_t desclen);
-
-
 #endif // USBDEV_H

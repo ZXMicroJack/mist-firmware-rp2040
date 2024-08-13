@@ -28,11 +28,19 @@
 
 
 #include "usb.h"
+#ifdef USB
+#include "usbhost.h"
+#endif
+
 
 #define WORD(a) (a)&0xff, ((a)>>8)&0xff
 
-#define debug(a) printf a
+#define DEBUG
+#include "drivers/debug.h"
 
+// #define debug(a) printf a
+
+// #define USB_POLL_DIRECT
 
 void usb_dev_open(void) {}
 void usb_dev_reconnect(void) {}
@@ -53,65 +61,49 @@ uint16_t usb_cdc_read(char *pData, uint16_t length) { return 0; }
 // uint8_t storage_devices = 0;
 // #endif
 
-#ifdef USB
-
+#ifndef USB
+void usb_init() {}
+#else
 #ifdef TEST_BUILD
 #define MAX_USB   1
 #else
 #define MAX_USB   4
 #endif
 
-usb_device_t device[MAX_USB];
+static usb_device_t device[MAX_USB];
 
-struct {
+static struct {
+#ifndef USB_POLL_DIRECT
   uint8_t *last_report;
   uint16_t report_size;
+#endif
   uint8_t *desc_stored;
   uint16_t desc_len;
   usb_device_class_config_t *usb_dev;
   uint8_t dev_addr;
   uint8_t inst;
-} report[MAX_USB] = {
-  {0,0,0,0,NULL}
-};
+  uint8_t type;
+} report[MAX_USB];
 
 #define MAX_TUSB_DEVS	8
-
-uint8_t dev_tusb[MAX_TUSB_DEVS];
-
+static uint8_t dev_tusb[MAX_TUSB_DEVS];
 
 uint8_t tuh_descriptor_get_device_sync(uint8_t dev_addr, uint8_t *dd, uint16_t len);
 
-static void myusb_init() {
-  static uint8_t usb_inited = 0;
-  if (usb_inited) return;
-
-  for (int i=0; i<MAX_TUSB_DEVS; i++) {
-    dev_tusb[i] = 0xff;
-  }
+void usb_init() {
+  memset(dev_tusb, 0xff, sizeof dev_tusb);
   memset(device, 0, sizeof device);
   memset(report, 0, sizeof report);
-  usb_inited = 1;
 }
 
 
-void fakeusb_poll() {
-#if 0
-  for (int i=0; i<MAX_USB; i++) {
-    if (report[i].usb_dev != NULL) {
-      report[i].usb_dev->poll(&device[i]);
-    }
-  }
-#endif
-}
+uint8_t usb_xbox_init(usb_device_t *dev, usb_device_descriptor_t *dev_desc);
 
-// uint8_t dd[128];
+// extern usb_device_class_config_t usb_xbox_class;
 
-void usb_attached(uint8_t dev, uint8_t idx, uint16_t vid, uint16_t pid, uint8_t *desc, uint16_t desclen) {
+void usb_attached(uint8_t dev, uint8_t idx, uint16_t vid, uint16_t pid, uint8_t *desc, uint16_t desclen, uint8_t type) {
   usb_device_descriptor_t dd;
   uint8_t r;
-
-  myusb_init();
 
   int n;
   for (n=0; n<MAX_USB; n++) {
@@ -129,18 +121,35 @@ void usb_attached(uint8_t dev, uint8_t idx, uint16_t vid, uint16_t pid, uint8_t 
   report[n].dev_addr = dev;
   report[n].inst = idx;
 
-  tuh_descriptor_get_device_sync(dev, &dd, sizeof dd);
   report[n].desc_stored = desc;
   report[n].desc_len = desclen;
+#ifndef USB_POLL_DIRECT
   report[n].report_size = 0;
+#endif
   device[n].vid = vid;
   device[n].pid = pid;
   device[n].bAddress = 1;
+  report[n].type = type;
 
-  r = usb_hid_class.init(&device[n], &dd);
+  switch(type) {
+    case USB_TYPE_HID:
+      tuh_descriptor_get_device_sync(dev, &dd, sizeof dd);
+      r = usb_hid_class.init(&device[n], &dd);
+      report[n].usb_dev = &usb_hid_class;
+      break;
+    case USB_TYPE_XBOX:
+      r = usb_xbox_class.init(&device[n], NULL);
+      report[n].usb_dev = &usb_xbox_class;
+      break;
+    default: //TBD
+      break;
+  }
+  
+  report[n].desc_stored = NULL;
+  report[n].desc_len = 0;
+
   if (!r) {
-    report[n].usb_dev = &usb_hid_class;
-//    report[n].usb_dev->poll(&device[n]);
+    
   }
   printf("r returns %d\n", r);
   
@@ -150,25 +159,38 @@ void usb_attached(uint8_t dev, uint8_t idx, uint16_t vid, uint16_t pid, uint8_t 
 void usb_detached(uint8_t dev) {
   uint8_t n;
 
-  myusb_init();
   n = dev_tusb[dev];
   if (n > MAX_USB || report[n].usb_dev == NULL) return;
 
+#ifndef USB_POLL_DIRECT
   if (report[n].report_size) {
     free(report[n].last_report);
     report[n].report_size = 0;
   }
+#endif
   report[n].usb_dev->release(&device[n]);
   report[n].usb_dev = NULL;
 }
 
+#ifdef USB_POLL_DIRECT
+void usb_hid_process(usb_device_t *dev, int inst, uint8_t *buf, uint16_t read);
+void usb_xbox_process(usb_device_t *dev, int inst, uint8_t *buf, uint16_t read);
+
+typedef void (*usb_xxx_process)(usb_device_t *dev, int inst, uint8_t *buf, uint16_t read);
+
+static usb_xxx_process process_fn[] = {
+  usb_hid_process,
+  usb_xbox_process
+};
+#endif
+
 void usb_handle_data(uint8_t dev, uint8_t *desc, uint16_t desclen) {
   uint8_t n;
   
-  myusb_init();
   n = dev_tusb[dev];
   if (n > MAX_USB || report[n].usb_dev == NULL) return;
 
+#ifndef USB_POLL_DIRECT
   if (report[n].report_size != desclen) {
     if (report[n].report_size) free(report[dev].last_report);
     if (desclen) report[n].last_report = (uint8_t *)malloc(desclen);
@@ -176,6 +198,9 @@ void usb_handle_data(uint8_t dev, uint8_t *desc, uint16_t desclen) {
   }
   memcpy(report[n].last_report, desc, desclen);
   report[n].usb_dev->poll(&device[n]);
+#else
+  process_fn[report[n].type](&device[n], report[n].inst, desc, desclen);
+#endif
 }
 
 // PL2303
@@ -214,11 +239,13 @@ uint8_t usb_ctrl_req( usb_device_t *dev, uint8_t bmReqType,
   uint8_t n = dev - device;
 
   if (bmReqType == HID_REQ_HIDREPORT && bRequest == USB_REQUEST_GET_DESCRIPTOR && wValLo == 0 && wValHi == HID_DESCRIPTOR_REPORT) {
-    memcpy(dataptr, report[n].desc_stored, lowest(report[n].desc_len, nbytes));
-  // } else if (bmReqType == HID_REQ_HIDIN && bRequest == HID_REQUEST_GET_IDLE) {
+    if (report[n].desc_stored) {
+      memcpy(dataptr, report[n].desc_stored, lowest(report[n].desc_len, nbytes));
+    } else {
+      return 1;
+    }
   } else if (bmReqType == HID_REQ_HIDIN && bRequest == HID_REQUEST_GET_PROTOCOL) {
     *dataptr = tuh_hid_get_protocol(report[n].dev_addr, report[n].inst);
-  // } else if (bmReqType == HID_REQ_HIDOUT && bRequest == HID_REQUEST_SET_IDLE) {
   } else if (bmReqType == HID_REQ_HIDOUT && bRequest == HID_REQUEST_SET_PROTOCOL) {
     tuh_hid_set_protocol(report[n].dev_addr, report[n].inst, wValLo);
   } else if (bmReqType == HID_REQ_HIDOUT && bRequest == HID_REQUEST_SET_REPORT) {
@@ -231,6 +258,7 @@ uint8_t usb_ctrl_req( usb_device_t *dev, uint8_t bmReqType,
 // TODO MJ implement usb_ctrl_req
 // NOTE: Faked purely to pass on the last report.
 uint8_t usb_in_transfer( usb_device_t *dev, ep_t *ep, uint16_t *nbytesptr, uint8_t* data) {
+#ifndef USB_POLL_DIRECT
   uint8_t n = dev - device;
   debug(("usb_in_transfer(%04X:%04X:%02X): dev %08x, ep %08x, ptr %08X data %08X\n", 
 			  device[n].vid, device[n].pid, device[n].bAddress,
@@ -247,6 +275,7 @@ uint8_t usb_in_transfer( usb_device_t *dev, ep_t *ep, uint16_t *nbytesptr, uint8
   } else {
     *nbytesptr = 0;
   }
+#endif
   return 0;
 }
 

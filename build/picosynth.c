@@ -4,7 +4,6 @@
 #include "wtsynth.h"
 #include "picosynthversion.h"
 
-#include "pico/multicore.h"
 #include "pico/bootrom.h"
 #include "pico/stdlib.h"
 
@@ -61,8 +60,8 @@ static struct audio_buffer_pool *init_audio() {
 }
 
 
+#if 0
 static void audio_core() {
- 
   int ret = wtsynth_Init();
   if (ret < 0) {
     LUTS_POS = (uint8_t *)RP2M_LUTS2_POS;
@@ -83,13 +82,41 @@ static void audio_core() {
  }
 }
 
+void picosynth_Init() {
+  multicore_reset_core1();
+  multicore_launch_core1(audio_core);
+}
+#else
+static int synth_status = 0;
+static struct audio_buffer_pool *ap;
+void picosynth_Init() {
+  int ret = wtsynth_Init();
+  if (ret < 0) {
+    LUTS_POS = (uint8_t *)RP2M_LUTS2_POS;
+    ret = wtsynth_Init();
+  }
+  synth_status = ret;
+  ap = init_audio();
+}
+
+void picosynth_Loop() {
+  if (!synth_status) {
+    struct audio_buffer *buffer = take_audio_buffer(ap, false);
+    if (buffer) {
+      int16_t *samples = (int16_t *) buffer->buffer->bytes;
+      wtsynth_GetAudioPacket(samples);
+      buffer->sample_count = buffer->max_sample_count>>1;
+      give_audio_buffer(ap, buffer);
+      nrbuffs++;
+    }
+  }
+}
+
+#endif
+
 void wtsynth_ActiveState(uint8_t active) {
 }
 
 void wtsynth_SetBar(uint8_t chan, uint8_t level) {
 }
 
-void picosynth_Init() {
-  multicore_reset_core1();
-  multicore_launch_core1(audio_core);
-}

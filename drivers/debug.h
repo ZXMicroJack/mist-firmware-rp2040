@@ -2,7 +2,7 @@
 #define _DEBUG_H
 
 #ifdef DEBUG
-void hexdump(uint8_t *buf, int len);
+void hexdump1(uint8_t *buf, int len);
 #ifdef PIODEBUG
 void debuginit();
 int dbgprintf(const char *fmt, ...);
@@ -14,8 +14,8 @@ int dbgprintf(const char *fmt, ...);
 #else
 #define debuginit()
 #define debug(a)
-#undef hexdump
-#define hexdump(a,b)
+#undef hexdump1
+#define hexdump1(a,b)
 #endif
 
 

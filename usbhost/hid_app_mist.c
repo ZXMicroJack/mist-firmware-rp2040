@@ -271,8 +271,8 @@ void uni_hid_device_send_ctrl_report(uni_hid_device_t* d, const uint8_t* report,
 #endif
 
 void sony_ds3_magic_package(uint8_t dev_addr, uint8_t instance) {
-  // uint8_t magic_packet[] = {0x42, 0x0c, 0x00, 0x00};
-  uint8_t magic_packet[] = {0x42, 0x03, 0x00, 0x00};
+  uint8_t magic_packet[] = {0x42, 0x0c, 0x00, 0x00};
+  // uint8_t magic_packet[] = {0x42, 0x03, 0x00, 0x00};
   send_control_message(dev_addr, instance, 0x21,
     HID_REQ_CONTROL_SET_REPORT, 
     // HID_REPORT_TYPE_FEATURE
@@ -289,27 +289,34 @@ void sony_ds3_magic_package(uint8_t dev_addr, uint8_t instance) {
     DS3_FEATURE_START_DEVICE, 
     magic_packet, sizeof magic_packet);
 #endif
-#if 1
+#if 0
   send_control_message(dev_addr, instance, 0x21,
     HID_REQ_CONTROL_SET_REPORT, 
     DS3_FEATURE_START_DEVICE, 
     magic_packet, sizeof magic_packet);
- 
+#endif
+
   uint8_t control_xfer_buff[CONTROL_TRANSFER_BUFFER_LENGTH];
   send_control_message(dev_addr, instance, 0xA1, // TBD
     HID_REQ_CONTROL_GET_REPORT, 
     DS3_FEATURE_DEVICE_ADDRESS, 
-    control_xfer_buff, sizeof control_xfer_buff);
+    control_xfer_buff, 17);
 
   send_control_message(dev_addr, instance, 0xA1, // TBD
     HID_REQ_CONTROL_GET_REPORT, 
     DS3_FEATURE_HOST_ADDRESS,
-    control_xfer_buff, sizeof control_xfer_buff);
-
+    control_xfer_buff, 8);
 
   send_control_message(dev_addr, instance, 0x21,
-    HID_REQ_CONTROL_SET_REPORT, 
-    0x0201, 
+    HID_REQ_CONTROL_SET_REPORT,
+    0x0201,
+    control_xfer_buff, 1);
+
+
+#if 0
+  send_control_message(dev_addr, instance, 0x21,
+    HID_REQ_CONTROL_SET_REPORT,
+    0x0201,
     sony_ds3_default_report, sizeof sony_ds3_default_report);
 #endif
 

@@ -271,8 +271,8 @@ void uni_hid_device_send_ctrl_report(uni_hid_device_t* d, const uint8_t* report,
 #endif
 
 void sony_ds3_magic_package(uint8_t dev_addr, uint8_t instance) {
-  uint8_t magic_packet[] = {0x42, 0x0c, 0x00, 0x00};
-  // uint8_t magic_packet[] = {0x42, 0x03, 0x00, 0x00};
+  // uint8_t magic_packet[] = {0x42, 0x0c, 0x00, 0x00};
+  uint8_t magic_packet[] = {0x42, 0x03, 0x00, 0x00};
   send_control_message(dev_addr, instance, 0x21,
     HID_REQ_CONTROL_SET_REPORT, 
     // HID_REPORT_TYPE_FEATURE

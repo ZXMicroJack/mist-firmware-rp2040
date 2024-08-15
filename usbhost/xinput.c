@@ -6,7 +6,7 @@
 #include "host/usbh_classdriver.h"
 #include "usbhost.h"
 
-#define DEBUG
+//#define DEBUG
 #include "../drivers/debug.h"
 
 #define XBOX_VID                                0x045E // Microsoft Corporation
@@ -25,16 +25,8 @@ void tuh_xinput_report_received_cb(uint8_t dev_addr, uint8_t instance, xinputh_i
 #ifdef MIST_USB
         if (xid_itf->connected && xid_itf->new_pad_data) {
           usb_handle_data(dev_addr, xid_itf, sizeof (xinputh_interface_t));
-          switch (xid_itf->type)
-          {
-              case 1: type_str = "Xbox One";          break;
-              case 2: type_str = "Xbox 360 Wireless"; break;
-              case 3: type_str = "Xbox 360 Wired";    break;
-              case 4: type_str = "Xbox OG";           break;
-              default: type_str = "Unknown";
-          }
-          debug(("[%02x, %02x], Type: %s, Buttons %04x, LT: %02x RT: %02x, LX: %d, LY: %d, RX: %d, RY: %d\n",
-              dev_addr, instance, type_str, p->wButtons, p->bLeftTrigger, p->bRightTrigger, p->sThumbLX, p->sThumbLY, p->sThumbRX, p->sThumbRY));
+          debug(("[%02x, %02x], Buttons %04x, LT: %02x RT: %02x, LX: %d, LY: %d, RX: %d, RY: %d\n",
+              dev_addr, instance, p->wButtons, p->bLeftTrigger, p->bRightTrigger, p->sThumbLX, p->sThumbLY, p->sThumbRX, p->sThumbRY));
         }
 #else
         switch (xid_itf->type)

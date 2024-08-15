@@ -40,7 +40,7 @@
 
 // #define debug(a) printf a
 
-// #define USB_POLL_DIRECT
+#define USB_POLL_DIRECT
 
 void usb_dev_open(void) {}
 void usb_dev_reconnect(void) {}

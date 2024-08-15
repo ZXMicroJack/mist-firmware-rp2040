@@ -25,33 +25,9 @@
 
 #include "bsp/board.h"
 #include "tusb.h"
-// #include "ps2.h"
 #define DEBUG
 #include "debug.h"
-// #include "joypad.h"
 #include "usbhost.h"
-
-#if 0
-#ifdef MIST_USB
-void usb_attached(uint8_t dev, uint8_t idx, uint16_t vid, uint16_t pid, uint8_t *desc, uint16_t desclen);
-void usb_detached(uint8_t dev);
-void usb_handle_data(uint8_t dev, uint8_t *desc, uint16_t desclen);
-#else
-#endif
-
-#ifdef MIST_USB
-#else
-#endif
-#endif
-
-//--------------------------------------------------------------------+
-// MACRO TYPEDEF CONSTANT ENUM DECLARATION
-//--------------------------------------------------------------------+
-
-// If your host terminal support ansi escape code such as TeraTerm
-// it can be use to simulate mouse cursor movement within terminal
-
-#define MAX_REPORT  4
 
 #ifdef PIODEBUG
 #define printf dbgprintf
@@ -59,7 +35,17 @@ void usb_handle_data(uint8_t dev, uint8_t *desc, uint16_t desclen);
 #else
 // #define printf debugprintf
 #endif
-  
+
+#define MAX_USB 8
+
+enum {
+  NORMAL,
+  DUALSHOCK3
+};
+static uint8_t hid_type[MAX_USB] = {0};
+static uint8_t ds3_report[MAX_USB][17];
+static uint8_t setup_packets[MAX_USB];
+
 
 #if CFG_TUH_HID
 
@@ -76,21 +62,25 @@ void dumphex(char *s, uint8_t *data, int len) {
 }
 #endif
 
-// Each HID instance can has multiple reports
-#if 0
-static struct hid_info
-{
-  uint8_t report_count;
-  tuh_hid_report_info_t report_info[MAX_REPORT];
-  
-  uint16_t vid, pid;
-} hid_info[CFG_TUSB_HOST_DEVICE_MAX];
-#endif
+#define SLOW_TEST_REQUESTS
 
+#ifdef SLOW_TEST_REQUESTS
+uint64_t then = 0;
+uint8_t capture = 0;
+void hid_app_task(void)
+{
+  uint64_t now = time_us_64();
+
+  if ((now - then) > 1000000) {
+    then = now;
+    capture = 1;
+  }
+}
+#else
 void hid_app_task(void)
 {
 }
-
+#endif
 //--------------------------------------------------------------------+
 // TinyUSB Callbacks
 //--------------------------------------------------------------------+
@@ -109,7 +99,311 @@ void kbd_set_leds(uint8_t data) {
 }
 #endif
 
+static void request_report(uint8_t dev_addr, uint8_t instance);
 
+static void tuh_xfer_sony_ds_cb(tuh_xfer_t *xfer) {
+  // xfer->user_data;
+  dumphex("buffer", xfer->buffer, 17);
+  debug(("xfer->result = %d\n", xfer->result));
+  // request to receive report
+  request_report(xfer->daddr, (uint8_t)xfer->user_data);
+}
+
+
+uint8_t tuh_hid_receive_report_sony_ds(uint8_t dev_addr, uint8_t instance) {
+  tusb_control_request_t setup_packet = 
+  {
+      .bmRequestType = 0xA1,  
+      .bRequest = 0x01, // GET_REPORT
+      .wValue = (HID_REPORT_TYPE_FEATURE << 8) | 0xF2, 
+      .wIndex = 0x0000,    
+      .wLength = 17
+  };
+
+  tuh_xfer_t transfer = 
+  {
+      .daddr = dev_addr,
+      .ep_addr = 0x00,
+      .setup = &setup_packet, 
+      .buffer = ds3_report[dev_addr],
+      .complete_cb = tuh_xfer_sony_ds_cb, 
+      .user_data = (void *)instance
+  };
+
+  return tuh_control_xfer(&transfer);
+}
+uint8_t sony_ds3_default_report[] = 
+{
+    0x01, 0xff, 0x00, 0xff, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00,
+    0xff, 0x27, 0x10, 0x00, 0x32,
+    0xff, 0x27, 0x10, 0x00, 0x32,
+    0xff, 0x27, 0x10, 0x00, 0x32,
+    0xff, 0x27, 0x10, 0x00, 0x32,
+    0x00, 0x00, 0x00, 0x00, 0x00
+};
+
+
+#if 0
+NTSTATUS
+SendControlRequest(
+    _In_ PDEVICE_CONTEXT Context,
+    _In_ WDF_USB_BMREQUEST_DIRECTION Direction,
+    _In_ WDF_USB_BMREQUEST_TYPE Type,
+    _In_ BYTE Request,
+    _In_ USHORT Value,
+    _In_ USHORT Index,
+    _In_ PVOID Buffer,
+    _In_ ULONG BufferLength)
+{
+
+    // "Magic packet"
+    UCHAR hidCommandEnable[DS3_HID_COMMAND_ENABLE_SIZE] =
+    {
+        0x42, 0x0C, 0x00, 0x00
+    };
+
+    return SendControlRequest(
+        Context,
+        BmRequestHostToDevice,
+        BmRequestClass,
+        SetReport,
+        Ds3FeatureStartDevice,
+        0,
+        hidCommandEnable,
+        DS3_HID_COMMAND_ENABLE_SIZE
+    );
+}
+#endif
+
+// HID_REQ_CONTROL_SET_IDLE,
+//req = HID_REQ_CONTROL_SET_REPORT
+//val = 0x03f4
+#define DS3_FEATURE_START_DEVICE 0x03F4
+#define DS3_FEATURE_DEVICE_ADDRESS 0x03F2
+#define DS3_FEATURE_HOST_ADDRESS 0x03F5
+
+// 0x22 - 0x21 was original
+static uint8_t send_control_message(uint8_t dev_addr, uint8_t instance, 
+  uint8_t reqtype,
+  uint8_t req, uint16_t val, uint8_t *data, uint16_t len) {
+  tusb_control_request_t setup_packet = 
+  {
+      // .bmRequestType = 0x21,
+      .bmRequestType = reqtype,
+      .bRequest = req, // SET_REPORT
+      .wValue = val,
+      .wIndex = 0x0000,
+      .wLength = len
+  };
+
+  tuh_xfer_t transfer = 
+  {
+      .daddr = dev_addr,
+      .ep_addr = 0x00,
+      .setup = &setup_packet, 
+      .buffer = data,
+      .complete_cb = NULL, 
+      .user_data = NULL
+  };
+
+  uint8_t result = tuh_control_xfer(&transfer);
+  debug(("send_control_message: returns %d\n", result));
+  dumphex("data", transfer.buffer, setup_packet.wLength );
+  debug(("xfer->result = %d\n", transfer.result));
+  return result;
+}
+
+
+#if 0
+        uint8_t cmd_buf[4];
+        cmd_buf[0] = 0x42; // Special PS3 Controller enable commands
+        cmd_buf[1] = 0x0c;
+        cmd_buf[2] = 0x00;
+        cmd_buf[3] = 0x00;
+
+        // bmRequest = Host to device (0x00) | Class (0x20) | Interface (0x01) = 0x21,
+        //  bRequest = Set Report (0x09), 
+        // Report ID (0xF4), 
+        //Report Type (Feature 0x03), interface (0x00), 
+        // datalength, datalength, data)
+        pUsb->ctrlReq(bAddress, 
+          epInfo[PS3_CONTROL_PIPE].epAddr, 
+          bmREQ_HID_OUT, 
+          HID_REQUEST_SET_REPORT, 
+          0xF4, 0x03, 
+          0x00, 4, 4, cmd_buf, NULL);
+#endif
+
+#define CONTROL_TRANSFER_BUFFER_LENGTH      64
+
+#if 0
+        // 
+        // Initial output state (rumble & LEDs off)
+        // 
+        UCHAR DefaultOutputReport[DS4_HID_OUTPUT_REPORT_SIZE] =
+        {
+            0x05, 0xFF, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF,
+            0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+        };
+#endif
+
+#if 0
+    // Dual Shock 3 Sixasis requires a magic packet to be sent in order to enable reports. Taken from:
+    // https://github.com/torvalds/linux/blob/1d1df41c5a33359a00e919d54eaebfb789711fdc/drivers/hid/hid-sony.c#L1684
+    static uint8_t sixaxisEnableReports[] = {(HID_MESSAGE_TYPE_SET_REPORT << 4) | HID_REPORT_TYPE_FEATURE,
+                                             0xf4,  // Report ID
+                                             0x42,
+                                             0x03,
+                                             0x00,
+                                             0x00};
+    uni_hid_device_send_ctrl_report(d, (uint8_t*)&sixaxisEnableReports, sizeof(sixaxisEnableReports));
+
+
+
+
+
+
+void uni_hid_device_send_ctrl_report(uni_hid_device_t* d, const uint8_t* report, uint16_t len) {
+    uni_hid_device_send_report(d, d->conn.control_cid, report, len);
+#endif
+
+void sony_ds3_magic_package(uint8_t dev_addr, uint8_t instance) {
+  // uint8_t magic_packet[] = {0x42, 0x0c, 0x00, 0x00};
+  uint8_t magic_packet[] = {0x42, 0x03, 0x00, 0x00};
+  send_control_message(dev_addr, instance, 0x21,
+    HID_REQ_CONTROL_SET_REPORT, 
+    // HID_REPORT_TYPE_FEATURE
+    DS3_FEATURE_START_DEVICE, 
+    magic_packet, sizeof magic_packet);
+#if 0
+  send_control_message(dev_addr, instance, 0x21,
+    HID_REQ_CONTROL_SET_REPORT, 
+    DS3_FEATURE_START_DEVICE, 
+    magic_packet, sizeof magic_packet);
+
+  send_control_message(dev_addr, instance, 0x21,
+    HID_REQ_CONTROL_SET_REPORT, 
+    DS3_FEATURE_START_DEVICE, 
+    magic_packet, sizeof magic_packet);
+#endif
+#if 1
+  send_control_message(dev_addr, instance, 0x21,
+    HID_REQ_CONTROL_SET_REPORT, 
+    DS3_FEATURE_START_DEVICE, 
+    magic_packet, sizeof magic_packet);
+ 
+  uint8_t control_xfer_buff[CONTROL_TRANSFER_BUFFER_LENGTH];
+  send_control_message(dev_addr, instance, 0xA1, // TBD
+    HID_REQ_CONTROL_GET_REPORT, 
+    DS3_FEATURE_DEVICE_ADDRESS, 
+    control_xfer_buff, sizeof control_xfer_buff);
+
+  send_control_message(dev_addr, instance, 0xA1, // TBD
+    HID_REQ_CONTROL_GET_REPORT, 
+    DS3_FEATURE_HOST_ADDRESS,
+    control_xfer_buff, sizeof control_xfer_buff);
+
+
+  send_control_message(dev_addr, instance, 0x21,
+    HID_REQ_CONTROL_SET_REPORT, 
+    0x0201, 
+    sony_ds3_default_report, sizeof sony_ds3_default_report);
+#endif
+
+  // bool result = tuh_hid_set_report(dev_addr, instance, 0xf4, 0x03, magic_packet, 4);
+  // debug(("magic packet: returns %d\n", result));
+#if 0
+  tusb_control_request_t setup_packet = 
+  {
+      .bmRequestType = 0x21,
+      .bRequest = 0x09, // SET_REPORT
+      .wValue = 0x03f4,
+      .wIndex = 0x0000,
+      .wLength = 4
+  };
+
+  tuh_xfer_t transfer = 
+  {
+      .daddr = dev_addr,
+      .ep_addr = 0x00,
+      .setup = &setup_packet, 
+      .buffer = magic_packet,
+      .complete_cb = NULL, 
+      .user_data = NULL
+  };
+
+  debug(("magic packet: returns %d\n", tuh_control_xfer(&transfer)));
+  dumphex("data", transfer.buffer, setup_packet.wLength );
+  debug(("xfer->result = %d\n", transfer.result));
+#endif
+}
+
+void sony_ds3_setup(uint8_t dev_addr, uint8_t instance) {
+  tusb_control_request_t setup_packet = 
+  {
+      .bmRequestType = 0xA1,  
+      .bRequest = 0x01, // GET_REPORT
+      .wValue = (HID_REPORT_TYPE_FEATURE << 8) | 0xF2, 
+      .wIndex = 0x0000,
+      .wLength = 17
+  };
+
+  tuh_xfer_t transfer = 
+  {
+      .daddr = dev_addr,
+      .ep_addr = 0x00,
+      .setup = &setup_packet, 
+      .buffer = ds3_report[dev_addr],
+      .complete_cb = NULL, 
+      .user_data = NULL
+      // .complete_cb = tuh_xfer_sony_ds_cb, 
+      // .user_data = (void *)instance
+  };
+
+  for (int i=0; i<4; i++) {
+    // switch(setup_packets[dev_addr]) {
+    switch(i) {
+      case 0: // leave as is
+      case 1: // leave as is
+        break;
+      case 2: // leave as is
+        setup_packet.wLength = 8;
+        break;
+      case 3: // set report
+          setup_packet.bmRequestType = 0x21;
+          setup_packet.bRequest = 0x09; // SET_REPORT
+          setup_packet.wValue = 0x0201;
+          setup_packet.wIndex = 0x0000; // same
+          setup_packet.wLength = sizeof(sony_ds3_default_report);
+          transfer.buffer = sony_ds3_default_report;
+          sony_ds3_default_report[9] = 0x02; // led 1
+          sony_ds3_default_report[10] = 0xff; // led 1
+          break;
+    }
+
+    debug(("packet %d: returns %d\n", i, tuh_control_xfer(&transfer)));
+    dumphex("data", transfer.buffer, setup_packet.wLength );
+    debug(("xfer->result = %d\n", transfer.result));
+  }
+}
+
+
+// static void request_report(uint8_t dev_addr, uint8_t instance) {
+//   if (hid_type[dev_addr] == DUALSHOCK3 && setup_packets[dev_addr] < 3) {
+//     if (!tuh_hid_receive_report_sony_ds(dev_addr, instance)) {
+//       debug(("Error: cannot request DS3 to receive report\n"));
+//     }
+
+//   } else {
+//     // tuh_hid_report_received_cb() will be invoked when report is available
+//     if ( !tuh_hid_receive_report(dev_addr, instance)) {
+//       debug(("Error: cannot request to receive report\n"));
+//     }
+//   }
+// }
 
 void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_report, uint16_t desc_len)
 {
@@ -120,6 +414,24 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
 #endif
   uint16_t vid, pid;
   tuh_vid_pid_get(dev_addr, &vid, &pid);
+
+  if (vid == 0x054C && pid == 0x0268) {
+    // dualshock 3
+    debug(("FOUND DUALSHOCK3\n"));
+    sony_ds3_magic_package(dev_addr, instance);
+    if ( !tuh_hid_receive_report(dev_addr, instance)) {
+      debug(("Error: cannot request to receive report\n"));
+    }
+    return;
+    // sony_ds3_setup(dev_addr, instance);
+    // hid_type[dev_addr] = NORMAL;
+  //   hid_type[dev_addr] = DUALSHOCK3;
+  //   setup_packets[dev_addr] = 0;
+  // } else {
+  //   debug(("FOUND USB HID\n"));
+  //   hid_type[dev_addr] = NORMAL;
+  }
+
 
 #ifdef MIST_USB
   usb_attached(dev_addr, instance, vid, pid, desc_report, desc_len, USB_TYPE_HID);
@@ -175,15 +487,25 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
   }
 #endif
 
-  // request to receive report
-  // tuh_hid_report_received_cb() will be invoked when report is available
-  if ( !tuh_hid_receive_report(dev_addr, instance) )
-  {
-#ifdef DEBUG
-    printf("Error: cannot request to receive report\r\n");
-#endif
-
+  if (vid == 0x054C && pid == 0x0268) {
+    // dualshock 3
+    debug(("FOUND DUALSHOCK3\n"));
+    sony_ds3_magic_package(dev_addr, instance);
+    // sony_ds3_setup(dev_addr, instance);
+    // hid_type[dev_addr] = NORMAL;
+  //   hid_type[dev_addr] = DUALSHOCK3;
+  //   setup_packets[dev_addr] = 0;
+  // } else {
+  //   debug(("FOUND USB HID\n"));
+  //   hid_type[dev_addr] = NORMAL;
   }
+
+  // request to receive report
+  // request_report(dev_addr, instance);
+  if ( !tuh_hid_receive_report(dev_addr, instance)) {
+    debug(("Error: cannot request to receive report\n"));
+  }
+
 }
 
 // Invoked when device with hid interface is un-mounted
@@ -222,42 +544,20 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
   
   usb_handle_data(dev_addr, report, len);
 #else
-  uprintf("tuh_hid_report_received_cb(dev_addr:%d inst:%d)\n", dev_addr, instance);
-  dumphex("report", report, len);
+#ifdef SLOW_TEST_REQUESTS
+  if (capture) {
+    capture = 0;
 #endif
-  tuh_hid_receive_report(dev_addr, instance);
-}
-
-
-
-#if 0
-void tuh_hid_receive_report_sony_ds(uint8_t dev_addr, uint8_t instance) {
-        tusb_control_request_t setup_packet = 
-        {
-            .bmRequestType = 0xA1,  
-            .bRequest = 0x01, // GET_REPORT
-            .wValue = (HID_REPORT_TYPE_FEATURE << 8) | 0xF2, 
-            .wIndex = 0x0000,    
-            .wLength = 17     
-        };
-
-        tuh_xfer_t transfer = 
-        {
-            .daddr = dev_addr,
-            .ep_addr = 0x00,
-            .setup = &setup_packet, 
-            .buffer = (uint8_t*)&dualshock3.en_buffer,
-            .complete_cb = NULL, 
-            .user_data = 0
-        };
-
-        if (tuh_control_xfer(&transfer))
-        {
-            dualshock3.response_count++;
-            get_report_complete_cb(dev_addr, instance);
-            return;
-        }
-}
+    uprintf("tuh_hid_report_received_cb(dev_addr:%d inst:%d)\n", dev_addr, instance);
+    dumphex("report", report, len);
+#ifdef SLOW_TEST_REQUESTS
+  }
 #endif
+#endif
+  // request_report(dev_addr, instance);
+  if ( !tuh_hid_receive_report(dev_addr, instance)) {
+    debug(("Error: cannot request to receive report\n"));
+  }
+}
 
 #endif

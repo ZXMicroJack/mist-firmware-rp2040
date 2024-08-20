@@ -250,6 +250,185 @@ static uint8_t send_control_message(uint8_t dev_addr, uint8_t instance,
         };
 #endif
 
+
+#if 0
+
+https://github.com/search?q=Ds3FeatureStartDevice&type=code
+
+#define SIXAXIS_REPORT_0xF2_SIZE 17
+#define SIXAXIS_REPORT_0xF5_SIZE 8
+
+
+static int sixaxis_set_operational_usb(struct hid_device *hdev)
+{
+	struct sony_sc *sc = hid_get_drvdata(hdev);
+	const int buf_size =
+		max(SIXAXIS_REPORT_0xF2_SIZE, SIXAXIS_REPORT_0xF5_SIZE);
+	u8 *buf;
+	int ret;
+
+	buf = kmalloc(buf_size, GFP_KERNEL);
+	if (!buf)
+		return -ENOMEM;
+
+	ret = hid_hw_raw_request(hdev, 0xf2, buf, SIXAXIS_REPORT_0xF2_SIZE, 
+				 HID_FEATURE_REPORT, HID_REQ_GET_REPORT);
+	if (ret < 0) {
+		hid_err(hdev, "can't set operational mode: step 1\n");
+		goto out;
+	}
+
+	/*
+	 * Some compatible controllers like the Speedlink Strike FX and
+	 * Gasia need another query plus an USB interrupt to get operational.
+	 */
+	ret = hid_hw_raw_request(hdev, 0xf5, buf, SIXAXIS_REPORT_0xF5_SIZE,
+				 HID_FEATURE_REPORT, HID_REQ_GET_REPORT);
+	if (ret < 0) {
+		hid_err(hdev, "can't set operational mode: step 2\n");
+		goto out;
+	}
+
+	/*
+	 * But the USB interrupt would cause SHANWAN controllers to
+	 * start rumbling non-stop, so skip step 3 for these controllers.
+	 */
+	if (sc->quirks & SHANWAN_GAMEPAD)
+		goto out;
+
+	ret = hid_hw_output_report(hdev, buf, 1);
+	if (ret < 0) {
+		hid_info(hdev, "can't set operational mode: step 3, ignoring\n");
+		ret = 0;
+	}
+
+out:
+	kfree(buf);
+
+	return ret;
+}
+
+
+
+
+
+
+
+
+
+
+
+typedef enum {
+  TUSB_REQ_GET_STATUS        = 0  ,
+  TUSB_REQ_CLEAR_FEATURE     = 1  ,
+  TUSB_REQ_RESERVED          = 2  ,
+  TUSB_REQ_SET_FEATURE       = 3  ,
+  TUSB_REQ_RESERVED2         = 4  ,
+  TUSB_REQ_SET_ADDRESS       = 5  ,
+  TUSB_REQ_GET_DESCRIPTOR    = 6  ,
+  TUSB_REQ_SET_DESCRIPTOR    = 7  ,
+  TUSB_REQ_GET_CONFIGURATION = 8  ,
+  TUSB_REQ_SET_CONFIGURATION = 9  ,
+  TUSB_REQ_GET_INTERFACE     = 10 ,
+  TUSB_REQ_SET_INTERFACE     = 11 ,
+  TUSB_REQ_SYNCH_FRAME       = 12
+} tusb_request_code_t;
+
+
+
+
+
+typedef enum {
+  TUSB_DIR_OUT = 0,
+  TUSB_DIR_IN  = 1,
+
+  TUSB_DIR_IN_MASK = 0x80
+} tusb_dir_t;
+
+
+typedef enum {
+  TUSB_REQ_RCPT_DEVICE =0,
+  TUSB_REQ_RCPT_INTERFACE,
+  TUSB_REQ_RCPT_ENDPOINT,
+  TUSB_REQ_RCPT_OTHER
+} tusb_request_recipient_t;
+
+typedef enum {
+  TUSB_REQ_TYPE_STANDARD = 0,
+  TUSB_REQ_TYPE_CLASS,
+  TUSB_REQ_TYPE_VENDOR,
+  TUSB_REQ_TYPE_INVALID
+} tusb_request_type_t;
+
+
+            uint8_t recipient :  5; ///< Recipient type tusb_request_recipient_t.
+            uint8_t type      :  2; ///< Request type tusb_request_type_t.
+            uint8_t direction :  1; ///< Direction type. tusb_dir_t
+        } bmRequestType_bit;
+
+
+
+ tried it with TinyUSB:
+const tusb_control_request_t xfer_ctrl_req = {
+                .bmRequestType_bit.recipient = TUSB_REQ_RCPT_INTERFACE,
+                .bmRequestType_bit.type = TUSB_REQ_TYPE_CLASS,
+                .bmRequestType_bit.direction = TUSB_DIR_IN,
+                .bRequest = HID_REQ_CONTROL_GET_REPORT,
+                .wValue = (HID_REPORT_TYPE_FEATURE << 8) + cR.usbRequest.reportId,
+                .wIndex = 0,
+                .wLength = cR.usbRequest.reportLen
+};
+
+static uint8_t send_control_message(uint8_t dev_addr, uint8_t instance, 
+  uint8_t reqtype,
+  uint8_t req, uint16_t val, uint8_t *data, uint16_t len) {
+  tusb_control_request_t setup_packet = 
+  {
+      // .bmRequestType = 0x21,
+      .bmRequestType = reqtype,
+      .bRequest = req, // SET_REPORT
+      .wValue = val,
+      .wIndex = 0x0000,
+      .wLength = len
+  };
+
+  tuh_xfer_t transfer = 
+  {
+      .daddr = dev_addr,
+      .ep_addr = 0x00,
+      .setup = &setup_packet, 
+      .buffer = data,
+      .complete_cb = NULL, 
+      .user_data = NULL
+  };
+
+  uint8_t result = tuh_control_xfer(&transfer);
+  debug(("send_control_message: returns %d\n", result));
+  dumphex("data", transfer.buffer, setup_packet.wLength );
+  debug(("xfer->result = %d\n", transfer.result));
+  return result;
+}
+
+
+
+
+  send_control_message(dev_addr, instance, 0x21,
+    HID_REQ_CONTROL_SET_REPORT, 
+    // HID_REPORT_TYPE_FEATURE
+    DS3_FEATURE_START_DEVICE, 
+    magic_packet, sizeof magic_packet);
+
+
+
+
+
+
+
+
+#endif
+
+
+
 #if 0
     // Dual Shock 3 Sixasis requires a magic packet to be sent in order to enable reports. Taken from:
     // https://github.com/torvalds/linux/blob/1d1df41c5a33359a00e919d54eaebfb789711fdc/drivers/hid/hid-sony.c#L1684
@@ -278,23 +457,6 @@ void sony_ds3_magic_package(uint8_t dev_addr, uint8_t instance) {
     // HID_REPORT_TYPE_FEATURE
     DS3_FEATURE_START_DEVICE, 
     magic_packet, sizeof magic_packet);
-#if 0
-  send_control_message(dev_addr, instance, 0x21,
-    HID_REQ_CONTROL_SET_REPORT, 
-    DS3_FEATURE_START_DEVICE, 
-    magic_packet, sizeof magic_packet);
-
-  send_control_message(dev_addr, instance, 0x21,
-    HID_REQ_CONTROL_SET_REPORT, 
-    DS3_FEATURE_START_DEVICE, 
-    magic_packet, sizeof magic_packet);
-#endif
-#if 0
-  send_control_message(dev_addr, instance, 0x21,
-    HID_REQ_CONTROL_SET_REPORT, 
-    DS3_FEATURE_START_DEVICE, 
-    magic_packet, sizeof magic_packet);
-#endif
 
   uint8_t control_xfer_buff[CONTROL_TRANSFER_BUFFER_LENGTH];
   send_control_message(dev_addr, instance, 0xA1, // TBD
@@ -312,6 +474,11 @@ void sony_ds3_magic_package(uint8_t dev_addr, uint8_t instance) {
     0x0201,
     control_xfer_buff, 1);
 
+  send_control_message(dev_addr, instance, 0x21,
+    HID_REQ_CONTROL_SET_REPORT, 
+    // HID_REPORT_TYPE_FEATURE
+    DS3_FEATURE_START_DEVICE, 
+    magic_packet, sizeof magic_packet);
 
 #if 0
   send_control_message(dev_addr, instance, 0x21,
@@ -412,6 +579,8 @@ void sony_ds3_setup(uint8_t dev_addr, uint8_t instance) {
 //   }
 // }
 
+int magic_count = 0;
+
 void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_report, uint16_t desc_len)
 {
 #ifdef DEBUG
@@ -426,6 +595,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
     // dualshock 3
     debug(("FOUND DUALSHOCK3\n"));
     sony_ds3_magic_package(dev_addr, instance);
+    magic_count = 3;
     if ( !tuh_hid_receive_report(dev_addr, instance)) {
       debug(("Error: cannot request to receive report\n"));
     }
@@ -562,6 +732,21 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
 #endif
 #endif
   // request_report(dev_addr, instance);
+
+  if (magic_count) {
+    uint16_t vid, pid;
+    tuh_vid_pid_get(dev_addr, &vid, &pid);
+    
+    if (vid == 0x054C && pid == 0x0268) {
+      // dualshock 3
+      debug(("FOUND DUALSHOCK3\n"));
+      sony_ds3_magic_package(dev_addr, instance);
+      magic_count --;
+    }
+  }
+  
+
+
   if ( !tuh_hid_receive_report(dev_addr, instance)) {
     debug(("Error: cannot request to receive report\n"));
   }

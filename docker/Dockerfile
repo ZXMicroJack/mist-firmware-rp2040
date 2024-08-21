@@ -5,5 +5,8 @@ RUN echo \$@ > /bin/sudo && chmod a+x /bin/sudo
 RUN DEBIAN_FRONTEND=noninteractive ./pico_setup.sh
 
 RUN apt-get install -y python3 mc vim
+
+# XINPUT patch
+COPY usbh.c /pico/pico-sdk/lib/tinyusb/src/host/usbh.c
 CMD bash
 

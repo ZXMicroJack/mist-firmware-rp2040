@@ -76,11 +76,15 @@
 
 #if 1
 #define CFG_TUH_HUB                 1
-#define CFG_TUH_CDC                 1
+#define CFG_TUH_CDC                 0
 #define CFG_TUH_HID                 5 // typical keyboard + mouse device can have 3-4 HID interfaces
 #define CFG_TUH_MSC                 1
 #define CFG_TUH_VENDOR              0
+#ifdef EXCLUDE_XBOX_CONTROLLER
+#define CFG_TUH_XINPUT              0
+#else
 #define CFG_TUH_XINPUT              1
+#endif
 #else
 #define CFG_TUH_MSC                 1
 #endif

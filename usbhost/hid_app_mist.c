@@ -25,8 +25,8 @@
 
 #include "bsp/board.h"
 #include "tusb.h"
-#define DEBUG
-#include "debug.h"
+// #define DEBUG
+#include "drivers/debug.h"
 #include "usbhost.h"
 
 #ifdef PIODEBUG
@@ -45,6 +45,12 @@ enum {
 static uint8_t hid_type[MAX_USB] = {0};
 static uint8_t hid_setup[MAX_USB] = {0};
 
+
+#ifdef MIST_USB
+#else
+#define SLOW_TEST_REQUESTS
+#endif
+
 #if CFG_TUH_HID
 
 #ifdef MIST_USB
@@ -59,8 +65,6 @@ void dumphex(char *s, uint8_t *data, int len) {
     printf("\n");
 }
 #endif
-
-#define SLOW_TEST_REQUESTS
 
 #ifdef SLOW_TEST_REQUESTS
 uint64_t then = 0;
@@ -186,8 +190,9 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
   tuh_vid_pid_get(dev_addr, &vid, &pid);
 
   hid_type[dev_addr] = NORMAL;
+
+  /* DETECT SONY DUALSHOCK 3 */
   if (vid == 0x054C && pid == 0x0268) {
-    // dualshock 3
     debug(("FOUND DUALSHOCK3\n"));
     hid_type[dev_addr] = DUALSHOCK3;
     hid_setup[dev_addr] = 2;
@@ -209,8 +214,6 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
   memset(dd, 0xff, sizeof dd);
   tuh_descriptor_get_device_sync(dev_addr, dd, sizeof dd);
   dumphex("dd", dd, sizeof dd);
-
-//   XFER_RESULT_SUCCESS
 
   memset(dd, 0xff, sizeof dd);
   tuh_descriptor_get_configuration_sync(dev_addr, instance, dd, sizeof dd);

@@ -534,6 +534,9 @@ int mist_loop() {
 
     cdc_control_poll();
     storage_control_poll();
+#ifdef USB
+    usb_deferred_poll();
+#endif
 
     if (legacy_mode == LEGACY_MODE) {
       if (user_io_core_type() != CORE_TYPE_UNKNOWN) {

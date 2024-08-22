@@ -40,7 +40,7 @@
 
 // #define debug(a) printf a
 
-#define USB_POLL_DIRECT
+//#define USB_POLL_DIRECT
 
 void usb_dev_open(void) {}
 void usb_dev_reconnect(void) {}
@@ -76,6 +76,7 @@ static struct {
 #ifndef USB_POLL_DIRECT
   uint8_t *last_report;
   uint16_t report_size;
+  uint8_t new_report;
 #endif
   uint8_t *desc_stored;
   uint16_t desc_len;
@@ -125,6 +126,7 @@ void usb_attached(uint8_t dev, uint8_t idx, uint16_t vid, uint16_t pid, uint8_t 
   report[n].desc_len = desclen;
 #ifndef USB_POLL_DIRECT
   report[n].report_size = 0;
+  report[n].new_report = 0;
 #endif
   device[n].vid = vid;
   device[n].pid = pid;
@@ -197,10 +199,19 @@ void usb_handle_data(uint8_t dev, uint8_t *desc, uint16_t desclen) {
     report[n].report_size = desclen;
   }
   memcpy(report[n].last_report, desc, desclen);
-  report[n].usb_dev->poll(&device[n]);
+  report[n].new_report = 1;
+//  report[n].usb_dev->poll(&device[n]);
 #else
   process_fn[report[n].type](&device[n], report[n].inst, desc, desclen);
 #endif
+}
+
+void usb_deferred_poll() {
+  for (int i=0; i<MAX_USB; i++) {
+    if (report[i].usb_dev != NULL && report[i].new_report) {
+      report[i].usb_dev->poll(&device[i]);
+    }
+  }
 }
 
 // PL2303
@@ -272,6 +283,7 @@ uint8_t usb_in_transfer( usb_device_t *dev, ep_t *ep, uint16_t *nbytesptr, uint8
     uint16_t this_copy = lowest(report[n].report_size, *nbytesptr);
     memcpy(data, report[n].last_report, this_copy);
     *nbytesptr = this_copy;
+    report[n].new_report = 0;
   } else {
     *nbytesptr = 0;
   }

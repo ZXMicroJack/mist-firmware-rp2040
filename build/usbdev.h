@@ -36,4 +36,6 @@ uint8_t  usb_storage_is_configured(void);
 uint16_t usb_storage_write(const char *pData, uint16_t length);
 uint16_t usb_storage_read(char *pData, uint16_t length);
 
+void usb_deferred_poll();
+
 #endif // USBDEV_H

@@ -26,7 +26,11 @@
 #include "bsp/board.h"
 #include "tusb.h"
 // #define DEBUG
+#ifdef MIST_USB
 #include "drivers/debug.h"
+#else
+#include "debug.h"
+#endif
 #include "usbhost.h"
 
 #ifdef PIODEBUG
@@ -197,11 +201,12 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
     hid_type[dev_addr] = DUALSHOCK3;
     hid_setup[dev_addr] = 2;
     sony_ds3_magic_package(dev_addr, instance);
-
+#if 0
     if ( !tuh_hid_receive_report(dev_addr, instance)) {
       debug(("Error: cannot request to receive report\n"));
     }
     return;
+#endif
   }
 
 

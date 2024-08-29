@@ -75,6 +75,8 @@ uint8_t *get_mac() {
 
 //TODO MJ USB storage
 void storage_control_poll() {
+  usleep(10);
+  usb_deferred_poll();
 }
 
 // uint8_t mmc_inserted = 0;

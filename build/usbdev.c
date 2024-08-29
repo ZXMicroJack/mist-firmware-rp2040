@@ -35,7 +35,7 @@
 
 #define WORD(a) (a)&0xff, ((a)>>8)&0xff
 
-#define DEBUG
+// #define DEBUG
 #include "drivers/debug.h"
 
 // #define debug(a) printf a
@@ -61,6 +61,8 @@ uint16_t usb_cdc_read(char *pData, uint16_t length) { return 0; }
 // uint8_t storage_devices = 0;
 // #endif
 
+extern usb_device_class_config_t usb_sony_ds3_class;
+
 #ifndef USB
 void usb_init() {}
 #else
@@ -84,6 +86,7 @@ static struct {
   uint8_t dev_addr;
   uint8_t inst;
   uint8_t type;
+  void (*copy)(uint8_t *dst, uint8_t *src, uint16_t len);
 } report[MAX_USB];
 
 #define MAX_TUSB_DEVS	8
@@ -101,7 +104,6 @@ void usb_init() {
 uint8_t usb_xbox_init(usb_device_t *dev, usb_device_descriptor_t *dev_desc);
 
 // extern usb_device_class_config_t usb_xbox_class;
-
 void usb_attached(uint8_t dev, uint8_t idx, uint16_t vid, uint16_t pid, uint8_t *desc, uint16_t desclen, uint8_t type) {
   usb_device_descriptor_t dd;
   uint8_t r;
@@ -131,9 +133,17 @@ void usb_attached(uint8_t dev, uint8_t idx, uint16_t vid, uint16_t pid, uint8_t 
   device[n].vid = vid;
   device[n].pid = pid;
   device[n].bAddress = 1;
-  report[n].type = type;
+  report[n].copy = NULL;
 
-  switch(type) {
+  printf("!!! vid %04X pid %04X\n", vid, pid);
+  if (vid == 0x054C && pid == 0x0268) {
+    report[n].type = USB_TYPE_DS3;
+  } else {
+    report[n].type = type;
+  }
+  
+
+  switch(report[n].type) {
     case USB_TYPE_HID:
       tuh_descriptor_get_device_sync(dev, &dd, sizeof dd);
       r = usb_hid_class.init(&device[n], &dd);
@@ -143,6 +153,11 @@ void usb_attached(uint8_t dev, uint8_t idx, uint16_t vid, uint16_t pid, uint8_t 
       r = usb_xbox_class.init(&device[n], NULL);
       report[n].usb_dev = &usb_xbox_class;
       break;
+    case USB_TYPE_DS3:
+      r = usb_sony_ds3_class.init(&device[n], &dd);
+      report[n].usb_dev = &usb_sony_ds3_class;
+      break;
+
     default: //TBD
       break;
   }
@@ -172,6 +187,7 @@ void usb_detached(uint8_t dev) {
 #endif
   report[n].usb_dev->release(&device[n]);
   report[n].usb_dev = NULL;
+  report[n].copy = NULL;
 }
 
 #ifdef USB_POLL_DIRECT
@@ -186,6 +202,139 @@ static usb_xxx_process process_fn[] = {
 };
 #endif
 
+#if 0
+static void ds3_arcade_copy(uint8_t *rpt, uint8_t *report, uint16_t len) {
+  /* remap all the different kinds of DS3 */
+  /*
+  udlr = udlr (7 0->255)(6 0-255)
+  UDLR = LRUD (9 0->255)(8 0->255)
+  abxy = nothing (3 40 20 80 10)
+  dpad = xylr (2 10 40 80 20)
+  start = start (2 08)
+  sel = A (2 01)
+  hatpushL = B (2 02)
+  hatpushR = sel (2 04)
+  trl = l3 (3 01)
+  trl2 = l2 (3 04)
+  trr = r3 (3 02)
+  trr2 = r2 (3 08)
+  */
+  memcpy(rpt, report, 49);
+  rpt[9] = report[8];
+  rpt[8] = report[9];
+
+  uint16_t xlat[][2] = {
+    {0x0340, 0x0201}, // a
+    {0x0320, 0x0202}, // b
+    {0x0380, 0x0210}, // x
+    {0x0310, 0x0220}, //0x0240}, // y
+
+    {0x0208, 0x0208}, // start
+    {0x0201, 0x0204}, // sel
+
+    {0x0301, 0x0240}, //0x0280}, // l
+    {0x0304, 0x0301}, // l2
+    {0x0302, 0x0280}, //0x0220}, // r
+    {0x0308, 0x0302}, // r2
+
+    {0x0202, 0x0304}, // l3
+    {0x0204, 0x0308} // r3
+  };
+
+  rpt[2] = 0x00;
+  rpt[3] = 0x00;
+
+  for (int i=0; i<sizeof xlat / sizeof xlat[0]; i++) {
+    rpt[xlat[i][1] >> 8] |= ((report[xlat[i][0] >> 8]) & (xlat[i][0] & 0xff)) ? (xlat[i][1] & 0xff) : 0;
+  }
+
+  if (report[2] & 0x10) rpt[7] = 0x00;
+  if (report[2] & 0x40) rpt[7] = 0xff;
+  if (report[2] & 0x80) rpt[6] = 0x00;
+  if (report[2] & 0x20) rpt[6] = 0xff;
+
+  if (report[0x0e]) rpt[7] = 0x00;
+  if (report[0x11]) rpt[7] = 0xff;
+  if (report[0x12]) rpt[6] = 0x00;
+  if (report[0x0f]) rpt[6] = 0xff;
+
+    // {0x0210, 0x0720}, // dpad u
+    // {0x0240, 0x07d0}, // dpad d
+    // {0x0280, 0x0620}, // dpad l
+    // {0x0220, 0x0620}, // dpad r
+}
+#endif
+
+static void ds3_copy(uint8_t *rpt, uint8_t *report, uint16_t len) {
+  /* remap all the different kinds of DS3 */
+  /*
+  udlr = udlr (7 0->255)(6 0-255)
+  UDLR = LRUD (9 0->255)(8 0->255)
+  abxy = nothing (3 40 20 80 10)
+  dpad = xylr (2 10 40 80 20)
+  start = start (2 08)
+  sel = A (2 01)
+  hatpushL = B (2 02)
+  hatpushR = sel (2 04)
+  trl = l3 (3 01)
+  trl2 = l2 (3 04)
+  trr = r3 (3 02)
+  trr2 = r2 (3 08)
+  */
+  memcpy(rpt, report, 49);
+  // memset(rpt, 0, 49);
+  // rpt[0] = 1;
+  rpt[9] = report[8];
+  rpt[8] = report[9];
+
+  uint16_t xlat[][2] = {
+    {0x0340, 0x0201}, // a
+    {0x0320, 0x0202}, // b
+    {0x0380, 0x0210}, // x
+    {0x0310, 0x0220}, //0x0240}, // y
+
+    {0x0208, 0x0208}, // start
+    {0x0201, 0x0204}, // sel
+
+    {0x0301, 0x0240}, //0x0280}, // l
+    {0x0304, 0x0301}, // l2
+    {0x0302, 0x0280}, //0x0220}, // r
+    {0x0308, 0x0302}, // r2
+
+    {0x0202, 0x0304}, // l3
+    {0x0204, 0x0308} // r3
+  };
+
+  rpt[2] = 0x00;
+  rpt[3] = 0x00;
+
+  for (int i=0; i<sizeof xlat / sizeof xlat[0]; i++) {
+    rpt[xlat[i][1] >> 8] |= ((report[xlat[i][0] >> 8]) & (xlat[i][0] & 0xff)) ? (xlat[i][1] & 0xff) : 0;
+  }
+
+  // if (report[2] & 0x10) rpt[7] = 0x00;
+  // if (report[2] & 0x40) rpt[7] = 0xff;
+  // if (report[2] & 0x80) rpt[6] = 0x00;
+  // if (report[2] & 0x20) rpt[6] = 0xff;
+
+  // if (report[0x0e]) rpt[7] = 0x00;
+  // if (report[0x10]) rpt[7] = 0xff;
+  // if (report[0x11]) rpt[6] = 0x00;
+  // if (report[0x0f]) rpt[6] = 0xff;
+
+  if (report[2] & 0x10) rpt[7] = 0x00;
+  if (report[2] & 0x40) rpt[7] = 0xff;
+  if (report[2] & 0x80) rpt[6] = 0x00;
+  if (report[2] & 0x20) rpt[6] = 0xff;
+
+
+    // {0x0210, 0x0720}, // dpad u
+    // {0x0240, 0x07d0}, // dpad d
+    // {0x0280, 0x0620}, // dpad l
+    // {0x0220, 0x0620}, // dpad r
+}
+
+
 void usb_handle_data(uint8_t dev, uint8_t *desc, uint16_t desclen) {
   uint8_t n;
   
@@ -198,7 +347,12 @@ void usb_handle_data(uint8_t dev, uint8_t *desc, uint16_t desclen) {
     if (desclen) report[n].last_report = (uint8_t *)malloc(desclen);
     report[n].report_size = desclen;
   }
-  memcpy(report[n].last_report, desc, desclen);
+//  printf("!!! report[n].type %d report[n].copy %p\n", report[n].type, report[n].copy);
+  // if (report[n].type == USB_TYPE_DS3) {
+  //   ds3_copy(report[n].last_report, desc, desclen);
+  // } else {
+    memcpy(report[n].last_report, desc, desclen);
+  // }
   report[n].new_report = 1;
 //  report[n].usb_dev->poll(&device[n]);
 #else

@@ -5,7 +5,8 @@ default: mist-emu
 
 commonhwobjs=\
 hardware.o \
-xboxusb.o
+xboxusb.o \
+ds3usb.o
 
 hwobjs=\
 mmc.o \

@@ -25,7 +25,7 @@
 
 #include "bsp/board.h"
 #include "tusb.h"
-// #define DEBUG
+#define DEBUG
 #ifdef MIST_USB
 #include "drivers/debug.h"
 #else
@@ -57,16 +57,17 @@ static uint8_t hid_setup[MAX_USB] = {0};
 
 #if CFG_TUH_HID
 
+// #define uprintf dbgprintf
 #ifdef MIST_USB
 #define dumphex(a, d, l)
 #else
 void dumphex(char *s, uint8_t *data, int len) {
-    printf("%s: ", s);
+    debug(("%s: ", s));
     for (int i=0; i<len; i++) {
-      if (len > 16 && (i & 0xf) == 0) printf("\n");
-      printf("0x%02X,", data[i]);
+      if (len > 16 && (i & 0xf) == 0) debug(("\n"));
+      debug(("0x%02X,", data[i]));
     }
-    printf("\n");
+    debug(("\n"));
 }
 #endif
 
@@ -105,19 +106,9 @@ void kbd_set_leds(uint8_t data) {
 }
 #endif
 
-#if 0
-uint8_t sony_ds3_default_report[] = 
-{
-    0x01, 0xff, 0x00, 0xff, 0x00,
-    0x00, 0x00, 0x00, 0x00, 0x00,
-    0xff, 0x27, 0x10, 0x00, 0x32,
-    0xff, 0x27, 0x10, 0x00, 0x32,
-    0xff, 0x27, 0x10, 0x00, 0x32,
-    0xff, 0x27, 0x10, 0x00, 0x32,
-    0x00, 0x00, 0x00, 0x00, 0x00
-};
-#endif
-
+//--------------------------------------------------------------------+
+// Sony Dualshock 3 specifics to wake the bugger up
+//--------------------------------------------------------------------+
 #define DS3_FEATURE_START_DEVICE 0x03F4
 #define DS3_FEATURE_DEVICE_ADDRESS 0x03F2
 #define DS3_FEATURE_HOST_ADDRESS 0x03F5
@@ -201,12 +192,6 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
     hid_type[dev_addr] = DUALSHOCK3;
     hid_setup[dev_addr] = 2;
     sony_ds3_magic_package(dev_addr, instance);
-#if 0
-    if ( !tuh_hid_receive_report(dev_addr, instance)) {
-      debug(("Error: cannot request to receive report\n"));
-    }
-    return;
-#endif
   }
 
 
@@ -304,7 +289,13 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
     usb_ToPS2Mouse(report, len);
   }
   
-  usb_handle_data(dev_addr, report, len);
+  // if (hid_type[dev_addr] == DUALSHOCK3) {
+  // } else {
+    // uprintf("tuh_hid_report_received_cb(dev_addr:%d inst:%d)\n", dev_addr, instance);
+    // dumphex("report", report, len);
+
+    usb_handle_data(dev_addr, report, len);
+  // }
 #else
 #ifdef SLOW_TEST_REQUESTS
   if (capture) {
@@ -318,6 +309,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
 #endif
   // request_report(dev_addr, instance);
 
+  /* reissue the wakeup commands for dualshock3 - it takes a bit of waking up */
   if (hid_type[dev_addr] == DUALSHOCK3 && hid_setup[dev_addr]) {
     // dualshock 3
     debug(("FOUND DUALSHOCK3\n"));

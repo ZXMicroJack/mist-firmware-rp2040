@@ -107,6 +107,7 @@ set(usb_src
   ../usbhost/xinput.c
   ../contrib/tusb_xinput/xinput_host.c
   xboxusb.c
+  ds3usb.c
 )
 
 set(mistfirmware_src

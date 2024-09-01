@@ -33,14 +33,14 @@
 #include "state.h"
 #include "user_io.h"
 
-#define DEBUG
+// #define DEBUG
 #include "drivers/debug.h"
 
 #include "host/usbh.h"
 #include "xinput_host.h"
 #include "host/usbh_classdriver.h"
 
-static const uint16_t report_lut[] = {
+static const uint16_t ds3_report_lut[] = {
   0x0204, //r3
   0x0202, //l3
 
@@ -63,29 +63,76 @@ static const uint16_t report_lut[] = {
   0x0220 // dright
 };
 
+static const uint16_t ds4_report_lut[] = {
+  0x0680, //r3
+  0x0640, //l3
+
+  0x0602, //r2
+  0x0601, //l2
+
+  0x0608, //r
+  0x0604, //l
+  0x0580, //y
+  0x0510, //x
+
+  0x0610, //start
+  0x0620, //sel
+  0x0540, //b
+  0x0520, //a
+
+  0x0000, //dup
+  0x0000, //ddown
+  0x0000, //dleft
+  0x0000 // dright
+};
+
+
+// at least 13 bytes can be used here
+typedef struct {
+	uint16_t *lut; // uint32_t oldButtons;
+  uint8_t laxis_lr, laxis_ud;
+  uint8_t raxis_lr, raxis_ud;
+  uint8_t dpad8;
+	uint16_t jindex;
+} usb_sonyds_info_t;
+
 uint8_t usb_ds3_init(usb_device_t *dev, usb_device_descriptor_t *dev_desc) {
-	uint8_t rcode;
+  if (sizeof (usb_xbox_info_t) < sizeof(usb_sonyds_info_t)) {
+    return;
+  }
 
-  // TODO probably dont need this
-	usb_configuration_descriptor_t conf_desc;
+  usb_sonyds_info_t *info = (usb_sonyds_info_t *)&dev->xbox_info;
+  info->jindex = joystick_add();
+  info->lut = ds3_report_lut;
+  info->laxis_lr = 6;
+  info->laxis_ud = 7;
+  info->raxis_lr = 8;
+  info->raxis_ud = 9;
+  info->dpad8 = 0xff;
 
-	dev->xbox_info.bPollEnable = false;
-	
-	dev->xbox_info.interval = 4;
-	dev->xbox_info.inEp.epAddr = 0x01;
-	dev->xbox_info.inEp.epType = EP_TYPE_INTR;
-	dev->xbox_info.inEp.maxPktSize = XBOX_EP_MAXPKTSIZE;
-	dev->xbox_info.inEp.bmNakPower = USB_NAK_NOWAIT;
-	dev->xbox_info.inEp.bmSndToggle = 0;
-	dev->xbox_info.inEp.bmRcvToggle = 0;
-	dev->xbox_info.qLastPollTime = 0;
-	dev->xbox_info.jindex = joystick_add();
-	dev->xbox_info.bPollEnable = true;
 	return 0;
 }
 
-uint8_t usb_ds3_release(usb_device_t *dev) {
-	joystick_release(dev->xbox_info.jindex);
+uint8_t usb_ds4_init(usb_device_t *dev, usb_device_descriptor_t *dev_desc) {
+  if (sizeof (usb_xbox_info_t) < sizeof(usb_sonyds_info_t)) {
+    return;
+  }
+
+  usb_sonyds_info_t *info = (usb_sonyds_info_t *)&dev->xbox_info;
+  info->jindex = joystick_add();
+  info->lut = ds4_report_lut;
+  info->laxis_lr = 1;
+  info->laxis_ud = 2;
+  info->raxis_lr = 3;
+  info->raxis_ud = 4;
+  info->dpad8 = 5;
+
+	return 0;
+}
+
+uint8_t usb_dsX_release(usb_device_t *dev) {
+  usb_sonyds_info_t *info = (usb_sonyds_info_t *)&dev->xbox_info;
+	joystick_release(info->jindex);
 	return 0;
 }
 
@@ -95,13 +142,27 @@ static uint16_t analog_axis_to_digital(uint8_t val, uint16_t maskp, uint16_t mas
   return 0;
 }
 
-void usb_ds3_process(usb_device_t *dev, int inst, uint8_t *rpt, uint16_t read) {
+static const uint16_t dpad8_lut[] = {
+  JOY_UP,
+  JOY_UP|JOY_RIGHT,
+  JOY_RIGHT,
+  JOY_RIGHT|JOY_DOWN,
+  JOY_DOWN,
+  JOY_DOWN|JOY_LEFT,
+  JOY_LEFT,
+  JOY_UP|JOY_LEFT,
+  0
+};
+
+void usb_dsX_process(usb_device_t *dev, int inst, uint8_t *rpt, uint16_t read) {
 	if(!rpt) return;
 
-  printf("rpt = %02x%02x - %02x %02x %02x %02x\n",
-    rpt[2], rpt[3], rpt[6], rpt[7], rpt[8], rpt[9]);
+  usb_sonyds_info_t *info = (usb_sonyds_info_t *)&dev->xbox_info;
 
-	uint8_t idx = dev->xbox_info.jindex;
+  // printf("rpt = %02x%02x - %02x %02x %02x %02x\n",
+  //   rpt[2], rpt[3], rpt[6], rpt[7], rpt[8], rpt[9]);
+
+	uint8_t idx = info->jindex;
 	StateUsbIdSet(dev->vid, dev->pid, 8, idx);
 
 	// map virtual joypad
@@ -110,13 +171,17 @@ void usb_ds3_process(usb_device_t *dev, int inst, uint8_t *rpt, uint16_t read) {
 
     uint16_t m = 0x8000;
     for (int i=0; i<16; i++) {
-      if (rpt[report_lut[i]>>8] & (report_lut[i]&0xff)) buttons |= m;
+      if (rpt[info->lut[i]>>8] & (info->lut[i]&0xff)) buttons |= m;
       m >>= 1;
     }
 
+    if (info->dpad8 != 0xff && (rpt[info->dpad8] & 0x0f) <= 8) {
+      buttons |= dpad8_lut[rpt[info->dpad8] & 0x0f];
+    }
 
-    buttons |= analog_axis_to_digital(rpt[6], JOY_LEFT, JOY_RIGHT);
-    buttons |= analog_axis_to_digital(rpt[7], JOY_UP, JOY_DOWN);
+
+    buttons |= analog_axis_to_digital(rpt[info->laxis_lr], JOY_LEFT, JOY_RIGHT);
+    buttons |= analog_axis_to_digital(rpt[info->laxis_ud], JOY_UP, JOY_DOWN);
 
 		StateUsbJoySet(buttons, buttons>>8, idx);
 		uint32_t vjoy = virtual_joystick_mapping(dev->vid, dev->pid, buttons);
@@ -126,11 +191,12 @@ void usb_ds3_process(usb_device_t *dev, int inst, uint8_t *rpt, uint16_t read) {
 
     // Send right joy to OSD
     uint16_t jmap = 0;
-    jmap |= analog_axis_to_digital(rpt[8], JOY_LEFT, JOY_RIGHT);
-    jmap |= analog_axis_to_digital(rpt[9], JOY_UP, JOY_DOWN);
+    jmap |= analog_axis_to_digital(rpt[info->raxis_lr], JOY_LEFT, JOY_RIGHT);
+    jmap |= analog_axis_to_digital(rpt[info->raxis_ud], JOY_UP, JOY_DOWN);
     StateJoySetRight( jmap, idx);
 
-    StateJoySetAnalogue(rpt[6], rpt[7], rpt[8], rpt[9], idx);
+    StateJoySetAnalogue(rpt[info->laxis_lr], rpt[info->laxis_ud], rpt[info->raxis_lr], 
+      rpt[info->raxis_ud], idx);
 
     // add it to vjoy (no remapping)
     vjoy |= jmap<<16;
@@ -147,21 +213,25 @@ void usb_ds3_process(usb_device_t *dev, int inst, uint8_t *rpt, uint16_t read) {
 		user_io_digital_joystick_ext(idx, vjoy);
 
 		virtual_joystick_keyboard( vjoy );
-    user_io_analog_joystick(idx, rpt[6], rpt[7], rpt[8], rpt[9]);
+    user_io_analog_joystick(idx, rpt[info->laxis_lr], rpt[info->laxis_ud], rpt[info->raxis_lr], 
+      rpt[info->raxis_ud]);
 }
 
-static uint8_t usb_ds3_poll(usb_device_t *dev) {
+static uint8_t usb_dsX_poll(usb_device_t *dev) {
 	// usb_hid_info_t *info = &(dev->hid_info);
 
   uint8_t rpt[49];
   uint16_t read = sizeof rpt;
   uint8_t rcode = usb_in_transfer(dev, NULL, &read, rpt);
   if (!rcode) {
-    usb_ds3_process(dev, 0, rpt, read);
+    usb_dsX_process(dev, 0, rpt, read);
   }
 	return 0;
 }
 
 
 const usb_device_class_config_t usb_sony_ds3_class = {
-  usb_ds3_init, usb_ds3_release, usb_ds3_poll };
+  usb_ds3_init, usb_dsX_release, usb_dsX_poll };
+
+const usb_device_class_config_t usb_sony_ds4_class = {
+  usb_ds4_init, usb_dsX_release, usb_dsX_poll };

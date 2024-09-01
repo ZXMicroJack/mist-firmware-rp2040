@@ -167,5 +167,7 @@ unsigned char ConfigureFpga(const char*) {
   return 1;
 }
 
-void DB9Update(int n, uint8_t d) {}
+void DB9Update(int n, uint8_t d) {
+  printf("DB9Update: n %d d %02X\n", n, d);
+}
 

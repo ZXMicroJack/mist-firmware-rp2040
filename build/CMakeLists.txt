@@ -683,7 +683,7 @@ target_compile_options(mistmb2xilinx PUBLIC
   ${zxtres_opts}
   ${mb2_opts}
   ${usb_opts}
-  "-DPIODEBUG"
+  # "-DPIODEBUG"
   )
 
 ####################################################################################
@@ -983,7 +983,7 @@ target_compile_options(mistmb2 PUBLIC
   ${neptuno_opts}
   ${mb2_opts}
   ${usb_opts}
-  "-DPIODEBUG"
+  # "-DPIODEBUG"
   )
 
 

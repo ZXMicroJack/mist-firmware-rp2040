@@ -7,7 +7,7 @@
 #include "hardware/gpio.h"
 #include "jtag.h"
 #include "pins.h"
-#define DEBUG
+//#define DEBUG
 #include "debug.h"
 
 #define TDO GPIO_JTAG_TDO

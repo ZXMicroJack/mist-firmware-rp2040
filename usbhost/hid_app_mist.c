@@ -25,7 +25,7 @@
 
 #include "bsp/board.h"
 #include "tusb.h"
-#define DEBUG
+// #define DEBUG
 #ifdef MIST_USB
 #include "drivers/debug.h"
 #else

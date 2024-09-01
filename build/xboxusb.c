@@ -33,7 +33,7 @@
 #include "state.h"
 #include "user_io.h"
 
-#define DEBUG
+//#define DEBUG
 #include "drivers/debug.h"
 
 

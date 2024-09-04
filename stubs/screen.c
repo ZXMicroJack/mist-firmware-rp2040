@@ -192,7 +192,7 @@ char GetDB9(char index, unsigned char *joy_map) {
   // TODO - no DB9 joypad at present, but when implemented,
   // *joy_map is set to a combination of the following bitmapped values
   // JOY_UP, JOY_DOWN, JOY_LEFT, JOY_RIGHT, JOY_BTN1, JOY_BTN2
-  return 0;
+  // return 0;
 }
 
 void processKey(uint16_t scancode, int pressed) {

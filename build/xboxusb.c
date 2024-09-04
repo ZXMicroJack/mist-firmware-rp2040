@@ -216,7 +216,7 @@ void usb_xbox_process(usb_device_t *dev, int inst, uint8_t *buf, uint16_t read) 
 		// new API with all extra buttons
 		user_io_digital_joystick_ext(idx, vjoy);
 
-		virtual_joystick_keyboard( vjoy );
+    virtual_joystick_keyboard_idx( idx, vjoy );
 
     user_io_analog_joystick(idx,
       p->sThumbLX >> 8, 

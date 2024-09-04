@@ -38,3 +38,10 @@ v7 (v2.8)
 ---------
 - Support for RTC on middle boards / add  on card
 - Improved reliability of core loading.
+
+v8 (v2.9)
+---------
+- Added support for DS3, DS4, XInput USB controllers.
+- Fixed menu navigation with joypads.
+- Added firmware update for dual MCU boards
+- Improved latency in USB joypads.

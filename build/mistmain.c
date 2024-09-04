@@ -350,6 +350,12 @@ int mist_init() {
 #ifdef PIODEBUG
     debuginit();
 #endif
+
+#ifdef MB2 // TODO remove
+    // ReturnToNormal();
+#endif
+
+
     return 0;
 }
 

@@ -180,6 +180,21 @@ uint8_t modifier = 0;
 
 void usbaction(char c);
 
+char db9_state = 0;
+char ctrl_joypad = 0;
+char GetDB9(char index, unsigned char *joy_map) {
+  if (ctrl_joypad == index) {
+    *joy_map = db9_state;
+  } else {
+    *joy_map = 0;
+  }
+  return 1;
+  // TODO - no DB9 joypad at present, but when implemented,
+  // *joy_map is set to a combination of the following bitmapped values
+  // JOY_UP, JOY_DOWN, JOY_LEFT, JOY_RIGHT, JOY_BTN1, JOY_BTN2
+  return 0;
+}
+
 void processKey(uint16_t scancode, int pressed) {
   uint8_t d = 0;
 	printf("processKey %02X pressed %d\n", scancode, pressed);
@@ -217,6 +232,31 @@ void processKey(uint16_t scancode, int pressed) {
     case SDLK_2: if (pressed) usbaction('2'); break;
     case SDLK_3: if (pressed) usbaction('3'); break;
     case SDLK_4: if (pressed) usbaction('4'); break;
+
+    case SDLK_F1: ctrl_joypad = 0; break;
+    case SDLK_F2: ctrl_joypad = 1; break;
+
+
+    case SDLK_y:
+      if (pressed) db9_state |= JOY_UP;
+      else         db9_state &= ~JOY_UP;
+      break;
+    case SDLK_n: 
+      if (pressed) db9_state |= JOY_DOWN;
+      else         db9_state &= ~JOY_DOWN;
+      break;
+    case SDLK_g:
+      if (pressed) db9_state |= JOY_LEFT;
+      else         db9_state &= ~JOY_LEFT;
+      break;
+    case SDLK_j:
+      if (pressed) db9_state |= JOY_RIGHT;
+      else         db9_state &= ~JOY_RIGHT;
+      break;
+    case SDLK_h:
+      if (pressed) db9_state |= JOY_BTN1;
+      else         db9_state &= ~JOY_BTN1;
+      break;
   }
 
     uint8_t keys[6];

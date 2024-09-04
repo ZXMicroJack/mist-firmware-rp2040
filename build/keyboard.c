@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "pico/stdlib.h"
+
 #include "attrs.h"
 #include "hardware.h"
 #include "user_io.h"

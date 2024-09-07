@@ -62,6 +62,25 @@ static void ipc_core() {
 }
 #endif
 
+// #define MAP_KEY_TO_START
+#ifdef MAP_KEY_TO_START
+int prev_key = 0;
+int _ps2_GetChar(uint8_t ch);
+int ps2_GetChar(uint8_t ch) {
+  int n = _ps2_GetChar(ch);
+  if (n == 0x0e) {
+    user_io_digital_joystick(0, prev_key == 0xf0 ? 0 : 0x80);
+    user_io_digital_joystick_ext(0, prev_key == 0xf0 ? 0 : 0x80);
+    user_io_digital_joystick(1, prev_key == 0xf0 ? 0 : 0x80);
+    user_io_digital_joystick_ext(1, prev_key == 0xf0 ? 0 : 0x80);
+    printf("Pressing start realase status = %d\n", prev_key == 0xf0);
+  }
+  prev_key = n;
+  return n;
+}
+#define ps2_GetChar _ps2_GetChar
+#endif
+
 int ps2_GetChar(uint8_t ch) {
   return ch == 0 ? fifo_Get(&kbdfifo) : fifo_Get(&mousefifo);
 }
@@ -131,7 +150,7 @@ unsigned char usb_host_storage_read(unsigned long lba, unsigned char *pReadBuffe
 #define IPC_USB_CONFIG_DESC     0x46
 
 void ipc_HandleData(uint8_t tag, uint8_t *data, uint16_t len) {
-  printf("ipc_HandleData: tag %02x len %d\n", tag, len);
+  debug(("ipc_HandleData: tag %02x len %d\n", tag, len));
   switch(tag) {
 #ifdef MB2USB
     case IPC_USB_DEVICE_DESC:

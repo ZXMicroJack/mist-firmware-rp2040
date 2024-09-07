@@ -13,8 +13,6 @@
 // #define DEBUG
 #include "drivers/debug.h"
 
-
-
 // TODO MJ interface to FPGA via SPI and all the nCS for different bits.
 
 #define MIST_CSN    17 // user io
@@ -31,37 +29,8 @@
 #define SPI_SLOW_BAUD   500000
 #define SPI_SDC_BAUD   24000000
 #define SPI_MMC_BAUD   16000000
-// #define SPI_SLOW_BAUD   500000
-// #define SPI_SDC_BAUD   500000
-// #define SPI_MMC_BAUD   500000
 
 static unsigned char spi_speed;
-
-// void test_UserIOSPI(uint8_t datain) {
-//   uint8_t data[6];
-// // int spi_write_read_blocking (spi_inst_t *spi, const uint8_t *src, uint8_t *dst, size_t len)
-// //   uint8_t cmd[] = {0x1a, 0x00, 0x00, 0x00, 0xff, 0xff};
-//   uint8_t cmd[] = {0x02, 0xff};
-//
-//   gpio_put(MIST_CSN, 0);
-//
-//   cmd[1] = datain;
-//
-//   memset(data, 0xff, sizeof data);
-//   spi_write_read_blocking(spi0, cmd, data, sizeof cmd);
-//   printf("Returns: ");
-//   for (int i=0; i<sizeof data; i++) {
-//     printf("%02X ", data[i]);
-//   }
-//   printf("\n");
-//   gpio_put(MIST_CSN, 1);
-// }
-
-
-
-// void test_UserIOKill() {
-//   spi_deinit(spi0);
-// }
 
 #define spi spi0
 
@@ -84,9 +53,10 @@ void mist_spi_init() {
     gpio_init(spi_pins[i]);
     gpio_set_function(spi_pins[i], GPIO_FUNC_SPI);
   }
-  spi_init(spi0, SPI_SLOW_BAUD); // 500khz
-  spi_set_format(spi0, 8, SPI_CPOL_1, SPI_CPHA_1, SPI_MSB_FIRST);
-  spi_speed = SPI_SLOW_CLK_VALUE;
+
+  spi_init(spi, SPI_SDC_BAUD);
+  spi_set_format(spi, 8, SPI_CPOL_1, SPI_CPHA_1, SPI_MSB_FIRST);
+  spi_speed = SPI_SDC_CLK_VALUE;
 }
 
 RAMFUNC void spi_wait4xfer_end() {
@@ -121,22 +91,13 @@ void DisableIO() {
 }
 
 void EnableDMode() {
-  // spi_set_format(spi0, 8, SPI_CPOL_1, SPI_CPHA_0, SPI_MSB_FIRST);
   gpio_put(MIST_SS4, 0);
 }
 
 void DisableDMode() {
-  // spi_set_format(spi0, 8, SPI_CPOL_1, SPI_CPHA_1, SPI_MSB_FIRST);
   spi_wait4xfer_end();
   gpio_put(MIST_SS4, 1);
 }
-
-// void spi_max_start() {
-// }
-//
-// void spi_max_end() {
-//     spi_wait4xfer_end();
-// }
 
 void spi_block(unsigned short num) {
   uint8_t out, in;

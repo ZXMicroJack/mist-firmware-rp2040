@@ -45,3 +45,7 @@ v8 (v2.9)
 - Fixed menu navigation with joypads.
 - Added firmware update for dual MCU boards
 - Improved latency in USB joypads.
+
+v9 (v2.10)
+---------
+- Speed up SPI seems to have fixed many things.

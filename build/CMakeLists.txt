@@ -266,6 +266,9 @@ set(flash_opts
 "-DPICOSYNTH"
 "-DBUFFER_FPGA"
 )
+set(flash_opts_zx1
+""
+)
 set(ram_opts
   "-DBUFFER_FPGA"
   "-DNO_FILE_INDEX"
@@ -850,7 +853,7 @@ add_executable(mistusbzx1
   ${driver_zx1_src}
   ${mainzx1_src}
   ${usb_src}
-  ${picosynth_src}
+  # ${picosynth_src}
   )
 
 target_link_libraries(mistusbzx1 
@@ -862,7 +865,8 @@ target_link_libraries(mistusbzx1
   pico_multicore 
   tinyusb_host 
   tinyusb_board
-  ${picosynth_lib})
+)
+  # ${picosynth_lib})
 add_compile_options(-O2)
 target_include_directories(mistusbzx1 PUBLIC ../picosynth)
 target_include_directories(mistusbzx1 PUBLIC ../usbhost)
@@ -894,7 +898,7 @@ target_compile_options(mistusbzx1 PUBLIC
   # "-DUSB_STORAGE"
   ${common_opts}
   ${xilinx_opts}
-  ${flash_opts}
+  ${flash_opts_zx1}
   ${zxuno_opts}
   ${usb_opts}
   )

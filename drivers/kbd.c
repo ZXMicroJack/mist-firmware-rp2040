@@ -11,7 +11,7 @@
 #include "pins.h"
 #include "ps2.h"
 #include "fifo.h"
-#define DEBUG
+// #define DEBUG
 #include "debug.h"
 #include "keymap.h"
 
@@ -30,11 +30,11 @@ static fifo_t ps2_fifo;
 static uint8_t ps2_fifo_buf[64];
 static uint8_t opqa_cursors = 0;
 
-uint8_t shift_held = 0;
-uint8_t ext_held = 0;
-uint8_t sym_held = 0;
-uint8_t fn_held = 0;
-uint8_t xfn_held = 0;
+static uint8_t shift_held = 0;
+static uint8_t ext_held = 0;
+static uint8_t sym_held = 0;
+static uint8_t fn_held = 0;
+static uint8_t xfn_held = 0;
 
 #define WAIT  0xff
 
@@ -253,8 +253,8 @@ void kbd_Process() {
       switch(key) {
         case KEY_X: // save
           if (pressed) {
-            // TODO: save config to flash
-#if 1 // for testing jamma
+            // TODO: save config to flash?
+#ifdef DEV_BUILD
             reset_usb_boot(0, 0);
 #endif
           }

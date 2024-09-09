@@ -6,16 +6,12 @@ set(BOARD pico_sdk)
 # Pull in SDK (must be before project)
 include(pico_sdk_import.cmake)
 include(pico_extras_import.cmake)
-# include($ENV{PICO_EXTRAS_PATH}/external/pico_extras_import.cmake)
-
 
 project(pico_examples C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
-#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DIPC_SLAVE -DPICO_XOSC_STARTUP_DELAY_MULTIPLIER=64 -DUSB")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DIPC_SLAVE -DPICO_XOSC_STARTUP_DELAY_MULTIPLIER=64 -DEXCLUDE_XBOX_CONTROLLER")
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-error=implicit-function-declaration -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=return-mismatch")
-#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DIPC_SLAVE -DPICO_XOSC_STARTUP_DELAY_MULTIPLIER=64")
 
 set(PICO_EXAMPLES_PATH ${PROJECT_SOURCE_DIR})
 
@@ -40,9 +36,6 @@ add_executable(rp2ur rp2u.c
   ../drivers/cookie.c
   ../drivers/jamma.c
   ../drivers/crc16.c)
-  #  ../drivers/crc16.c
-  #  ../usbhost/hid_app.c
-  #  ../usbhost/joypad.c)
   
 target_link_libraries(rp2ur
     pico_stdlib 
@@ -51,14 +44,9 @@ target_link_libraries(rp2ur
     hardware_i2c
     pico_i2c_slave
     pico_multicore)
-    #pico_multicore
-    #tinyusb_host
-    #tinyusb_board)
     
 add_compile_options(-O2)
-#target_include_directories(rp2ur PUBLIC ../usbhost)
 pico_enable_stdio_usb(rp2ur 1)
-#pico_enable_stdio_usb(rp2ur 0)
 pico_enable_stdio_uart(rp2ur 0)
 pico_add_extra_outputs(rp2ur)
 example_auto_set_url(rp2ur)
@@ -66,14 +54,8 @@ pico_generate_pio_header(rp2ur ../drivers/jamma.pio)
 pico_generate_pio_header(rp2ur ../drivers/jammadb9.pio)
 pico_generate_pio_header(rp2ur ../drivers/ps2.pio)
 pico_generate_pio_header(rp2ur ../drivers/ps2tx.pio)
-# target_compile_options(rp2ur PUBLIC "-DIPC_SLAVE" "-DRP2U" "-DUSBDEV")
 target_compile_options(rp2ur PUBLIC "-DIPC_SLAVE" "-DRP2U" "-DMATRIX_KEYBOARD")
-#target_compile_options(rp2ur PUBLIC "-DIPC_SLAVE" "-DRP2U" "-DMATRIX_KEYBOARD" "-DUSB")
-
 pico_set_binary_type(rp2ur no_flash)
-#set_target_properties(rp2u PROPERTIES PICO_TARGET_LINKER_SCRIPT "./standalone.ld")
-
-
 
 # fpga program
 add_executable(rp2u rp2u.c
@@ -146,10 +128,6 @@ pico_generate_pio_header(rp2u_nousb ../drivers/jamma.pio)
 pico_generate_pio_header(rp2u_nousb ../drivers/jammadb9.pio)
 pico_generate_pio_header(rp2u_nousb ../drivers/ps2.pio)
 pico_generate_pio_header(rp2u_nousb ../drivers/ps2tx.pio)
-target_compile_options(rp2u_nousb PUBLIC "-DIPC_SLAVE" "-DRP2U" "-DMATRIX_KEYBOARD") # "-DUSB")
+target_compile_options(rp2u_nousb PUBLIC "-DIPC_SLAVE" "-DRP2U" "-DMATRIX_KEYBOARD" "-DDEV_BUILD") # "-DUSB")
 
 set_target_properties(rp2u_nousb PROPERTIES PICO_TARGET_LINKER_SCRIPT "./standalone.ld")
-
-
-
-

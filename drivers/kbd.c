@@ -11,7 +11,7 @@
 #include "pins.h"
 #include "ps2.h"
 #include "fifo.h"
-// #define DEBUG
+#define DEBUG
 #include "debug.h"
 #include "keymap.h"
 
@@ -36,7 +36,9 @@ uint8_t sym_held = 0;
 uint8_t fn_held = 0;
 uint8_t xfn_held = 0;
 
-const uint8_t spacedot[] = { 0xf0, 0x12, 0xf0, 0x14, KEY_SPACE, 0xf0, KEY_SPACE, KEY_PUNTO, 0xf0, KEY_PUNTO}; 
+#define WAIT  0xff
+
+const uint8_t spacedot[] = { 0xf0, 0x12, 0xf0, 0x14, KEY_SPACE, WAIT, 0xf0, KEY_SPACE, KEY_PUNTO, WAIT, 0xf0, KEY_PUNTO, WAIT, WAIT}; 
 
 const uint8_t nomZX[] = { 2,KEY_Z,KEY_X,1 }; //Numero de Letras,(letras[n],,),CKm)
 const uint8_t nomCPC[] = { 3,KEY_C,KEY_P,KEY_C,4 };
@@ -95,16 +97,9 @@ static bool kbd_timer_callback(struct repeating_timer *t) {
 }
 
 
-#if 0
-static uint8_t mistMode = 0;
-
-void kbd_SetMistMode(uint8_t _mistMode) {
-  mistMode = _mistMode;
-}
-#endif
+static uint64_t waittime;
 
 void kbd_Init() {
-  //mistMode = _mistMode;
   for (int i=0; i<COLS; i++) {
     gpio_init(GPIO_KCOL(i));
     gpio_set_dir(GPIO_KCOL(i), GPIO_OUT);
@@ -123,11 +118,6 @@ void kbd_Init() {
                          NULL, &kbd_timer);
 }
 
-#if 0
-void kbd_Init() {
-  kbd_InitEx(0);
-}
-#endif
 static int get_mode(uint8_t scancode) {
   for (int i=0; i<sizeof mode_scancodes; i++) {
     if (scancode == mode_scancodes[i])
@@ -136,51 +126,46 @@ static int get_mode(uint8_t scancode) {
   return -1;
 }
 
-//TODO
-int forceexit = 0;
+#define KBD_WAIT_TIME     100000
 
-fifo_t *kbd_GetFifo() {
-  return &ps2_fifo;
-}
-
-//TODO MJ remove this
-#if 0
-static void ps2_SendCharX(uint8_t ch, uint8_t data) {
-  fifo_Put(&ps2_fifo, data);
-#if 0
-	if (mistMode) {
-    ps2_InsertChar(ch, data);
-  } else {
-    ps2_SendChar(ch, data);
+int kbd_Get() {
+  int r = -1;
+  if (!fifo_Empty(&ps2_fifo)) {
+    uint64_t now = time_us_64();
+    if (!waittime || waittime < now) {
+      int c = fifo_Get(&ps2_fifo);
+      if (c == 0xff) {
+        waittime = now + KBD_WAIT_TIME;
+      } else {
+        r = c;
+      }
+    }
   }
-#endif
+  return r;
 }
-#endif
-
-#define ps2_SendChar(c,x) fifo_Put(&ps2_fifo, x);
 
 static void send_key_raw(uint16_t key, uint8_t pressed) {
   if (!key || key == NADA) return;
   if (codeset_xt) {
     if (pressed) {
-      if (key & E) ps2_SendChar(0, 0xE0);
-      if (key & S) ps2_SendChar(0, KS1_LSHIFT);
-      ps2_SendChar(0, key & 0xff);
+      if (key & E) fifo_Put(&ps2_fifo, 0xE0);
+      if (key & S) fifo_Put(&ps2_fifo, KS1_LSHIFT);
+      fifo_Put(&ps2_fifo, key & 0xff);
     } else {
-      if (key & E) ps2_SendChar(0, 0xE0);
-      ps2_SendChar(0, KS1_RELEASE | key & 0xff);
-      if (key & S) ps2_SendChar(0, KS1_RELEASE | KS1_LSHIFT);
+      if (key & E) fifo_Put(&ps2_fifo, 0xE0);
+      fifo_Put(&ps2_fifo, KS1_RELEASE | key & 0xff);
+      if (key & S) fifo_Put(&ps2_fifo, KS1_RELEASE | KS1_LSHIFT);
     }
   } else {
     if ((key & S) && pressed) {
-      ps2_SendChar(0, KEY_LSHIFT);
+      fifo_Put(&ps2_fifo, KEY_LSHIFT);
     }
-    if (key & E) ps2_SendChar(0, 0xe0);
-    if (!pressed) ps2_SendChar(0, 0xf0);
-    ps2_SendChar(0, key & 0xff);
+    if (key & E) fifo_Put(&ps2_fifo, 0xe0);
+    if (!pressed) fifo_Put(&ps2_fifo, 0xf0);
+    fifo_Put(&ps2_fifo, key & 0xff);
     if ((key & S) && !pressed) {
-      ps2_SendChar(0, 0xf0);
-      ps2_SendChar(0, KEY_LSHIFT);
+      fifo_Put(&ps2_fifo, 0xf0);
+      fifo_Put(&ps2_fifo, KEY_LSHIFT);
     }
   }
 }
@@ -197,6 +182,7 @@ static void send_key(uint16_t code, uint8_t pressed) {
         send_key_raw(kc_lut[kc][i], true);
       }
     }
+    if (code & M) fifo_Put(&ps2_fifo, WAIT);
     if (momentary_or_released) {
       for (int i=MAX_KEY_COMB-1; i>=0; i--) {
         send_key_raw(kc_lut[kc][i], false);
@@ -204,6 +190,7 @@ static void send_key(uint16_t code, uint8_t pressed) {
     }
   } else {
     if (pressed) send_key_raw(code, true);
+    if (code & M) fifo_Put(&ps2_fifo, WAIT);
     if (momentary_or_released) send_key_raw(code, false);
   }
 }
@@ -243,14 +230,16 @@ void kbd_Process() {
         //TODO set mode setting from AT?
         // send mode key
         for (int i=0; i<sizeof spacedot; i++) {
-          ps2_SendChar(0, spacedot[i]);
+          fifo_Put(&ps2_fifo, spacedot[i]);
         }
         
         uint8_t *keys = modeCode[kbmode];
         for (int i=1; i<=keys[0]; i++) {
-          ps2_SendChar(0, keys[i]);
-          ps2_SendChar(0, 0xf0);
-          ps2_SendChar(0, keys[i]);
+          fifo_Put(&ps2_fifo, keys[i]);
+          fifo_Put(&ps2_fifo, WAIT);
+          fifo_Put(&ps2_fifo, 0xf0);
+          fifo_Put(&ps2_fifo, keys[i]);
+          fifo_Put(&ps2_fifo, WAIT);
         }
       }
       next_key_mode = 2;
@@ -265,7 +254,7 @@ void kbd_Process() {
         case KEY_X: // save
           if (pressed) {
             // TODO: save config to flash
-#if 0 // for testing jamma
+#if 1 // for testing jamma
             reset_usb_boot(0, 0);
 #endif
           }

@@ -42,3 +42,7 @@ uint16_t fifo_Count(fifo_t *f) {
 uint16_t fifo_Space(fifo_t *f) {
   return f->m - fifo_Count(f);
 }
+
+uint8_t fifo_Empty(fifo_t *f) {
+  return f->l == f->r;
+}

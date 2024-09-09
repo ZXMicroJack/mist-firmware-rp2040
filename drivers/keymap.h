@@ -568,6 +568,7 @@ const uint16_t mapFN1[ROWS][COLS] = {
     {        0,    M|KEY_NUMLCK,  0,          0,            0,             0   }
 };
 
+#if 0
 const uint16_t mapFN[ROWS][COLS] = {
     { M|KEY_F1,    M|KEY_F2,      M|KEY_F3,   M|KEY_F4,     M|KEY_F5,      0},
     {M|KEY_F11,    M|KEY_F12,     0,          0,            0,             0 },
@@ -579,6 +580,19 @@ const uint16_t mapFN[ROWS][COLS] = {
     {        0,    M|KEY_RSHIFT,    0,          M|KC_CTALDEL, M|KC_CTALBS,   E|M|KEY_PGUP  },
     {M|KEY_ESCAPE, M|KEY_NUMLCK,  0,          0,            0,             0   }
 };
+#else
+const uint16_t mapFN[ROWS][COLS] = {
+    {   KEY_F1,      KEY_F2,      KEY_F3,     KEY_F4,       KEY_F5,      0},
+    {  KEY_F11,      KEY_F12,     0,          0,            0,             0 },
+    {        0,    0,             0,          0,            KEY_SCRLCK,    0/*KEY_X_RST*/ },
+    {  KEY_F10,    KEY_F9,        KEY_F8,     KEY_F7,       KEY_F6,        E|M|KEY_DELETE},
+    {        0,    0,             0,          0,            0,             E|KEY_LEFT  },
+    {        0,    0,             0,          0,            0,             E|M|KEY_END   },
+    {        0,    0,             0,          0,            0,             E|KEY_PGDW  },
+    {        0,    KEY_RSHIFT,    0,          KC_CTALDEL,   KC_CTALBS,   E|KEY_PGUP  },
+    {  KEY_ESCAPE, KEY_NUMLCK,  0,          0,              0,             0   }
+};
+#endif
 
 const uint16_t mapEXT[ROWS][COLS] = { //Mapa especial con caps shift (Igual en todos los Keymaps)
     {       KEY_F2,     KEY_CAPS,     0,            0,          KEY_LEFT,     0           },

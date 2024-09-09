@@ -234,7 +234,7 @@ uint8_t ipc_GotCommand(uint8_t cmd, uint8_t *data, uint8_t len) {
 
 
 #ifdef MATRIX_KEYBOARD
-static fifo_t *matkbd_in;
+// static fifo_t *matkbd_in;
 static fifo_t *hid_ps2_in[2];
 static fifo_t *hid_ps2_out[2];
 static fifo_t mist_ps2_out[2];
@@ -274,7 +274,8 @@ void ps2_OutHost(uint8_t ch, uint8_t data) {
 int ps2_In(uint8_t ch) {
   int c;
 
-	if (ch == 0 && (c = fifo_Get(matkbd_in)) >= 0) return c; // from matrix
+	// if (ch == 0 && (c = fifo_Get(matkbd_in)) >= 0) return c; // from matrix
+  if (ch == 0 && (c = kbd_Get()) >= 0) return c; // from matrix
 #ifdef USB
 	if ((c = fifo_Get(hid_ps2_in[ch])) >= 0) return c; // from usb
 #endif
@@ -399,7 +400,7 @@ void kbd_core() {
   kbd_Init();
 
 
-  matkbd_in = kbd_GetFifo();
+  // matkbd_in = kbd_GetFifo();
 #ifdef USB
 	hid_ps2_in[0] = HID_getPS2Fifo(0, 0); // from device
 	hid_ps2_in[1] = HID_getPS2Fifo(1, 0); // from device

@@ -61,12 +61,17 @@ static int cursor = 0;
 
 static void bitstore_add() {
   nr_chunks ++;
+  debug(("bitstore_add: nr_chunks %d\n", nr_chunks));
   chunk_t *chunk = (chunk_t *)malloc(sizeof(chunk_t));
+  debug(("bitstore_add: after malloc\n"));
   chunk->next = NULL;
 
+  debug(("bitstore_add: after malloc\n"));
   if (!store) {
+    debug(("bitstore_add: first block\n"));
     store = latest = chunk;
   } else {
+    debug(("bitstore_add: next block\n"));
     latest->next = chunk;
     latest = latest->next;
   }
@@ -74,6 +79,7 @@ static void bitstore_add() {
 }
 
 static void bitstore_put(uint8_t data) {
+  // printf("lastblock = %d\n", lastblock);
   if (latest == NULL || lastblock == CHUNKSIZE) {
     bitstore_add();
     lastblock = 0;
@@ -438,6 +444,7 @@ void bitstore_Free() {
     store = store->next;
     free(chunk);
   }
+
   store = latest = NULL;
   lastblock = 0;
   nr_chunks = 0;

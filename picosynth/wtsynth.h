@@ -23,6 +23,7 @@ extern "C" {
 /* construct and destruct functions */
 int wtsynth_Init(void);
 int wtsynth_Kill(void);
+void wtsynth_Suspend(uint8_t suspend);
 
 /* patch and preset handler routines */
 int wtsynth_GetPatchInfo(char *fn, void (*callback)(char *));

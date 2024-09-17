@@ -3,5 +3,6 @@
 
 void picosynth_Init();
 void picosynth_Loop();
+void picosynth_Suspend(uint8_t state);
 
 #endif

@@ -10,6 +10,9 @@
 #include "drivers/audio_i2s.h"
 #include "drivers/pins.h"
 
+// #define DEBUG
+#include "drivers/debug.h"
+
 #ifndef SAMPLE_RATE
 #define SAMPLE_RATE 44100
 #endif
@@ -59,60 +62,51 @@ static struct audio_buffer_pool *init_audio() {
     return producer_pool;
 }
 
-
-#if 0
-static void audio_core() {
-  int ret = wtsynth_Init();
-  if (ret < 0) {
-    LUTS_POS = (uint8_t *)RP2M_LUTS2_POS;
-    ret = wtsynth_Init();
-  }
-
-  if (!ret) {
-    struct audio_buffer_pool *ap = init_audio();
-    for(;;) {
-      // read and process audio data
-      struct audio_buffer *buffer = take_audio_buffer(ap, true);
-      int16_t *samples = (int16_t *) buffer->buffer->bytes;
-      wtsynth_GetAudioPacket(samples);
-      buffer->sample_count = buffer->max_sample_count>>1;
-      give_audio_buffer(ap, buffer);
-      nrbuffs++;
-    }
- }
-}
-
-void picosynth_Init() {
-  multicore_reset_core1();
-  multicore_launch_core1(audio_core);
-}
-#else
 static int synth_status = 0;
+static uint8_t pending_state = 1;
+static uint8_t running_state = 1;
 static struct audio_buffer_pool *ap;
 void picosynth_Init() {
   int ret = wtsynth_Init();
+  debug(("picosynth_Init: luts returns %d\n", ret));
   if (ret < 0) {
     LUTS_POS = (uint8_t *)RP2M_LUTS2_POS;
     ret = wtsynth_Init();
+    debug(("picosynth_Init: luts2 returns %d\n", ret));
   }
   synth_status = ret;
   ap = init_audio();
+  debug(("picosynth_Init: all ok\n"));
 }
 
 void picosynth_Loop() {
+  /* grab audio packets if synth is started */
   if (!synth_status) {
     struct audio_buffer *buffer = take_audio_buffer(ap, false);
     if (buffer) {
       int16_t *samples = (int16_t *) buffer->buffer->bytes;
-      wtsynth_GetAudioPacket(samples);
+      if (running_state) {
+        wtsynth_GetAudioPacket(samples);
+      } else {
+        for (int i=0; i<SAMPLES_PER_BUFFER; i++)
+          samples[i] = 0;
+      }
       buffer->sample_count = buffer->max_sample_count>>1;
       give_audio_buffer(ap, buffer);
       nrbuffs++;
     }
+
+    if (pending_state != running_state) {
+      running_state = pending_state;
+      wtsynth_Suspend(!running_state);
+    }
   }
 }
 
-#endif
+void picosynth_Suspend(uint8_t state) {
+  pending_state = !state;
+  debug(("picosynth_Suspend: state %d\n", state));
+}
 
 void wtsynth_ActiveState(uint8_t active) {
 }

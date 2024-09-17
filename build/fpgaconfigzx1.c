@@ -24,6 +24,11 @@
 #include "drivers/bitstore.h"
 #include "drivers/pins.h"
 #include "drivers/jtag.h"
+
+#ifdef PICOSYNTH
+#include "picosynth.h"
+#endif
+
 // #define DEBUG
 #include "drivers/debug.h"
 
@@ -51,7 +56,7 @@ static uint8_t read_next_block(void *ud, uint8_t *data) {
     return 0;
   }
   cf->size -= br;
-  // printf("cf->size = %d br = %d\n", cf->size, br);
+  debug(("read_next_block: cf->size = %d br = %d\n", cf->size, br));
   return br > 0;
 }
 
@@ -97,14 +102,14 @@ void ConfigureFPGAFlash()
   uint32_t size, offset;
   int result = jtag_get_length((uint8_t *)FPGA_IMAGE_POS, 512, &size, &offset);
 
-  printf("result %d size %d offset %d\n", result, size, offset);
-  //result 1 size 340699 offset 95
+  debug(("result %d size %d offset %d\n", result, size, offset));
 
   if (result) {
     fpga_image_size = size;
     memset(&cf, 0x00, sizeof cf);
     jtag_init();
-    printf("fpga_program returns %d\n", jtag_configure(&cf, test_fpga_get_next_block, size));
+    result = jtag_configure(&cf, test_fpga_get_next_block, size);
+    debug(("fpga_program returns %d\n", result));
   }
 }
 
@@ -181,15 +186,29 @@ unsigned char ConfigureFpga(const char *bitfile) {
   size = cf.size = f_size(&cf.file);
   cf.error = 0;
 
+  /* first create some memory */
+#ifdef PICOSYNTH
+  picosynth_Suspend(1);
+#endif
+
   /* initialise fpga */
+  debug(("ConfigureFpga: Initialising bitstore\n"));
   bitstore_InitRetrieve();
+  debug(("ConfigureFpga: Storing bitfile\n"));
   int chunks = bitstore_Store(&cf, read_next_block);
 
   /* initialise jtag */
+  debug(("ConfigureFpga: Initialising JTAG\n"));
   jtag_init();
 
+  debug(("ConfigureFpga: setting up receive\n"));
   bitstore_InitRetrieve();
+  debug(("ConfigureFpga: programming\n"));
   jtag_configure(NULL, bitstore_GetBlockJTAG, size);
+
+#ifdef PICOSYNTH
+  picosynth_Suspend(0);
+#endif
   // rtc_AttemptSync();
 #endif
   return 1;

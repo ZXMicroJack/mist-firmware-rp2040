@@ -263,11 +263,11 @@ set(xilinx_opts
   "-DXILINX"
 )
 set(flash_opts
-"-DPICOSYNTH"
-"-DBUFFER_FPGA"
+  "-DPICOSYNTH"
+  "-DBUFFER_FPGA"
 )
 set(flash_opts_zx1
-""
+  "-DPICOSYNTH"
 )
 set(ram_opts
   "-DBUFFER_FPGA"
@@ -843,9 +843,9 @@ target_compile_options(mistzx1 PUBLIC
   # "-DZXUNO"
   ${common_opts}
   ${xilinx_opts}
-  ${flash_opts}
+  ${flash_opts_zx1}
   ${zxuno_opts}
-  )
+)
 
 ####################################################################################
 # Main build RAM test build for ZXUno
@@ -853,7 +853,7 @@ add_executable(mistusbzx1
   ${driver_zx1_src}
   ${mainzx1_src}
   ${usb_src}
-  # ${picosynth_src}
+  ${picosynth_src}
   )
 
 target_link_libraries(mistusbzx1 
@@ -865,6 +865,7 @@ target_link_libraries(mistusbzx1
   pico_multicore 
   tinyusb_host 
   tinyusb_board
+  ${picosynth_lib}
 )
   # ${picosynth_lib})
 add_compile_options(-O2)

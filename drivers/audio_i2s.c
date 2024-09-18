@@ -7,13 +7,17 @@
 #include <stdio.h>
 
 #include "audio_i2s.h"
-#include "audio_i2s.pio.h"
 #include "hardware/pio.h"
 #include "hardware/gpio.h"
 #include "hardware/dma.h"
 #include "hardware/irq.h"
 #include "hardware/clocks.h"
 
+#ifdef ZXUNO
+#include "audio_i2s_zx1.pio.h"
+#else
+#include "audio_i2s.pio.h"
+#endif
 
 CU_REGISTER_DEBUG_PINS(audio_timing)
 
@@ -94,8 +98,11 @@ static audio_buffer_pool_t *audio_i2s_consumer;
 static void update_pio_frequency(uint32_t sample_freq) {
     uint32_t system_clock_frequency = clock_get_hz(clk_sys);
     assert(system_clock_frequency < 0x40000000);
-//     uint32_t divider = system_clock_frequency * 4 / sample_freq; // avoid arithmetic overflow
+#ifdef ZXUNO
+    uint32_t divider = system_clock_frequency * 4 / sample_freq; // avoid arithmetic overflow
+#else
     uint32_t divider = system_clock_frequency * 16 / (sample_freq * 5); // avoid arithmetic overflow
+#endif
     assert(divider < 0x1000000);
     pio_sm_set_clkdiv_int_frac(audio_pio, shared_state.pio_sm, divider >> 8u, divider & 0xffu);
     shared_state.freq = sample_freq;

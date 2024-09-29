@@ -16,29 +16,14 @@
 
 #define MAX_USB   5
 
+#define USB_ON_CORE2
+
 #define lowest(a,b) ((a) < (b) ? (a) : (b))
 
 static uint8_t storedDD[USB_DEVICE_DESCRIPTOR_LEN];
 static uint8_t config[MAX_USB][256];
 
 static uint32_t jammaData = 0xffff0000;
-
-void jamma_Init() {
-}
-
-uint32_t jamma_GetData(uint8_t inst) {
-  uint8_t d = ~(inst ? (jammaData >> 24) : (jammaData >> 16));
-  // debug(("jamma_GetData: inst %d returns %02X\n", inst, d));
-  return d;
-}
-
-void jamma_SetData(uint8_t inst, uint32_t data) {
-  uint8_t cmddata[2];
-  cmddata[0] = inst;
-  cmddata[1] = data;
-  ipc_Command(IPC_SENDJAMMA, cmddata, sizeof cmddata);
-}
-
 
 #ifdef MB2USB
 void tuh_task() {
@@ -51,6 +36,53 @@ static uint8_t kbdfifo_buf[64];
 
 static fifo_t mousefifo;
 static uint8_t mousefifo_buf[64];
+
+#ifdef USB_ON_CORE2
+static fifo_t kbdusbfifo;
+static uint8_t kbdusbfifo_buf[64];
+
+static fifo_t mouseusbfifo;
+static uint8_t mouseusbfifo_buf[64];
+
+static uint8_t jamma[2] = {0,0};
+static uint8_t jamma_prev[2] = {0,0};
+#endif
+
+/********************************************/
+/* JAMMA mb2 */
+void jamma_Init() {
+}
+
+uint32_t jamma_GetData(uint8_t inst) {
+  uint8_t d = ~(inst ? (jammaData >> 24) : (jammaData >> 16));
+  // debug(("jamma_GetData: inst %d returns %02X\n", inst, d));
+  return d;
+}
+
+#ifdef USB_ON_CORE2
+void jamma_SetData(uint8_t inst, uint32_t data) {
+  jamma[inst] = data;
+}
+
+void jamma_SendMessages() {
+  uint8_t cmddata[2];
+  for (int i=0; i<2; i++) {
+    if (jamma[i] != jamma_prev[i]) {
+      cmddata[0] = i;
+      cmddata[1] = jamma[i];
+      ipc_Command(IPC_SENDJAMMA, cmddata, sizeof cmddata);
+      jamma_prev[i] = jamma[i];
+    }
+  }
+}
+#else
+void jamma_SetData(uint8_t inst, uint32_t data) {
+  uint8_t cmddata[2];
+  cmddata[0] = inst;
+  cmddata[1] = data;
+  ipc_Command(IPC_SENDJAMMA, cmddata, sizeof cmddata);
+}
+#endif
 
 
 #ifdef CORE2_IPC_TICKS
@@ -89,6 +121,10 @@ static uint8_t ipc_started = 0;
 void ps2_Init() {
   fifo_Init(&kbdfifo, kbdfifo_buf, sizeof kbdfifo_buf);
   fifo_Init(&mousefifo, mousefifo_buf, sizeof mousefifo_buf);
+#ifdef USB_ON_CORE2
+  fifo_Init(&kbdusbfifo, kbdusbfifo_buf, sizeof kbdusbfifo_buf);
+  fifo_Init(&mouseusbfifo, mouseusbfifo_buf, sizeof mouseusbfifo_buf);
+#endif
 
   if (!ipc_started) {
 #ifdef CORE2_IPC_TICKS
@@ -198,6 +234,47 @@ void ipc_HandleData(uint8_t tag, uint8_t *data, uint16_t len) {
     }
   }
 }
+
+void mb2_SendPS2(uint8_t *data, uint8_t len) {
+  debug(("mb2_SendPS2(len %d)\n", len));
+#ifdef USB_ON_CORE2
+  if (len > 1) {
+    uint8_t ch = *data++;
+    len --;
+    if (!ch) while (len --) fifo_Put(&kbdusbfifo, *data++);
+    else     while (len --) fifo_Put(&mouseusbfifo, *data++);
+  }
+#else
+  ipc_Command(IPC_SENDPS2, data, len);
+#endif
+}
+
+#ifdef USB_ON_CORE2
+void mb2_SendPS2FromQueue(uint8_t ch, fifo_t *fifo) {
+  uint16_t count = fifo_Count(fifo);
+  if (count) {
+    debug(("mb2_SendPS2FromQueue: ch %d count %d)\n", ch, count));
+    int len = 0;
+    uint8_t data[64];
+
+    data[len++] = ch;
+    while (len < sizeof data && len <= count) {
+      data[len++] = fifo_Get(fifo);
+    }
+    ipc_Command(IPC_SENDPS2, data, len);
+  }
+}
+
+void mb2_SendMessages() {
+  mb2_SendPS2FromQueue(0, &kbdusbfifo);
+  mb2_SendPS2FromQueue(1, &mouseusbfifo);
+  jamma_SendMessages();
+}
+#else
+void mb2_SendMessages() {
+}
+#endif
+
 
 //   tuh_descriptor_get_device_sync(dev, dd, sizeof dd);
 //   ipc_SendData(IPC_USB_DEVICE_DESC, dd, sizeof dd);

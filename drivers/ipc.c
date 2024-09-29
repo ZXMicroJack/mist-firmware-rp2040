@@ -279,6 +279,12 @@ int ipc_Command(uint8_t cmd, uint8_t *data, uint8_t len) {
   uint8_t response;
   uint8_t blob[IPC_MAX_PAYLOAD+2];
   
+  debug(("ipc_Command: cmd %02X len %d ", cmd, len));
+#ifdef DEBUG
+  for (int i=0; i<len; i++) debug(("%02X ", data[i]));
+  debug(("\n"));
+#endif
+
   if (len > IPC_MAX_PAYLOAD) {
     debug(("ipc_Command: payload size > IPC_MAX_PAYLOAD\n"));
     return 1;
@@ -326,7 +332,7 @@ void ipc_MasterTick() {
   // printf("ipc_ReadBackLen returns %d\n", readable);
 
   while (readable) {
-    // printf("ipc_ReadBackLen returns %d\n", readable);
+    debug(("ipc_ReadBackLen returns %d\n", readable));
     // if (readable == 0xff) return;
     if (pos >= 5) {
       pktlen = (pkt[3] << 8) | pkt[4];

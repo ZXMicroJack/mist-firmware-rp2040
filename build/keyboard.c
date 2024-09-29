@@ -409,7 +409,7 @@ void usb_ToPS2(uint8_t modifier, uint8_t keys[6]) {
   prev_modifier = modifier;
 
 #ifdef MB2
-  if (nrps2 > 1) ipc_Command(IPC_SENDPS2, ps2, nrps2);
+  if (nrps2 > 1) mb2_SendPS2(ps2, nrps2);
 #else
   if (nrps2 > 1) {
     for (int i=1; i<nrps2; i++) {
@@ -447,7 +447,7 @@ void usb_ToPS2Mouse(uint8_t report[], uint16_t len) {
 #endif
 
 #ifdef MB2
-      ipc_Command(IPC_SENDPS2, ps2, 4);
+      mb2_SendPS2(ps2, 4);
 #else
       for (int i=1; i<4; i++) {
         ps2_SendChar(1, ps2[i]);

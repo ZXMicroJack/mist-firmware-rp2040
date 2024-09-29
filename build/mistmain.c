@@ -106,7 +106,7 @@ uint8_t legacy_mode = DEFAULT_MODE;
 
 void set_legacy_mode(uint8_t mode) {
   if (mode != legacy_mode) {
-    printf("Setting legacy mode to %d\n", mode);
+    debug(("Setting legacy mode to %d\n", mode));
     DB9SetLegacy(mode == LEGACY_MODE);
 #ifndef ZXUNO
 #ifdef MB2
@@ -423,7 +423,7 @@ void sysex_Process() {
         fn[i] = sysex_buffer[i+1];
       }
       
-      printf("fn = %s\n", fn);
+      debug(("fn = %s\n", fn));
       // skip initial separator, reset before load
       ResetFPGA();
 
@@ -449,7 +449,7 @@ void sysex_Process() {
 #endif
 
     default:
-      printf("Unknown sysex cmd: %02X\n", sysex_buffer[0]);
+      debug(("Unknown sysex cmd: %02X\n", sysex_buffer[0]));
   }
 }
 
@@ -525,6 +525,11 @@ int mist_loop() {
   ps2_Poll();
 #ifndef USBFAKE
   midi_loop();
+#endif
+
+#ifdef MB2
+  /* send messages buffered by core 2 processes */
+  mb2_SendMessages();
 #endif
 
 #ifndef ZXUNO

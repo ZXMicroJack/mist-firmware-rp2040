@@ -65,8 +65,12 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "drivers/ipc.h"
 #include "drivers/midi.h"
+#include "drivers/pins.h"
+#include "drivers/gpioirq.h"
 // #define DEBUG
 #include "drivers/debug.h"
+
+#include "hardware/gpio.h"
 
 #include "mbconfig.h"
 
@@ -175,11 +179,44 @@ unsigned int usb_host_storage_capacity() {
 #endif
 #endif
 
+uint8_t inhibit_reset = 0;
+#ifndef ZXUNO
+static void gpio_callback(uint gpio, uint32_t events) {
+  if (gpio == GPIO_RESET_FPGA && !inhibit_reset) {
+#ifdef MB2
+    extern uint8_t stop_watchdog;
+    stop_watchdog = 1;
+#else
+    watchdog_enable(1, 1);
+#endif
+  }
+}
+#endif
+
 int mist_init() {
     uint8_t mmc_ok = 0;
 
     DISKLED_ON;
 
+#if !defined(MB2) && defined(PS2WAKEUP)
+    ps2_AttemptDetect(GPIO_PS2_CLK2, GPIO_PS2_DATA2);
+    ps2_AttemptDetect(GPIO_PS2_CLK, GPIO_PS2_DATA);
+#endif
+
+#ifndef ZXUNO
+    /* monitor RESET switch */
+    gpioirq_Init();
+    gpioirq_SetCallback(IRQ_RESET, gpio_callback);
+
+    gpio_init(GPIO_RESET_FPGA);
+    gpio_set_dir(GPIO_RESET_FPGA, GPIO_IN);
+
+    while (!gpio_get(GPIO_RESET_FPGA))
+      tight_loop_contents();
+
+    // gpio_set_irq_enabled(GPIO_RESET_FPGA, GPIO_IRQ_EDGE_RISE, true);
+    gpio_set_irq_enabled(GPIO_RESET_FPGA, GPIO_IRQ_EDGE_FALL, true);
+#endif
     // Timer_Init();
     USART_Init(115200);
 
@@ -532,14 +569,20 @@ int mist_loop() {
   mb2_SendMessages();
 #endif
 
+#if 0
 #ifndef ZXUNO
 #ifndef USBFAKE
   if (fpga_ResetButtonState()) {
+    printf("Reset detected!!!!\n");
+    fpga_init(NULL);
+#if 0
 #ifdef MB2
     stop_watchdog = 1;
 #endif
     watchdog_enable(1, 1);
+#endif
   }
+#endif
 #endif
 #endif
 

@@ -135,6 +135,12 @@
 #define GPIO_FPGA_NSTATUS 13
 #endif
 
+#ifdef ALTERA_FPGA
+#define GPIO_RESET_FPGA GPIO_FPGA_NCONFIG
+#else
+#define GPIO_RESET_FPGA GPIO_FPGA_RESET
+#endif
+
 #ifdef IPCDEV
 #define GPIO_IPCM_I2C_CLK   4
 #define GPIO_IPCM_I2C_DAT   5

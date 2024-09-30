@@ -39,6 +39,8 @@ add_executable(drivertest drivertest.c ../drivers/fpga.c
   ../drivers/jtag.c
   ../drivers/crc16.c
   ../drivers/bitstore.c
+  ../drivers/ps2detect.c
+  ../drivers/gpioirq.c
   # ../zlib/inflate.c
   # ../zlib/deflate.c
   # ../zlib/adler32.c

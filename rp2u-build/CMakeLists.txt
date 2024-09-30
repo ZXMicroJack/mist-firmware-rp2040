@@ -35,6 +35,7 @@ add_executable(rp2ur rp2u.c
   ../drivers/kbd.c
   ../drivers/cookie.c
   ../drivers/jamma.c
+  ../drivers/gpioirq.c
   ../drivers/crc16.c)
   
 target_link_libraries(rp2ur
@@ -67,6 +68,7 @@ add_executable(rp2u rp2u.c
   ../drivers/kbd.c
   ../drivers/cookie.c
   ../drivers/jamma.c
+  ../drivers/gpioirq.c
   ../drivers/crc16.c
   ../usbhost/hid_app.c
   ../usbhost/cdc_app.c
@@ -106,6 +108,7 @@ add_executable(rp2u_nousb rp2u.c
   ../drivers/kbd.c
   ../drivers/cookie.c
   ../drivers/jamma.c
+  ../drivers/gpioirq.c
   ../drivers/crc16.c
   ../usbhost/hid_app.c
   ../usbhost/cdc_app.c

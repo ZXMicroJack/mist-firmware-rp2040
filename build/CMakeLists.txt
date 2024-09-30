@@ -31,6 +31,7 @@ set(driver_src
   ../drivers/fpga.c
   ../drivers/pio_spi.c
   ../drivers/ps2.c
+  ../drivers/ps2detect.c
   ../drivers/sdcard.c
   ../drivers/bitfile.c
   ../drivers/midi.c
@@ -40,6 +41,7 @@ set(driver_src
   ../drivers/fifo.c
   ../drivers/kbd.c
   ../drivers/jamma.c
+  ../drivers/gpioirq.c
   ../drivers/crc16.c
 )
 
@@ -52,6 +54,7 @@ set(driver_mb2_src
   ../drivers/cookie.c
   ../drivers/midi.c
   #../drivers/flash.c
+  ../drivers/gpioirq.c
   ../drivers/debug.c
   ../drivers/fifo.c
   ../drivers/crc16.c
@@ -63,10 +66,12 @@ set(driver_zx1_src
 ../drivers/pio_spi.c
 ../drivers/ps2.c
 ../drivers/sdcard.c
+../drivers/ps2detect.c
 ../drivers/bitfile.c
 ../drivers/midi.c
 #../drivers/ipc.c
 #../drivers/flash.c
+../drivers/gpioirq.c
 ../drivers/debug.c
 ../drivers/fifo.c
 ../drivers/kbd.c

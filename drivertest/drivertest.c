@@ -29,18 +29,19 @@
 #include "debug.h"
 
 // #define TEST_PS2
-// #define TEST_PS2_HOST
+#define TEST_PS2_HOST
 // #define TEST_IPC
 // #define TEST_SDCARD_SPI
 // #define TEST_FPGA
 // #define TEST_MATRIX
 // #define TEST_FLASH
 // #define TEST_USERIO
-#define TEST_JAMMA
+//#define TEST_JAMMA
 // #define TEST_JOYPAD
 // #define TEST_DEBUG
 // #define TEST_JTAG
 // #define TEST_DB9
+#define TEST_PS2USB_SWITCH
 
 // KEY ACTION ALLOCATION
 // aAgGHjJlMNoOqQrRTuUVwWxXyYzZ
@@ -306,8 +307,10 @@ void keyledon(uint8_t ledstate) {
 }
 
 void keyreset() {
+  ps2_SendChar(0, 0x55);
   ps2_SendChar(0, 0xff);
-  ps2_SendChar(1, 0xff);
+  ps2_SendChar(0, 0x55);
+  // ps2_SendChar(1, 0xff);
 }
 
 void mouseenable(uint8_t ch) {
@@ -517,20 +520,148 @@ void test_UserIOKill() {
   spi_deinit(spi0);
 }
 
+#if 0
+int ps2_issue_cmd(uint8_t data) {
+  printf("ps2_issue_cmd\n");
+  ps2_InitPin(GPIO_PS2_CLK);
+  ps2_InitPin(GPIO_PS2_DATA);
+  // gpio_init(GPIO_PS2_DATA);
+  // gpio_set_dir(GPIO_PS2_DATA, GPIO_OUT);
+  // gpio_disable_pulls(GPIO_PS2_CLK);
+  // gpio_disable_pulls(GPIO_PS2_DATA);
+  // gpio_pull_down(GPIO_PS2_CLK);
+  // gpio_pull_down(GPIO_PS2_DATA);
+
+  uint32_t states = (data << 1) | (parity(data) << 9) | 0x400;
+  uint64_t timeout = time_us_64() + 30000;
+
+  ps2_set_dir(GPIO_PS2_CLK, GPIO_OUT);
+  ps2_set_dir(GPIO_PS2_DATA, GPIO_OUT);
+
+  ps2_gpio_put(GPIO_PS2_CLK, 0);
+  ps2_gpio_put(GPIO_PS2_DATA, 0);
+  sleep_ms(10);
+
+  // ps2_gpio_put(GPIO_PS2_CLK, 0);
+  // sleep_ms(1);
+  // ps2_gpio_put(GPIO_PS2_DATA, 0);
+  // 
+  // ps2_gpio_put(GPIO_PS2_CLK, 0);
+  ps2_gpio_put(GPIO_PS2_DATA, 1);
+  ps2_gpio_put(GPIO_PS2_CLK, 0);
+  // sleep_ms(1);
+  sleep_us(500);
+  ps2_gpio_put(GPIO_PS2_DATA, 0);
+  ps2_gpio_put(GPIO_PS2_CLK, 1);
+  ps2_set_dir(GPIO_PS2_CLK, GPIO_IN);
+
+  for (int i=0; i<11; i++) {
+    ps2_gpio_put(GPIO_PS2_DATA, states & 1);
+    // gpio_put(GPIO_PS2_DATA, states & 1);
+    while (gpio_get(GPIO_PS2_CLK) && time_us_64() < timeout)
+      tight_loop_contents();
+    while (!gpio_get(GPIO_PS2_CLK) && time_us_64() < timeout)
+      tight_loop_contents();
+    states >>= 1;
+
+    if (time_us_64() >= timeout) {
+      printf("timeout at %d\n", i);
+      break;
+    }
+  }
+
+#if 0
+  states = 0;
+  ps2_gpio_put(GPIO_PS2_DATA, 1);
+  for (int i=0; i<11; i++) {
+    while (gpio_get(GPIO_PS2_CLK) && time_us_64() < timeout)
+      tight_loop_contents();
+    states = (states << 1) | gpio_get(GPIO_PS2_DATA);
+    while (!gpio_get(GPIO_PS2_CLK) && time_us_64() < timeout)
+      tight_loop_contents();
+
+    if (time_us_64() >= timeout) {
+      printf("timeout at %d\n", i);
+      break;
+    }
+  }
+
+  printf("states = %X\n", states);
+#endif
+
+  if (time_us_64() >= timeout) {
+    printf("Timed out!\n");
+    return 1;
+  } else {
+    printf("Sent ok!\n");
+    return 0;
+  }
+}
+
+void switch_ps2_2() {
+  int timeout = 10;
+  while (timeout--) {
+    // ps2_Reset();
+    // ps2_SendChar(0, 0xff);
+    // ps2_HealthCheck();
+    // if (!ps2_issue_cmd(0x77))
+    //   break;
+    if (!ps2_issue_cmd(0xff))
+      break;
+    // if (!ps2_issue_cmd(0x77))
+    //   break;
+    sleep_ms(350);
+    // ps2_HealthCheck();
+    // if (ps2_GetChar(0) == 0xFA) {
+    //   break;
+    // }
+    // printf("No response... resetting and starting again...\n");
+    // ps2_SwitchMode(0);
+    // ps2_SwitchMode(1);
+  }
+
+  if (timeout > 0) {
+    printf("YES!!!.\n");
+  } else {
+    printf("SORRY!\n");
+  }
+}
+
+void switch_ps2_3(uint8_t clk, uint8_t data) {
+  int timeout = 10;
+  while (timeout--) {
+    // if (!ps2_issue_cmd(0x77))
+    //   break;
+    if (!ps2_issue_cmd2(clk, data, 0xff))
+      break;
+    // if (!ps2_issue_cmd(0x77))
+    //   break;
+    sleep_ms(350);
+    // ps2_HealthCheck();
+    // if (ps2_GetChar(0) == 0xFA) {
+    //   break;
+    // }
+    // printf("No response... resetting and starting again...\n");
+    // ps2_SwitchMode(0);
+    // ps2_SwitchMode(1);
+  }
+
+  if (timeout > 0) {
+    printf("YES!!!.\n");
+  } else {
+    printf("SORRY!\n");
+  }
+}
+
 void switch_ps2() {
-    gpio_put(GPIO_PS2_CLK, 0);
-    gpio_set_dir(GPIO_PS2_CLK, GPIO_OUT);
+    ps2_gpio_put(GPIO_PS2_CLK, 0);
 
 // at 1 = 100 us
-    gpio_put(GPIO_PS2_DATA, 0);
-    gpio_set_dir(GPIO_PS2_DATA, GPIO_OUT);
+    ps2_gpio_put(GPIO_PS2_DATA, 0);
 
 // at 49 = 4900us = 4.9ms
-    gpio_put(GPIO_PS2_CLK, 1);
-    gpio_put(GPIO_PS2_DATA, 1);
-
-    gpio_set_dir(GPIO_PS2_CLK, GPIO_IN);
-    gpio_set_dir(GPIO_PS2_DATA, GPIO_IN);
+    ps2_gpio_put(GPIO_PS2_CLK, 1);
+    ps2_gpio_put(GPIO_PS2_DATA, 1);
 
 // at 50 = 5000us = 5ms // never gets here
     // gpio_put(GPIO_PS2_CLK, 1);
@@ -581,12 +712,22 @@ void switch_ps2() {
   gpio_put(GPIO_PS2_CLK, 0);
 #endif
 }
+#endif
 
 int bitstore_GetBlockJTAG(void *user_data, uint8_t *blk) {
   return bitstore_GetBlock(blk) ? false : true;
 }
 
-extern int forceexit;
+#if 0
+#define ps2_gpio_put(gpio, state) if (state) { \
+  gpio_set_dir(gpio, GPIO_IN); \
+  } else { \
+  gpio_put(gpio, 0); \
+  gpio_set_dir(gpio, GPIO_OUT); \
+}
+#endif
+
+// extern int forceexit;
 int main()
 {
   stdio_init_all();
@@ -609,14 +750,15 @@ int main()
 #ifdef TEST_MATRIX
   kbd_Init();
 #endif
+
 #ifdef TEST_PS2
-  ps2_Init();
+  ps2_Init();x
   ps2_EnablePort(0, true);
   ps2_SwitchMode(0);
 #endif
 #ifdef TEST_PS2_HOST
-  ps2_Init();
-  ps2_SwitchMode(1);
+  // ps2_Init();
+  // ps2_SwitchMode(1);
 #endif
 
 //   ps2_SendChar(0, 0x7e);
@@ -643,7 +785,7 @@ int main()
 //     ipc_MasterTick();
 
 //     int c = getchar();
-    if (forceexit) break;
+    // if (forceexit) break;
     if (c == 'q') break;
 //     if (c == 'h') printf("Hello\n");
 //     kbd_Process();
@@ -797,6 +939,268 @@ int main()
         break;
 #endif
 
+#ifdef TEST_PS2USB_SWITCH
+      case 'x':
+        ps2_AttemptDetect(GPIO_PS2_CLK, GPIO_PS2_DATA);
+        break;
+      case 'X':
+        ps2_AttemptDetect(GPIO_PS2_CLK2, GPIO_PS2_DATA2);
+        break;
+
+      case 'Z':
+        gpio_init(GPIO_PS2_CLK);
+        // gpio_pull_up(GPIO_PS2_CLK);
+        gpio_init(GPIO_PS2_DATA);
+        // gpio_pull_up(GPIO_PS2_DATA);
+        gpio_disable_pulls(GPIO_PS2_CLK);
+        gpio_disable_pulls(GPIO_PS2_DATA);
+        break;
+
+#if 0
+      case 'z': {
+        int state = 1;
+        while (getchar_timeout_us(1) < 0) {
+          ps2_gpio_put(GPIO_PS2_DATA, state);
+          state != state;
+          sleep_ms(2);
+        }
+#if 0
+        int prev_clk = gpio_get(GPIO_PS2_CLK);
+        int prev_dat = gpio_get(GPIO_PS2_DATA);
+        while (getchar_timeout_us(1) < 0) {
+          int cur_clk = gpio_get(GPIO_PS2_CLK);
+          int cur_dat = gpio_get(GPIO_PS2_DATA);
+
+          if (prev_clk != cur_clk || prev_dat != cur_dat) {
+            printf("clk %d dat %d\n", cur_clk, cur_dat);
+
+#if 1
+            if (cur_dat) {
+              printf("pulse\n");
+              // gpio_set_dir(GPIO_PS2_CLK, GPIO_OUT);
+              ps2_gpio_put(GPIO_PS2_CLK, 1);
+              sleep_ms(2);
+              ps2_gpio_put(GPIO_PS2_CLK, 0);
+              sleep_ms(100);
+              ps2_gpio_put(GPIO_PS2_CLK, 1);
+              // gpio_set_dir(GPIO_PS2_CLK, GPIO_IN);
+            }
+#endif
+#if 0
+            if (!cur_clk) {
+              printf("pulse\n");
+              ps2_gpio_put(GPIO_PS2_DATA, 1);
+              sleep_ms(2);
+              ps2_gpio_put(GPIO_PS2_DATA, 0);
+            }
+#endif
+            prev_clk = cur_clk;
+            prev_dat = cur_dat;
+          }
+        }
+#endif
+        break;
+      }
+
+#endif
+      case 'a':
+        gpio_init(GPIO_PS2_CLK);
+        gpio_set_dir(GPIO_PS2_CLK, GPIO_OUT);
+        gpio_put(GPIO_PS2_CLK, 1);
+
+        gpio_init(GPIO_PS2_DATA);
+        gpio_set_dir(GPIO_PS2_DATA, GPIO_OUT);
+        gpio_put(GPIO_PS2_DATA, 1);
+
+        break;
+
+      case 's':
+        gpio_init(GPIO_PS2_CLK);
+        gpio_set_dir(GPIO_PS2_CLK, GPIO_IN);
+        break;
+
+#if 0
+      case 'f':
+        ps2_gpio_put(GPIO_PS2_CLK, !gpio_get(GPIO_PS2_CLK));
+        ps2_gpio_put(GPIO_PS2_DATA, !gpio_get(GPIO_PS2_DATA));
+        // gpio_set_dir(GPIO_PS2_CLK, GPIO_OUT);
+        // gpio_put(GPIO_PS2_DATA, 1);
+        // gpio_set_dir(GPIO_PS2_DATA, GPIO_OUT);
+        // printf("clk1dat0 oo\n");
+        // gpio_put(GPIO_PS2_CLK, 1);
+        // gpio_set_dir(GPIO_PS2_CLK, GPIO_OUT);
+        // gpio_put(GPIO_PS2_DATA, 0);
+        // gpio_set_dir(GPIO_PS2_DATA, GPIO_OUT);
+        break;
+#endif
+
+#if 0
+      case 'X':
+        printf("clk0dat0 oo\n");
+        gpio_put(GPIO_PS2_CLK, 0);
+        gpio_set_dir(GPIO_PS2_CLK, GPIO_OUT);
+        gpio_put(GPIO_PS2_DATA, 0);
+        gpio_set_dir(GPIO_PS2_DATA, GPIO_OUT);
+        // printf("clk0dat1 oo\n");
+        // gpio_put(GPIO_PS2_CLK, 0);
+        // gpio_set_dir(GPIO_PS2_CLK, GPIO_OUT);
+        // gpio_put(GPIO_PS2_DATA, 1);
+        // gpio_set_dir(GPIO_PS2_DATA, GPIO_OUT);
+        break;
+      case 'a':
+        printf("clk1dat1 oo\n");
+        gpio_put(GPIO_PS2_CLK, 1);
+        gpio_set_dir(GPIO_PS2_CLK, GPIO_OUT);
+        // gpio_put(GPIO_PS2_DATA, 1);
+        // gpio_set_dir(GPIO_PS2_DATA, GPIO_OUT);
+        // printf("clk1dat0 oo\n");
+        // gpio_put(GPIO_PS2_CLK, 1);
+        // gpio_set_dir(GPIO_PS2_CLK, GPIO_OUT);
+        // gpio_put(GPIO_PS2_DATA, 0);
+        // gpio_set_dir(GPIO_PS2_DATA, GPIO_OUT);
+        break;
+      case 's':
+        printf("clk0dat0 ii\n");
+        gpio_put(GPIO_PS2_CLK, 0);
+        gpio_set_dir(GPIO_PS2_CLK, GPIO_IN);
+        gpio_put(GPIO_PS2_DATA, 0);
+        gpio_set_dir(GPIO_PS2_DATA, GPIO_IN);
+        break;
+      case 'f':
+        printf("clk1dat1 ii\n");
+        gpio_put(GPIO_PS2_CLK, 1);
+        gpio_set_dir(GPIO_PS2_CLK, GPIO_IN);
+        gpio_put(GPIO_PS2_DATA, 1);
+        gpio_set_dir(GPIO_PS2_DATA, GPIO_IN);
+        break;
+
+      case 'o': {
+        gpio_init(GPIO_PS2_CLK);
+        gpio_disable_pulls(GPIO_PS2_CLK);
+        gpio_init(GPIO_PS2_DATA);
+        gpio_disable_pulls(GPIO_PS2_DATA);
+        // sleep_ms(4000);
+        ps2_Init();
+        ps2_EnablePortEx(0, false, true); 
+        ps2_SwitchMode(1);
+        break;
+      }
+#endif
+
+#if 0
+      case 'o': {
+        gpio_init(GPIO_PS2_CLK);
+        gpio_disable_pulls(GPIO_PS2_CLK);
+        gpio_init(GPIO_PS2_DATA);
+        gpio_disable_pulls(GPIO_PS2_DATA);
+        // sleep_ms(4000);
+        ps2_Init();
+        ps2_EnablePortEx(0, false, true); 
+        ps2_SwitchMode(1);
+        break;
+      }
+#endif
+      case 'O': {
+        gpio_init(GPIO_PS2_CLK);
+        gpio_disable_pulls(GPIO_PS2_CLK);
+        gpio_init(GPIO_PS2_DATA);
+        gpio_disable_pulls(GPIO_PS2_DATA);
+        gpio_put(GPIO_PS2_DATA, 1);
+        gpio_put(GPIO_PS2_CLK, 1);
+        // sleep_ms(2000);
+        // ps2_Init();
+        // ps2_EnablePortEx(0, false, true); 
+        // ps2_SwitchMode(1);
+
+        int prev_clk = gpio_get(GPIO_PS2_CLK);
+        int prev_dat = gpio_get(GPIO_PS2_DATA);
+        int state = 0;
+        while (getchar_timeout_us(1) < 0) {
+          int cur_clk = gpio_get(GPIO_PS2_CLK);
+          int cur_dat = gpio_get(GPIO_PS2_DATA);
+
+          if (prev_clk != cur_clk || prev_dat != cur_dat) {
+            printf("clk %d dat %d\n", cur_clk, cur_dat);
+            prev_clk = cur_clk;
+            prev_dat = cur_dat;
+
+            if (!cur_clk && cur_dat) {
+              gpio_set_dir(GPIO_PS2_CLK, GPIO_OUT);
+              gpio_pull_up(GPIO_PS2_CLK);
+              sleep_ms(2);
+              printf("pulse\n");
+              gpio_set_dir(GPIO_PS2_CLK, GPIO_IN);
+              gpio_disable_pulls(GPIO_PS2_CLK);
+            } else if (cur_clk && cur_dat) {
+              // gpio_set_dir(GPIO_PS2_CLK, GPIO_IN);
+              // gpio_disable_pulls(GPIO_PS2_CLK);
+            }
+
+#if 0
+            if (state == 0) {
+              if (!cur_dat) {
+                state = 1;
+                printf("state 1\n");
+              }
+            } else if (state == 1) {
+              if (cur_dat) {
+                state = 0;
+                gpio_set_dir(GPIO_PS2_CLK, GPIO_OUT);
+                // gpio_pull_up(GPIO_PS2_CLK);
+
+                // for (int i=0; i<10; i++) {
+                gpio_pull_up(GPIO_PS2_CLK);
+                gpio_put(GPIO_PS2_CLK, 1);
+                sleep_ms(1000);
+                gpio_put(GPIO_PS2_CLK, 0);
+                gpio_disable_pulls(GPIO_PS2_CLK);
+                // sleep_ms(1000);
+
+                // gpio_disable_pulls(GPIO_PS2_CLK);
+                // gpio_put(GPIO_PS2_CLK, 0);
+
+                printf("state ends\n");
+              }
+#if 0
+            } else if (state == 2) {
+              if (!cur_dat) {
+                state = 0;
+                gpio_init(GPIO_PS2_CLK);
+                gpio_disable_pulls(GPIO_PS2_CLK);
+                gpio_init(GPIO_PS2_DATA);
+                gpio_disable_pulls(GPIO_PS2_DATA);
+                printf("state 0\n");
+              }
+#endif
+            }
+#endif          
+          }
+          // if (prev_clk != cur_clk || prev_dat != cur_dat) {
+          //   printf("clk %d dat %d\n", cur_clk, cur_dat);
+          //   prev_clk = cur_clk;
+          //   prev_dat = cur_dat;
+          // }
+        }
+      }
+
+      case 'F': {
+        int prev_clk = gpio_get(GPIO_PS2_CLK);
+        int prev_dat = gpio_get(GPIO_PS2_DATA);
+        while (getchar_timeout_us(100) < 0) {
+          int cur_clk = gpio_get(GPIO_PS2_CLK);
+          int cur_dat = gpio_get(GPIO_PS2_DATA);
+          
+          if (prev_clk != cur_clk || prev_dat != cur_dat) {
+            printf("clk %d dat %d\n", cur_clk, cur_dat);
+            prev_clk = cur_clk;
+            prev_dat = cur_dat;
+          }
+        }
+        break;
+      }
+
+#endif
+
       // HELP
       case '?':
         printf("\n");
@@ -815,6 +1219,7 @@ int main()
       // PS2
 #if defined(TEST_PS2) || defined(TEST_PS2_HOST)
       case 'k': printf("ps2init\n"); ps2_Init(); break;
+      case 'K': ps2_SwitchMode(1); break;
 #endif
 #if defined(TEST_PS2)
       case 'e': printf("enable ps2 0\n"); ps2_EnablePort(0, true); ps2_SwitchMode(0); break;
@@ -870,8 +1275,8 @@ int main()
       case 'h': keyledon(0x00); break;
       case 'H': keyledon(0x07); break;
       case 'r': keyreset(); break;
-      case 'x': ps2_SendChar(0, 0xaa); break;
-      case 'X': switch_ps2(); break;
+      // case 'x': ps2_SendChar(0, 0xaa); break;
+      // case 'X': switch_ps2(); break;
 #endif
 
       // IPC

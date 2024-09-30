@@ -29,6 +29,7 @@ uint8_t inited = 0;
 PIO fpga_pio = FPGA_PIO;
 unsigned fpga_sm = FPGA_SM;
 
+#if 0
 static uint8_t reset_button_readable = 1;
 static uint8_t reset_button_prev = 1;
 
@@ -43,6 +44,7 @@ int fpga_ResetButtonState() {
   reset_button_prev = reset_button_curr;
   return ret;
 }
+#endif
 
 int fpga_initialise() {
   if (inited) return 0;
@@ -99,7 +101,7 @@ void fpga_holdreset() {
   gpio_init(GPIO_FPGA_RESET);
   gpio_set_dir(GPIO_FPGA_RESET, GPIO_OUT);
   gpio_put(GPIO_FPGA_RESET, 0);
-  reset_button_readable = 0;
+  // reset_button_readable = 0;
 #endif
 }
 
@@ -127,7 +129,7 @@ int fpga_reset() {
   gpio_put(GPIO_FPGA_NCONFIG, 1);
   if (time_us_64() >= timeout) {
     gpio_init(GPIO_FPGA_NCONFIG);
-    reset_button_readable = 1;
+    // reset_button_readable = 1;
     return 1;
   }
 
@@ -139,7 +141,7 @@ int fpga_reset() {
   debug(("fpga_status: done %u nstatus %u\n", gpio_get(GPIO_FPGA_CONF_DONE), gpio_get(GPIO_FPGA_NSTATUS)));
   if (time_us_64() >= timeout) {
     gpio_init(GPIO_FPGA_NCONFIG);
-    reset_button_readable = 1;
+    // reset_button_readable = 1;
     return 2;
   }
   debug(("fpga_status: done %u nstatus %u\n", gpio_get(GPIO_FPGA_CONF_DONE), gpio_get(GPIO_FPGA_NSTATUS)));
@@ -162,7 +164,7 @@ int fpga_reset() {
   if (time_us_64() >= timeout) {
     gpio_init(GPIO_FPGA_INITB);
     gpio_init(GPIO_FPGA_RESET);
-    reset_button_readable = 1;
+    // reset_button_readable = 1;
     return 1;
   }
 
@@ -173,14 +175,14 @@ int fpga_reset() {
   if (time_us_64() >= timeout) {
     gpio_init(GPIO_FPGA_INITB);
     gpio_init(GPIO_FPGA_RESET);
-    reset_button_readable = 1;
+    // reset_button_readable = 1;
     return 2;
   }
   
   gpio_init(GPIO_FPGA_INITB);
   gpio_init(GPIO_FPGA_RESET);
 #endif
-  reset_button_readable = 1;
+  // reset_button_readable = 1;
   return 0;
 }
 

@@ -31,6 +31,7 @@ typedef struct {
   uint8_t fifobuf[64];
   fifo_t fifo_rx;
   uint8_t fiforxbuf[64];
+  uint64_t wait_time;
   uint sm;
 } ps2_t;
 
@@ -117,7 +118,9 @@ void ps2_Init() {
   fifo_Init(&ps2port[1].fifo_rx, ps2port[1].fiforxbuf, sizeof ps2port[1].fiforxbuf);
   ps2port[0].sm = PS2HOST_SM;
   ps2port[1].sm = PS2HOST2_SM;
-  
+  ps2port[0].wait_time = 0;
+  ps2port[1].wait_time = 0;
+
 #ifdef PIOINTS
   irq_set_exclusive_handler (PS2_PIO_IRQ, pio_callback);
   pio_set_irq0_source_enabled(ps2host_pio, ps2host_sm, true);
@@ -182,6 +185,7 @@ void ps2_SendChar(uint8_t ch, uint8_t data) {
 #endif
 }
 
+#define KBD_WAIT_TIME     100000
 void ps2_HealthCheck() {
   int c;
   int ch = 0;
@@ -192,9 +196,20 @@ void ps2_HealthCheck() {
     }
 
 #ifndef NO_PS2_TX
-    while (!pio_sm_is_tx_fifo_full(ps2host_pio, ps2port[ch].sm) && (c = fifo_Get(&ps2port[ch].fifo)) >= 0) {
-      debug(("[%02X]\n", c));
-      writePs2(ps2host_pio, ps2port[ch].sm, c, hostMode);
+    uint64_t now = time_us_64();
+    if (!ps2port[ch].wait_time || ps2port[ch].wait_time < now) {
+      ps2port[ch].wait_time = 0;
+      while (!pio_sm_is_tx_fifo_full(ps2host_pio, ps2port[ch].sm) && (c = fifo_Get(&ps2port[ch].fifo)) >= 0) {
+        printf("[%02X]\n", c);
+#if 0 /* TODO: find another way of checking for wait */
+        if (c == 0xff) {
+          printf("Wait\n");
+          ps2port[ch].wait_time = now + KBD_WAIT_TIME;
+          break;
+        }
+#endif
+        writePs2(ps2host_pio, ps2port[ch].sm, c, hostMode);
+      }
     }
 #endif
   }

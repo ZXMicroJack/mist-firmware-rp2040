@@ -7,6 +7,7 @@
 
 #include "pins.h"
 #include "ps2.h"
+#include "gpioirq.h"
 #include "jamma.h"
 // #define DEBUG
 #include "debug.h"
@@ -113,11 +114,14 @@ void jamma_InitUSB() {
   jamma_program_init(jamma_pio, jamma_sm, jamma_offset, GPIO_RP2U_XDATA);
   pio_sm_clear_fifos(jamma_pio, jamma_sm);
   
+  gpioirq_SetCallback(IRQ_JAMMA, gpio_callback);
+#if 0
 #ifdef OLD_PS2
   ps2_SetGPIOListener(gpio_callback);
 #else
   gpio_set_irq_callback(gpio_callback);
   irq_set_enabled(IO_IRQ_BANK0, true);
+#endif
 #endif
   gpio_set_irq_enabled(GPIO_RP2U_XLOAD, GPIO_IRQ_EDGE_FALL, true);
 
@@ -133,12 +137,15 @@ void jamma_Kill() {
   // disable interrupts
   gpio_set_irq_enabled(GPIO_RP2U_XLOAD, GPIO_IRQ_EDGE_FALL, false);
   pio_set_irq0_source_enabled(jamma_pio, jamma_sm, false);
+  gpioirq_SetCallback(IRQ_JAMMA, NULL);
 
+#if 0
   // remove handlers
 #ifdef OLD_PS2
   ps2_SetGPIOListener(NULL);
 #else
   irq_set_exclusive_handler (PIO0_IRQ_0, NULL);
+#endif
 #endif
 
   // shutdown sm

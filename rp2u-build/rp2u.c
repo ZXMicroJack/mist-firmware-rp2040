@@ -26,6 +26,7 @@
 #include "fifo.h"
 #include "ipc.h"
 #include "pins.h"
+#include "gpioirq.h"
 // #define printf uprintf
 // #define DEBUG
 // #define DEBUG_PS2
@@ -502,6 +503,7 @@ int main()
   // sleep_ms(1000); // usb settle delay
 
   cookie_Reset();
+  gpioirq_Init();
   watchdog_enable(4000, true);
   add_repeating_timer_us(2000000, watchdog_Callback, NULL, &watchdog_timer);
 

@@ -36,7 +36,8 @@ static uint8_t sym_held = 0;
 static uint8_t fn_held = 0;
 static uint8_t xfn_held = 0;
 
-#define WAIT  0xff
+//#define WAIT  0xff
+#define WAIT PS2_WAIT_SCANCODE
 
 const uint8_t spacedot[] = { 0xf0, 0x12, 0xf0, 0x14, KEY_SPACE, WAIT, 0xf0, KEY_SPACE, KEY_PUNTO, WAIT, 0xf0, KEY_PUNTO, WAIT, WAIT}; 
 

@@ -201,13 +201,11 @@ void ps2_HealthCheck() {
       ps2port[ch].wait_time = 0;
       while (!pio_sm_is_tx_fifo_full(ps2host_pio, ps2port[ch].sm) && (c = fifo_Get(&ps2port[ch].fifo)) >= 0) {
         printf("[%02X]\n", c);
-#if 0 /* TODO: find another way of checking for wait */
-        if (c == 0xff) {
+        if (c == PS2_WAIT_SCANCODE && ch == 0) { /* only respond to special wait scancode if you are a keyboard */
           printf("Wait\n");
           ps2port[ch].wait_time = now + KBD_WAIT_TIME;
           break;
         }
-#endif
         writePs2(ps2host_pio, ps2port[ch].sm, c, hostMode);
       }
     }

@@ -180,7 +180,7 @@ unsigned int usb_host_storage_capacity() {
 #endif
 
 uint8_t inhibit_reset = 0;
-#ifndef ZXUNO
+#if !defined(ZXUNO) && !defined(XILINX)
 static void gpio_callback(uint gpio, uint32_t events) {
   if (gpio == GPIO_RESET_FPGA && !inhibit_reset) {
 #ifdef MB2
@@ -203,7 +203,7 @@ int mist_init() {
     ps2_AttemptDetect(GPIO_PS2_CLK, GPIO_PS2_DATA);
 #endif
 
-#ifndef ZXUNO
+#if !defined(ZXUNO) && !defined(XILINX)
     /* monitor RESET switch */
     gpioirq_Init();
     gpioirq_SetCallback(IRQ_RESET, gpio_callback);
@@ -211,10 +211,12 @@ int mist_init() {
     gpio_init(GPIO_RESET_FPGA);
     gpio_set_dir(GPIO_RESET_FPGA, GPIO_IN);
 
+#ifndef XILINX /* don't have to wait for reset to come back up for xilinx. */
     while (!gpio_get(GPIO_RESET_FPGA))
       tight_loop_contents();
+#endif
 
-    // gpio_set_irq_enabled(GPIO_RESET_FPGA, GPIO_IRQ_EDGE_RISE, true);
+    inhibit_reset = 1;
     gpio_set_irq_enabled(GPIO_RESET_FPGA, GPIO_IRQ_EDGE_FALL, true);
 #endif
     // Timer_Init();

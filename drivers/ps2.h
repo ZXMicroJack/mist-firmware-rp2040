@@ -1,6 +1,8 @@
 #ifndef _PS2_H
 #define _PS2_H
 
+#define PS2_WAIT_SCANCODE		0xEC
+
 void ps2_InitEx(int mister);
 void ps2_Init();
 void ps2_SendChar(uint8_t ch, uint8_t data);

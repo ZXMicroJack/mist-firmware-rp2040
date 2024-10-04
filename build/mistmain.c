@@ -67,7 +67,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "drivers/midi.h"
 #include "drivers/pins.h"
 #include "drivers/gpioirq.h"
-// #define DEBUG
+//#define DEBUG
 #include "drivers/debug.h"
 
 #include "hardware/gpio.h"
@@ -534,11 +534,11 @@ void midi_loop() {
     thisread = midi_get(uartbuff, thisread);
 
 #if 0 // disabled for debug
-    printf("MidiIn: ");
+    debug(("MidiIn: "));
     for (int i=0; i<thisread; i++) {
-      printf("%02X %c", uartbuff[i], (uartbuff[i] >= ' ' && uartbuff[i] < 128) ? uartbuff[i] : '?');
+      debug(("%02X %c", uartbuff[i], (uartbuff[i] >= ' ' && uartbuff[i] < 128) ? uartbuff[i] : '?'));
     }
-    printf("\n");
+    debug(("\n"));
 #endif
 #ifndef PICOSYNTH
     for (int i=0; i<thisread; i++) {

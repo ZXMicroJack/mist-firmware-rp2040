@@ -135,7 +135,7 @@ int kbd_Get() {
     uint64_t now = time_us_64();
     if (!waittime || waittime < now) {
       int c = fifo_Get(&ps2_fifo);
-      if (c == 0xff) {
+      if (c == WAIT) {
         waittime = now + KBD_WAIT_TIME;
       } else {
         r = c;

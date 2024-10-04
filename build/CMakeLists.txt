@@ -170,7 +170,6 @@ set(picosynth_src
 set(picosynth_lib
   hardware_dma
   pico_audio
-  hardware_i2c 
   picosynth
 )
 
@@ -269,6 +268,9 @@ set(xilinx_opts
 )
 set(flash_opts
   "-DPICOSYNTH"
+  "-DBUFFER_FPGA"
+)
+set(flash_opts_mb2
   "-DBUFFER_FPGA"
 )
 set(flash_opts_zx1
@@ -649,7 +651,7 @@ add_executable(mistmb2xilinx
   ${driver_mb2_src}
   ${main_src}
   ${usb_src}
-  ${picosynth_src}
+  # ${picosynth_src}
   )
 
 # mistfirmwareusbxilinx
@@ -661,7 +663,8 @@ target_link_libraries(mistmb2xilinx
   hardware_pio 
   hardware_flash 
   hardware_rtc 
-  ${picosynth_lib}
+  hardware_i2c 
+  # ${picosynth_lib}
   # pico_multicore)
   pico_multicore tinyusb_host tinyusb_board)
 target_include_directories(mistmb2xilinx PUBLIC ../usbhost)
@@ -694,7 +697,7 @@ target_compile_options(mistmb2xilinx PUBLIC
   # "-DSD_DIRECT_MODE_GPIO=22"
   ${common_opts}
   ${xilinx_opts}
-  ${flash_opts}
+  ${flash_opts_mb2}
   ${zxtres_opts}
   ${mb2_opts}
   ${usb_opts}
@@ -770,6 +773,7 @@ target_link_libraries(mistzx1ram
   hardware_pio 
   hardware_rtc 
   pico_multicore 
+  hardware_i2c 
   ${picosynth_lib})
   
 add_compile_options(-O2)
@@ -979,6 +983,7 @@ target_link_libraries(mistmb2
   hardware_pio 
   hardware_flash 
   hardware_rtc 
+  hardware_i2c 
   ${picosynth_lib}
   pico_multicore tinyusb_host tinyusb_board)
 target_include_directories(mistmb2 PUBLIC ../usbhost)
@@ -996,7 +1001,7 @@ set_target_properties(mistmb2 PROPERTIES PICO_TARGET_LINKER_SCRIPT "${PROJECT_SO
 target_compile_options(mistmb2 PUBLIC
   ${common_opts}
   ${altera_opts}
-  ${flash_opts}
+  ${flash_opts_mb2}
   ${neptuno_opts}
   ${mb2_opts}
   ${usb_opts}

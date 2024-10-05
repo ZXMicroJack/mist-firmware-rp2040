@@ -49,3 +49,14 @@ v8 (v2.9)
 v9 (v2.10)
 ---------
 - Speed up SPI seems to have fixed many things.
+
+v10 (v2.11)
+-----------
+- Matrix keyboard - mappings fixed
+- Matrix keyboard - changing mode types new mode on screen
+- Add MIDI to single MBs and to ZXUno
+- Neptuno+ reset button fixed
+- Added more interfaces for USB to get around greedy USB devices grabbing 4+
+- Allow remapping of menu invoking keys on joypads
+- Improved USB keyboard stability on dual MBs.
+

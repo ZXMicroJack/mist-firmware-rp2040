@@ -87,10 +87,8 @@ void picosynth_Loop() {
       int16_t *samples = (int16_t *) buffer->buffer->bytes;
       if (running_state) {
         wtsynth_GetAudioPacket(samples);
-#ifdef ZXUNO
         for (int i=0; i<SAMPLES_PER_BUFFER; i++)
           samples[i] ^= 0x8000;
-#endif
       } else {
         for (int i=0; i<SAMPLES_PER_BUFFER; i++)
           samples[i] = 0;

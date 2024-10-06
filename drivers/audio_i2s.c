@@ -15,6 +15,8 @@
 
 #ifdef ZXUNO
 #include "audio_i2s_zx1.pio.h"
+#elif defined(MIDI_NOT_I2S)
+#include "audio_not_i2s.pio.h"
 #else
 #include "audio_i2s.pio.h"
 #endif
@@ -54,7 +56,12 @@ const audio_format_t *audio_i2s_setupx(const audio_format_t *intended_audio_form
     uint func = GPIO_FUNC_PIOx;
     gpio_set_function(config->data_pin, func);
     gpio_set_function(config->clock_pin_base, func);
+#ifdef MIDI_NOT_I2S
+    /* isolate pin */
+    gpio_init(config->clock_pin_base + 1);
+#else
     gpio_set_function(config->clock_pin_base + 1, func);
+#endif
 
     uint8_t sm = shared_state.pio_sm = config->pio_sm;
     pio_sm_claim(audio_pio, sm);
@@ -100,9 +107,21 @@ static void update_pio_frequency(uint32_t sample_freq) {
     assert(system_clock_frequency < 0x40000000);
 #ifdef ZXUNO
     uint32_t divider = system_clock_frequency * 4 / sample_freq; // avoid arithmetic overflow
+#elif defined(MIDI_NOT_I2S)
+    // divider should be:
+    // system_clock_frequency_hz * 256 / (nr_bits * sample_freq * instructions_per_bit)
+    //
+    // e.g.
+    // system_clock_frequency_hz * 256 / (32 * sample_freq * 2) - for example above
+    // system_clock_frequency_hz * 4 / sample_freq
+    //
+    // for this:
+    // system_clock_frequency_hz * 256 / (40 * sample_freq * 2)
+    uint32_t divider = system_clock_frequency * 16 / (sample_freq * 5); // avoid arithmetic overflow
 #else
     uint32_t divider = system_clock_frequency * 16 / (sample_freq * 5); // avoid arithmetic overflow
 #endif
+
     assert(divider < 0x1000000);
     pio_sm_set_clkdiv_int_frac(audio_pio, shared_state.pio_sm, divider >> 8u, divider & 0xffu);
     shared_state.freq = sample_freq;

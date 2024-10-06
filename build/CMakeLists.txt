@@ -1009,3 +1009,37 @@ target_compile_options(mistmb2 PUBLIC
   )
 
 
+####################################################################################
+# RAM build - test picosynth
+add_executable(miditest
+  ${driver_mb2_src}
+  miditest.c
+  ${picosynth_src}
+  )
+
+target_link_libraries(miditest 
+  pico_stdlib 
+  mistfirmware
+  hardware_spi 
+  hardware_pio 
+  hardware_rtc 
+  hardware_i2c
+  pico_multicore
+  ${picosynth_lib})
+add_compile_options(-O2)
+pico_generate_pio_header(miditest ../drivers/audio_i2s.pio)
+pico_generate_pio_header(miditest ../drivers/audio_not_i2s.pio)
+pico_enable_stdio_usb(miditest 1)
+
+target_include_directories(miditest PUBLIC ../picosynth)
+
+pico_enable_stdio_uart(miditest 0)
+pico_add_extra_outputs(miditest)
+example_auto_set_url(miditest)
+pico_set_binary_type(miditest no_flash)
+# target_compile_options(miditest PUBLIC 
+#   "-DMIDI_NOT_I2S"
+#   )
+
+
+

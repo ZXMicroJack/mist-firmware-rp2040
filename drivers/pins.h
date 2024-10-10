@@ -66,6 +66,11 @@
 #define GPIO_MIST_SS3    21 // osd
 #define GPIO_MIST_SS4    22 // dmode?
 
+#define GPIO_MIST_MISO   16
+#define GPIO_MIST_MOSI   18
+#define GPIO_MIST_SCK    19
+
+
 
 #ifdef USBDEV
 #define GPIO_PS2_CLK      3

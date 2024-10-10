@@ -67,7 +67,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "drivers/midi.h"
 #include "drivers/pins.h"
 #include "drivers/gpioirq.h"
-//#define DEBUG
+#define DEBUG
 #include "drivers/debug.h"
 
 #include "hardware/gpio.h"
@@ -144,8 +144,6 @@ int GetUSBStorageDevices()
 // Test use of USB disk instead of MMC - when MMC is not inserted.
 // #define MMC_AS_USB
 
-#ifdef USBFAKE
-
 #ifdef MMC_AS_USB
 uint8_t storage_devices = 1;
 
@@ -163,20 +161,6 @@ unsigned int usb_host_storage_capacity() {
   printf("usb_host_storage_capacity\n");
   return MMC_GetCapacity();
 }
-#else
-uint8_t storage_devices = 0;
-unsigned char usb_host_storage_read(unsigned long lba, unsigned char *pReadBuffer, uint16_t len) {
-  return 0;
-}
-
-unsigned char usb_host_storage_write(unsigned long lba, const unsigned char *pWriteBuffer, uint16_t len) {
-  return 0;
-}
-
-unsigned int usb_host_storage_capacity() {
-  return 0;
-}
-#endif
 #endif
 
 uint8_t inhibit_reset = 0;
@@ -228,13 +212,6 @@ int mist_init() {
 
     mist_spi_init();
     rtc_Init();
-
-// #if defined(ZXUNO) && PICO_NO_FLASH
-//     {
-//       extern void ConfigureFPGAStdin();
-//       ConfigureFPGAStdin();
-//     }
-// #endif
 
 #ifdef ZXUNO
   {
@@ -371,10 +348,6 @@ int mist_init() {
     midi_init();
 #endif
 
-// #ifdef PICOSYNTH
-    // picosynth_Init();
-// #endif
-
 #ifdef ZXUNO
     settings_board_load();
     settings_load(1);
@@ -389,11 +362,6 @@ int mist_init() {
 #ifdef PIODEBUG
     debuginit();
 #endif
-
-#ifdef MB2 // TODO remove
-    // ReturnToNormal();
-#endif
-
 
     return 0;
 }
@@ -533,7 +501,7 @@ void midi_loop() {
     
     thisread = midi_get(uartbuff, thisread);
 
-#if 0 // disabled for debug
+#if 1 // disabled for debug
     debug(("MidiIn: "));
     for (int i=0; i<thisread; i++) {
       debug(("%02X %c", uartbuff[i], (uartbuff[i] >= ' ' && uartbuff[i] < 128) ? uartbuff[i] : '?'));
@@ -569,23 +537,6 @@ int mist_loop() {
 #ifdef MB2
   /* send messages buffered by core 2 processes */
   mb2_SendMessages();
-#endif
-
-#if 0
-#ifndef ZXUNO
-#ifndef USBFAKE
-  if (fpga_ResetButtonState()) {
-    printf("Reset detected!!!!\n");
-    fpga_init(NULL);
-#if 0
-#ifdef MB2
-    stop_watchdog = 1;
-#endif
-    watchdog_enable(1, 1);
-#endif
-  }
-#endif
-#endif
 #endif
 
     cdc_control_poll();

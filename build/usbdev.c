@@ -266,12 +266,6 @@ void usb_deferred_poll() {
 // usb_ctrl_req( dev, HID_REQ_HIDOUT, HID_REQUEST_SET_REPORT, report_id, report_type, iface, nbytes, dataptr);
 
 
-// void mist_usb_init() {
-// }
-
-// void mist_usb_loop() {
-// }
-
 #if 1
 // TODO MJ implement usb_ctrl_req
 // NOTE: Faked to return report descriptor.

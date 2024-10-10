@@ -79,12 +79,7 @@ static void read_next_block_buffered_fill(configFpga *brl) {
        brl->r = brl_inc(brl->r);
        brl->c ++;
      } else {
-#if 0
-       if (brl->closing_fn) {
-         brl->closing_fn(brl->closing_user);
-         brl->closing_fn = NULL;
-       }
-#endif
+      // close the file here if needed
        break;
     }
   }
@@ -261,7 +256,6 @@ unsigned char ConfigureFpga(const char *bitfile) {
   fpga_configure(cf, read_next_block, fileSize);
 #endif
   fpga_claim(false);
-  // rtc_AttemptSync();
 
   int result = !cf->error;
   free(cf);

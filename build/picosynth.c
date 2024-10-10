@@ -79,6 +79,10 @@ void picosynth_Init() {
   debug(("picosynth_Init: all ok\n"));
 }
 
+int picosynth_GetStatus() {
+  return synth_status;
+}
+
 void picosynth_Loop() {
   /* grab audio packets if synth is started */
   if (!synth_status) {

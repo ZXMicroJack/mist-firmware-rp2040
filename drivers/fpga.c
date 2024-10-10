@@ -29,23 +29,6 @@ uint8_t inited = 0;
 PIO fpga_pio = FPGA_PIO;
 unsigned fpga_sm = FPGA_SM;
 
-#if 0
-static uint8_t reset_button_readable = 1;
-static uint8_t reset_button_prev = 1;
-
-int fpga_ResetButtonState() {
-#ifdef ALTERA_FPGA
-  uint8_t reset_button_curr = gpio_get(GPIO_FPGA_NCONFIG);
-#else
-  uint8_t reset_button_curr = gpio_get(GPIO_FPGA_RESET);
-#endif
-
-  uint8_t ret = reset_button_readable && !reset_button_prev && reset_button_curr;
-  reset_button_prev = reset_button_curr;
-  return ret;
-}
-#endif
-
 int fpga_initialise() {
   if (inited) return 0;
   
@@ -97,7 +80,7 @@ int fpga_claim(uint8_t claim) {
 }
 
 void fpga_holdreset() {
-#ifndef ALTERA_FPGA
+#if !defined(ALTERA_FPGA)
   gpio_init(GPIO_FPGA_RESET);
   gpio_set_dir(GPIO_FPGA_RESET, GPIO_OUT);
   gpio_put(GPIO_FPGA_RESET, 0);

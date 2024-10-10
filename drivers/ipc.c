@@ -145,16 +145,6 @@ void ipc_InitSlave() {
   gpio_init(GPIO_RP2U_BCDATAREADY);
   gpio_put(GPIO_RP2U_BCDATAREADY, 0); // no data
 
-#if 0
-  i2c_set_slave_mode(i2c0, true, SLAVE_ADDRESS);
-  // Enable the interrupts we want
-  *I2C0_INTR_MASK = (I2C_INTR_MASK_READ_REQ | I2C_INTR_MASK_RX_FULL);
-
-  // Set up the interrupt handlers
-  irq_set_exclusive_handler(I2C0_IRQ, i2c0_irq_handler);
-  // Enable I2C interrupts
-  irq_set_enabled(I2C0_IRQ, true);
-#endif
   fifo_Init(&readback_fifo, readback_fifo_buf, sizeof readback_fifo_buf);
 
 }
@@ -263,17 +253,6 @@ int ipc_ReadBack(uint8_t *data, uint8_t len) {
   i2c_read_blocking(i2c1, SLAVE_ADDRESS, data, len, true);
   return len;
 }
-
-#if 0
-int ipc_SetFastMode(uint8_t on) {
-#ifdef IPC_SLAVE
-  i2c_set_baudrate(i2c0, IPC_BAUDRATE_MAX);
-#endif
-#ifdef IPC_MASTER
-  i2c_set_baudrate(i2c1, IPC_BAUDRATE_MAX);
-#endif
-}
-#endif
 
 int ipc_Command(uint8_t cmd, uint8_t *data, uint8_t len) {
   uint8_t response;

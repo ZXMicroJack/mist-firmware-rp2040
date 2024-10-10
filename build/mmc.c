@@ -49,9 +49,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 static pio_spi_inst_t *spi = NULL;
 
 unsigned char MMC_Init(void) {
-#ifdef DEVKIT_DEBUG
-  return CARDTYPE_NONE;
-#else
   if (spi == NULL) spi = sd_hw_init();
 
   if (sd_init_card(spi)) {
@@ -59,75 +56,54 @@ unsigned char MMC_Init(void) {
   }
 
   return sd_is_sdhc() ? CARDTYPE_SDHC : CARDTYPE_SD;
-#endif
 }
 
 unsigned char MMC_Read(unsigned long lba, unsigned char *pReadBuffer) {
   debug(("MMC_Read: lba %d pReadBuffer %x\n", lba, pReadBuffer));
-#ifndef DEVKIT_DEBUG
   if (!sd_readsector(spi, lba, pReadBuffer)) {
       return 1;
   }
-#endif
   return 0;
 }
 
 unsigned char MMC_Write(unsigned long lba, const unsigned char *pWriteBuffer) {
   debug(("MMC_Write: lba %d pReadBuffer %x\n", lba, pWriteBuffer));
-#ifndef DEVKIT_DEBUG
   if (!sd_writesector(spi, lba, pWriteBuffer)) {
       return 1;
   }
-#endif
   return 0;
 }
 
 unsigned char MMC_ReadMultiple(unsigned long lba, unsigned char *pReadBuffer, unsigned long nBlockCount) {
   debug(("MMC_ReadMultiple: lba %d pReadBuffer %x nBlockCount %d\n", lba, pReadBuffer, nBlockCount));
-#ifndef DEVKIT_DEBUG
-    while (nBlockCount --) {
-      if (sd_readsector(spi, lba, pReadBuffer)) {
-        return 0;
-      }
-      lba++;
-      if (pReadBuffer != NULL) pReadBuffer += 512;
+  while (nBlockCount --) {
+    if (sd_readsector(spi, lba, pReadBuffer)) {
+      return 0;
     }
-    return 1;
-#else
-    return 0;
-#endif
+    lba++;
+    if (pReadBuffer != NULL) pReadBuffer += 512;
+  }
+  return 1;
 }
 
 unsigned char MMC_WriteMultiple(unsigned long lba, const unsigned char *pWriteBuffer, unsigned long nBlockCount) {
   debug(("MMC_WriteMultiple: lba %d pReadBuffer %x nBlockCount %d\n", lba, pWriteBuffer, nBlockCount));
-#ifndef DEVKIT_DEBUG
-    while (nBlockCount--) {
-        if (sd_writesector(spi, lba, pWriteBuffer)) {
-            return 0;
-        }
-        lba ++;
-        pWriteBuffer += 512;
-    }
-    return 1;
-#else
-    return 0;
-#endif
+  while (nBlockCount--) {
+      if (sd_writesector(spi, lba, pWriteBuffer)) {
+          return 0;
+      }
+      lba ++;
+      pWriteBuffer += 512;
+  }
+  return 1;
 }
 
 unsigned char MMC_GetCSD(unsigned char *b) {
-#ifndef DEVKIT_DEBUG
-    return sd_cmd9(spi, b);
-#else
-    return 0;
-#endif
+  return sd_cmd9(spi, b);
 }
 
 unsigned char MMC_GetCID(unsigned char *b) {
-#ifndef DEVKIT_DEBUG
-    return sd_cmd10(spi, b);
-#else
-    return 0;
-#endif
+  return sd_cmd10(spi, b);
 }
 
 // frequently check if card has been removed
@@ -136,16 +112,11 @@ unsigned char MMC_CheckCard() {
 }
 
 unsigned char MMC_IsSDHC() {
-#ifndef DEVKIT_DEBUG
   return sd_is_sdhc();
-#else
-    return 0;
-#endif
 }
 
 // MMC get capacity
 unsigned long MMC_GetCapacity() {
-#ifndef DEVKIT_DEBUG
 	unsigned long result=0;
 	unsigned char CSDData[16];
  
@@ -173,20 +144,9 @@ unsigned long MMC_GetCapacity() {
 	  result*=blocksize;	// Scale by the number of 512-byte chunks per block.
 	  return(result);
 	}
-#else
-    return 0;
-#endif
 }
 
-//TODO MJ assume MMC is inserted
+//assume MMC is inserted
 char mmc_inserted() {
   return 1;
 }
-
-#if 0 // TODO MJ only used for USB storage
-//TODO MJ assume MMC is not write protected - possibly assume it is for now.
-char mmc_write_protected() {
-  return 1; //  return (*AT91C_PIOA_PDSR & SD_WP);
-}
-
-#endif

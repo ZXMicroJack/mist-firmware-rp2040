@@ -3,12 +3,14 @@ cmake_minimum_required(VERSION 3.12)
 # Pull in SDK (must be before project)
 include(pico_sdk_import.cmake)
 include(pico_extras_import.cmake)
-# include($ENV{PICO_EXTRAS_PATH}/external/pico_extras_import.cmake)
 
 project(pico_examples C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DIPC_MASTER -DPICO_XOSC_STARTUP_DELAY_MULTIPLIER=64 -DNR_PS2=2 -fsigned-char -DUSE_8BA -DSAMPLE_RATE=22050 -DSAMPLE_LEN=512 -DPICO_AUDIO_I2S_DATA_PIN=4 -DPICO_AUDIO_I2S_CLOCK_PIN_BASE=2 -DVE_STEPS=64 -DLFO_STEPS=64 -DNONAME -DPICO_AUDIO_I2S_PIO=1")
+#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DIPC_MASTER -DPICO_XOSC_STARTUP_DELAY_MULTIPLIER=64 -DNR_PS2=2 -fsigned-char -DUSE_8BA -DSAMPLE_RATE=22050 -DSAMPLE_LEN=512 -DPICO_AUDIO_I2S_DATA_PIN=4 -DPICO_AUDIO_I2S_CLOCK_PIN_BASE=2 -DVE_STEPS=64 -DLFO_STEPS=64 -DNONAME -DPICO_AUDIO_I2S_PIO=1")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DPICO_XOSC_STARTUP_DELAY_MULTIPLIER=64 -fsigned-char")
+
+# for alpine build of docker tools
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-error=implicit-function-declaration -Wno-error=incompatible-pointer-types -Wno-error=int-conversion -Wno-error=return-mismatch")
 
 set(PICO_EXAMPLES_PATH ${PROJECT_SOURCE_DIR})
@@ -173,6 +175,14 @@ set(picosynth_lib
   picosynth
 )
 
+set(picosynth_opts
+  "-DSAMPLE_RATE=22050"
+  "-DSAMPLE_LEN=512"
+  "-DPICO_AUDIO_I2S_DATA_PIN=4"
+  "-DPICO_AUDIO_I2S_CLOCK_PIN_BASE=2"
+  "-DPICO_AUDIO_I2S_PIO=1"
+)
+
 # mist library
 add_library(mistfirmware STATIC ${mistfirmware_src})
 target_compile_options(mistfirmware PUBLIC
@@ -268,9 +278,12 @@ set(xilinx_opts
 )
 set(flash_opts
   "-DPICOSYNTH"
+  "-DMIDI_NOT_I2S"
   "-DBUFFER_FPGA"
 )
 set(flash_opts_mb2
+  "-DPICOSYNTH"
+  "-DMIDI_NOT_I2S"
   "-DBUFFER_FPGA"
 )
 set(flash_opts_zx1
@@ -310,9 +323,9 @@ set(mb2_opts
 
 ####################################################################################
 # Main build RAM test build for functionality Xilinx ZXTres
-# set(testarch xilinx)
+set(testarch xilinx)
 # set(archdefs "-DXILINX")
-set(archdefs   "-DALTERA_FPGA" "-DQMTECH")
+# set(archdefs   "-DALTERA_FPGA" "-DQMTECH")
 
 ####################################################################################
 # Main build RAM test build for functionality Xilinx ZXTres
@@ -337,6 +350,7 @@ pico_generate_pio_header(mistram ../drivers/spi.pio)
 pico_generate_pio_header(mistram ../drivers/jamma.pio)
 pico_generate_pio_header(mistram ../drivers/jammadb9.pio)
 pico_generate_pio_header(mistram ../drivers/ps2.pio)
+pico_generate_pio_header(mistram ../drivers/audio_not_i2s.pio)
 pico_generate_pio_header(mistram ../drivers/audio_i2s.pio)
 pico_generate_pio_header(mistram ../drivers/ps2tx.pio)
 pico_enable_stdio_usb(mistram 1)
@@ -345,29 +359,14 @@ pico_add_extra_outputs(mistram)
 example_auto_set_url(mistram)
 pico_set_binary_type(mistram no_flash)
 
-# ${common_opts}
-# ${altera_opts}
-# ${xilinx_opts}
-# ${flash_opts}
-# ${ram_opts}
-# ${zxtres_opts}
-# ${neptuno_opts}
-# ${zxuno_opts}
-# ${usb_opts}
-# ${mb2_opts}
-
 target_compile_options(mistram PUBLIC
   ${common_opts}
-  ${altera_opts}
+  ${xilinx_opts}
+  # ${altera_opts}
   ${ram_opts}
-  ${neptuno_opts}
-  # "-DVDATE=\"\""
-  # "-Dhexdump=driver_hexdump"
-  # "-DPS2HOST"
-  # ${archdefs}
-  # "-DJAMMADB9"
-  # "-DSD_DIRECT_MODE_GPIO=22"
-  # "-DBUFFER_FPGA"
+  # ${neptuno_opts}
+  ${zxtres_opts}
+  ${picosynth_opts}
 )
 
 
@@ -424,7 +423,6 @@ add_executable(mistxilinx
   ${main_src}
   ${picosynth_src}
   )
-  # ${usb_src}
 
 target_link_libraries(mistxilinx 
   pico_stdlib 
@@ -436,13 +434,14 @@ target_link_libraries(mistxilinx
   pico_multicore 
   ${picosynth_lib}
   hardware_i2c)
-# target_include_directories(mistxilinx PUBLIC ../usbhost)
-target_include_directories(mistxilinx PUBLIC ../picosynth)
+
+  target_include_directories(mistxilinx PUBLIC ../picosynth)
 add_compile_options(-O2)
 pico_generate_pio_header(mistxilinx ../drivers/fpga.pio)
 pico_generate_pio_header(mistxilinx ../drivers/spi.pio)
 pico_generate_pio_header(mistxilinx ../drivers/jamma.pio)
 pico_generate_pio_header(mistxilinx ../drivers/jammadb9.pio)
+pico_generate_pio_header(mistxilinx ../drivers/audio_not_i2s.pio)
 pico_generate_pio_header(mistxilinx ../drivers/audio_i2s.pio)
 pico_generate_pio_header(mistxilinx ../drivers/ps2.pio)
 pico_generate_pio_header(mistxilinx ../drivers/ps2tx.pio)
@@ -450,22 +449,13 @@ pico_enable_stdio_usb(mistxilinx 1)
 pico_enable_stdio_uart(mistxilinx 0)
 pico_add_extra_outputs(mistxilinx)
 example_auto_set_url(mistxilinx)
-#pico_set_binary_type(mistusb no_flash)
+
 target_compile_options(mistxilinx PUBLIC
-  # "-DVDATE=\"\""
-  # "-Dhexdump=driver_hexdump"
-  # "-DPS2HOST"
-  # "-DXILINX"
-  # "-DJAMMADB9"
-  # "-DMIST_ROOT=\"/MIST\""
-  # "-DBUFFER_FPGA"
-  # "-DSD_DIRECT_MODE_GPIO=22"
-  # "-DUSB_DEBUG_OFF"
-  # "-DPICOSYNTH"
   ${common_opts}
   ${xilinx_opts}
   ${flash_opts}
   ${zxtres_opts}
+  ${picosynth_opts}
   )
 
 ####################################################################################
@@ -496,6 +486,7 @@ pico_generate_pio_header(mistusbxilinx ../drivers/fpga.pio)
 pico_generate_pio_header(mistusbxilinx ../drivers/spi.pio)
 pico_generate_pio_header(mistusbxilinx ../drivers/jamma.pio)
 pico_generate_pio_header(mistusbxilinx ../drivers/jammadb9.pio)
+pico_generate_pio_header(mistusbxilinx ../drivers/audio_not_i2s.pio)
 pico_generate_pio_header(mistusbxilinx ../drivers/audio_i2s.pio)
 pico_generate_pio_header(mistusbxilinx ../drivers/ps2.pio)
 pico_generate_pio_header(mistusbxilinx ../drivers/ps2tx.pio)
@@ -503,27 +494,14 @@ pico_enable_stdio_usb(mistusbxilinx 0)
 pico_enable_stdio_uart(mistusbxilinx 0)
 pico_add_extra_outputs(mistusbxilinx)
 example_auto_set_url(mistusbxilinx)
-#pico_set_binary_type(mistusb no_flash)
+
 target_compile_options(mistusbxilinx PUBLIC
   ${common_opts}
   ${xilinx_opts}
   ${flash_opts}
   ${zxtres_opts}
   ${usb_opts}
-  # "-DVDATE=\"\""
-  # "-Dhexdump=driver_hexdump"
-  # "-DPS2HOST"
-  # "-DXILINX"
-  # "-DJAMMADB9"
-  # "-DUSB"
-  # "-DBUFFER_FPGA"
-  # "-DMIST_USB"
-  # "-DUSB_STORAGE"
-  # "-DBOOT_FLASH_ON_ERROR"
-  # "-DSD_DIRECT_MODE_GPIO=22"
-  # "-DUSB_DEBUG_OFF"
-  # "-DMIST_ROOT=\"/MIST\""
-  # "-DPICOSYNTH"
+  ${picosynth_opts}
 )
 
 ####################################################################################
@@ -554,6 +532,7 @@ pico_generate_pio_header(mistusb ../drivers/fpga.pio)
 pico_generate_pio_header(mistusb ../drivers/spi.pio)
 pico_generate_pio_header(mistusb ../drivers/jamma.pio)
 pico_generate_pio_header(mistusb ../drivers/jammadb9.pio)
+pico_generate_pio_header(mistusb ../drivers/audio_not_i2s.pio)
 pico_generate_pio_header(mistusb ../drivers/audio_i2s.pio)
 pico_generate_pio_header(mistusb ../drivers/ps2.pio)
 pico_generate_pio_header(mistusb ../drivers/ps2tx.pio)
@@ -561,25 +540,14 @@ pico_enable_stdio_usb(mistusb 0)
 pico_enable_stdio_uart(mistusb 0)
 pico_add_extra_outputs(mistusb)
 example_auto_set_url(mistusb)
-# pico_set_binary_type(mistusb no_flash)
+
 target_compile_options(mistusb PUBLIC
-  # "-DVDATE=\"\""
-  # "-Dhexdump=driver_hexdump"
-  # "-DPS2HOST"
-  # "-DJAMMADB9"
-  # "-DUSB"
-  # "-DSD_DIRECT_MODE_GPIO=22"
-  # "-DMIST_USB"
-  # "-DALTERA_FPGA"
-  # "-DQMTECH"
-  # "-DUSB_STORAGE"
-  # "-DPICOSYNTH"
-  # "-DUSB_DEBUG_OFF"
   ${common_opts}
   ${altera_opts}
   ${flash_opts}
   ${neptuno_opts}
   ${usb_opts}
+  ${picosynth_opts}
   )
 
 ####################################################################################
@@ -591,18 +559,9 @@ add_executable(mistmb2xilinxram
   ${usb_src}
   )
 
-#   add_executable(mistram
-#   ${driver_src}
-#   ${main_src}
-#   )
-
-# target_link_libraries(mistram pico_stdlib mistfirmware${testarch} hardware_spi hardware_pio)
-
-
 target_link_libraries(mistmb2xilinxram 
   pico_stdlib 
   mistfirmwarexilinx 
-  # mistfirmwareusbxilinx
   hardware_spi 
   hardware_pio 
   hardware_rtc 
@@ -614,6 +573,7 @@ target_link_libraries(mistmb2xilinxram
 add_compile_options(-O2)
 pico_generate_pio_header(mistmb2xilinxram ../drivers/fpga.pio)
 pico_generate_pio_header(mistmb2xilinxram ../drivers/spi.pio)
+pico_generate_pio_header(mistmb2xilinxram ../drivers/audio_not_i2s.pio)
 pico_generate_pio_header(mistmb2xilinxram ../drivers/audio_i2s.pio)
 pico_generate_pio_header(mistmb2xilinxram ../drivers/uart_tx.pio)
 # NOUSB
@@ -629,15 +589,6 @@ pico_add_extra_outputs(mistmb2xilinxram)
 example_auto_set_url(mistmb2xilinxram)
 pico_set_binary_type(mistmb2xilinxram no_flash)
 target_compile_options(mistmb2xilinxram PUBLIC
-  # "-DVDATE=\"\""
-  # "-Dhexdump=driver_hexdump"
-  # "-DBUFFER_FPGA"
-  # "-DXILINX"
-  # "-DMB2"
-  # "-DIPC_MASTER"
-  # "-DUSB_DEBUG_OFF"
-  # "-DBOOT_FLASH_ON_ERROR"
-  # "-DSD_DIRECT_MODE_GPIO=22"
   ${common_opts}
   ${ram_opts}
   ${xilinx_opts}
@@ -651,56 +602,41 @@ add_executable(mistmb2xilinx
   ${driver_mb2_src}
   ${main_src}
   ${usb_src}
-  # ${picosynth_src}
+  ${picosynth_src}
   )
 
 # mistfirmwareusbxilinx
 target_link_libraries(mistmb2xilinx 
   pico_stdlib
-  # mistfirmwarexilinx 
   mistfirmwareusbxilinx
   hardware_spi 
   hardware_pio 
   hardware_flash 
   hardware_rtc 
   hardware_i2c 
-  # ${picosynth_lib}
-  # pico_multicore)
+  ${picosynth_lib}
   pico_multicore tinyusb_host tinyusb_board)
 target_include_directories(mistmb2xilinx PUBLIC ../usbhost)
 target_include_directories(mistmb2xilinx PUBLIC ../picosynth)
 add_compile_options(-O2)
 pico_generate_pio_header(mistmb2xilinx ../drivers/fpga.pio)
 pico_generate_pio_header(mistmb2xilinx ../drivers/spi.pio)
+pico_generate_pio_header(mistmb2xilinx ../drivers/audio_not_i2s.pio)
 pico_generate_pio_header(mistmb2xilinx ../drivers/audio_i2s.pio)
 pico_generate_pio_header(mistmb2xilinx ../drivers/uart_tx.pio)
 pico_enable_stdio_usb(mistmb2xilinx 0)
-# pico_enable_stdio_usb(mistmb2xilinx 1)
 pico_enable_stdio_uart(mistmb2xilinx 0)
 pico_add_extra_outputs(mistmb2xilinx)
 example_auto_set_url(mistmb2xilinx)
 set_target_properties(mistmb2xilinx PROPERTIES PICO_TARGET_LINKER_SCRIPT "${PROJECT_SOURCE_DIR}/standalone.ld")
-# pico_set_binary_type(mistmb2xilinx no_flash)
 target_compile_options(mistmb2xilinx PUBLIC
-  # "-DVDATE=\"\""
-  # "-Dhexdump=driver_hexdump"
-  # "-DXILINX"
-  # "-DUSB"
-  # "-DMIST_USB"
-  # "-DUSB_STORAGE"
-  # "-DMB2"
-  # "-DBUFFER_FPGA"
-  # "-DIPC_MASTER"
-  # "-DUSB_DEBUG_OFF"
-  # "-DBOOT_FLASH_ON_ERROR"
-  # "-DPICOSYNTH"
-  # "-DSD_DIRECT_MODE_GPIO=22"
   ${common_opts}
   ${xilinx_opts}
   ${flash_opts_mb2}
   ${zxtres_opts}
   ${mb2_opts}
   ${usb_opts}
+  ${picosynth_opts}
   # "-DPIODEBUG"
   )
 
@@ -741,21 +677,12 @@ pico_add_extra_outputs(mistusbn1p)
 example_auto_set_url(mistusbn1p)
 #pico_set_binary_type(mistusb no_flash)
 target_compile_options(mistusbn1p PUBLIC
-  # "-DVDATE=\"\""
-  # "-Dhexdump=driver_hexdump"
-  # "-DPS2HOST"
-  # "-DJAMMADB9"
-  # "-DUSB"
-  # "-DMIST_USB"
-  # "-DALTERA_FPGA"
-  # "-DSD_DIRECT_MODE_GPIO=22"
-  # "-DUSB_STORAGE"
-  # "-DUSB_DEBUG_OFF"
   ${common_opts}
   ${altera_opts}
   ${flash_opts}
   ${neptuno_opts}
   ${usb_opts}
+  ${picosynth_opts}
   )
 
 ####################################################################################
@@ -778,10 +705,7 @@ target_link_libraries(mistzx1ram
   
 add_compile_options(-O2)
 target_include_directories(mistzx1ram PUBLIC ../picosynth)
-#pico_generate_pio_header(mistzx1ram ../drivers/fpga.pio)
 pico_generate_pio_header(mistzx1ram ../drivers/spi.pio)
-#pico_generate_pio_header(mistzx1ram ../drivers/jamma.pio)
-#pico_generate_pio_header(mistzx1ram ../drivers/jammadb9.pio)
 pico_generate_pio_header(mistzx1ram ../drivers/ps2.pio)
 pico_generate_pio_header(mistzx1ram ../drivers/audio_i2s_zx1.pio)
 pico_generate_pio_header(mistzx1ram ../drivers/ps2tx.pio)
@@ -791,22 +715,11 @@ pico_add_extra_outputs(mistzx1ram)
 example_auto_set_url(mistzx1ram)
 pico_set_binary_type(mistzx1ram no_flash)
 target_compile_options(mistzx1ram PUBLIC
-  # "-DVDATE=\"\""
-  # "-Dhexdump=driver_hexdump"
-  # "-DPS2HOST"
-  # "-DXILINX"
-  # "-DJAMMADB9"
-  # "-DNO_PS2_TX"
-  # "-DBOOT_FLASH_ON_ERROR"
-  # "-DNO_LEGACY_MODE"
-  # "-DSD_DIRECT_MODE_GPIO=19"
-  # "-DMIST_ROOT=\"/MIST\""
-  # "-DZXUNO"
-  # "-DNO_FILE_INDEX"
   ${common_opts}
   ${xilinx_opts}
   ${ram_opts}
   ${zxuno_opts}
+  ${picosynth_opts}
 )
 
 ####################################################################################
@@ -835,25 +748,12 @@ pico_enable_stdio_usb(mistzx1 1)
 pico_enable_stdio_uart(mistzx1 0)
 pico_add_extra_outputs(mistzx1)
 example_auto_set_url(mistzx1)
-#pico_set_binary_type(mistzx1 no_flash)
 target_compile_options(mistzx1 PUBLIC
-  # "-DVDATE=\"\""
-  # "-Dhexdump=driver_hexdump"
-  # "-DPS2HOST"
-  # "-DZXUNO"
-  # "-DXILINX"
-  # "-DBOOT_FLASH_ON_ERROR"
-  # "-DJAMMADB9"
-  # "-DNO_PS2_TX"
-  # "-DSD_DIRECT_MODE_GPIO=19"
-  # "-DCHECK_MIST_DIR"
-  # "-DMIST_ROOT=\"/MIST\""
-  # "-DNO_LEGACY_MODE"
-  # "-DZXUNO"
   ${common_opts}
   ${xilinx_opts}
   ${flash_opts_zx1}
   ${zxuno_opts}
+  ${picosynth_opts}
 )
 
 ####################################################################################
@@ -888,44 +788,15 @@ pico_enable_stdio_usb(mistusbzx1 0)
 pico_enable_stdio_uart(mistusbzx1 0)
 pico_add_extra_outputs(mistusbzx1)
 example_auto_set_url(mistusbzx1)
-#pico_set_binary_type(mistzx1 no_flash)
+
 target_compile_options(mistusbzx1 PUBLIC
-  # "-DVDATE=\"\""
-  # "-Dhexdump=driver_hexdump"
-  # "-DPS2HOST"
-  # "-DZXUNO"
-  # "-DXILINX"
-  # "-DJAMMADB9"
-  # "-DNO_PS2_TX"
-  # "-DBOOT_FLASH_ON_ERROR"
-  # "-DSD_DIRECT_MODE_GPIO=19"
-  # "-DMIST_ROOT=\"/MIST\""
-  # "-DNO_LEGACY_MODE"
-  # "-DCHECK_MIST_DIR"
-  # "-DUSB"
-  # "-DMIST_USB"
-  # "-DUSB_DEBUG_OFF"
-  # "-DUSB_STORAGE"
   ${common_opts}
   ${xilinx_opts}
   ${flash_opts_zx1}
   ${zxuno_opts}
   ${usb_opts}
+  ${picosynth_opts}
   )
-
-  # ${common_opts}
-  # ${altera_opts}
-  # ${xilinx_opts}
-  # ${flash_opts}
-  # ${ram_opts}
-  # ${zxtres_opts}
-  # ${neptuno_opts}
-  # ${zxuno_opts}
-  # ${usb_opts}
-  # ${mb2_opts}
-  
-
-
 
 ####################################################################################
 # RAM build - release binary for Xilinx ZXTres board -with single CPU middleboard.
@@ -946,6 +817,7 @@ target_link_libraries(mistmb2ram
 add_compile_options(-O2)
 pico_generate_pio_header(mistmb2ram ../drivers/fpga.pio)
 pico_generate_pio_header(mistmb2ram ../drivers/spi.pio)
+pico_generate_pio_header(mistmb2ram ../drivers/audio_not_i2s.pio)
 pico_generate_pio_header(mistmb2ram ../drivers/audio_i2s.pio)
 pico_generate_pio_header(mistmb2ram ../drivers/uart_tx.pio)
 pico_enable_stdio_usb(mistmb2ram 1)
@@ -991,6 +863,7 @@ target_include_directories(mistmb2 PUBLIC ../picosynth)
 add_compile_options(-O2)
 pico_generate_pio_header(mistmb2 ../drivers/fpga.pio)
 pico_generate_pio_header(mistmb2 ../drivers/spi.pio)
+pico_generate_pio_header(mistmb2 ../drivers/audio_not_i2s.pio)
 pico_generate_pio_header(mistmb2 ../drivers/audio_i2s.pio)
 pico_generate_pio_header(mistmb2 ../drivers/uart_tx.pio)
 pico_enable_stdio_usb(mistmb2 0)
@@ -1005,6 +878,7 @@ target_compile_options(mistmb2 PUBLIC
   ${neptuno_opts}
   ${mb2_opts}
   ${usb_opts}
+  ${picosynth_opts}
   # "-DPIODEBUG"
   )
 
@@ -1037,9 +911,10 @@ pico_enable_stdio_uart(miditest 0)
 pico_add_extra_outputs(miditest)
 example_auto_set_url(miditest)
 pico_set_binary_type(miditest no_flash)
-# target_compile_options(miditest PUBLIC 
-#   "-DMIDI_NOT_I2S"
-#   )
+target_compile_options(miditest PUBLIC 
+  ${picosynth_opts}
+  #  "-DMIDI_NOT_I2S"
+  )
 
 
 

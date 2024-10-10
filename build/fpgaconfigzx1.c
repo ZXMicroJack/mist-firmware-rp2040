@@ -209,7 +209,7 @@ unsigned char ConfigureFpga(const char *bitfile) {
 #ifdef PICOSYNTH
   picosynth_Suspend(0);
 #endif
-  // rtc_AttemptSync();
+
 #endif
   return 1;
 }

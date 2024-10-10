@@ -12,8 +12,6 @@
 // #define DEBUG
 #include "debug.h"
 
-
-
 #include "jammadb9.pio.h"
 #include "jamma.pio.h"
 
@@ -115,14 +113,6 @@ void jamma_InitUSB() {
   pio_sm_clear_fifos(jamma_pio, jamma_sm);
   
   gpioirq_SetCallback(IRQ_JAMMA, gpio_callback);
-#if 0
-#ifdef OLD_PS2
-  ps2_SetGPIOListener(gpio_callback);
-#else
-  gpio_set_irq_callback(gpio_callback);
-  irq_set_enabled(IO_IRQ_BANK0, true);
-#endif
-#endif
   gpio_set_irq_enabled(GPIO_RP2U_XLOAD, GPIO_IRQ_EDGE_FALL, true);
 
   pio_sm_put_blocking(jamma_pio, jamma_sm, reload_data);
@@ -138,15 +128,6 @@ void jamma_Kill() {
   gpio_set_irq_enabled(GPIO_RP2U_XLOAD, GPIO_IRQ_EDGE_FALL, false);
   pio_set_irq0_source_enabled(jamma_pio, jamma_sm, false);
   gpioirq_SetCallback(IRQ_JAMMA, NULL);
-
-#if 0
-  // remove handlers
-#ifdef OLD_PS2
-  ps2_SetGPIOListener(NULL);
-#else
-  irq_set_exclusive_handler (PIO0_IRQ_0, NULL);
-#endif
-#endif
 
   // shutdown sm
   pio_sm_set_enabled(jamma_pio, jamma_sm, false);

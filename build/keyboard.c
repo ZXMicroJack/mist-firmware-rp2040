@@ -427,24 +427,8 @@ void usb_ToPS2Mouse(uint8_t report[], uint16_t len) {
       uint8_t ps2[4];
       ps2[0] = 1;
       ps2[1] = (report[0] & 7) | 0x08;
-      // ps2[2] = report[1] & 0x7f; // x
-      // ps2[3] = report[2] & 0x7f; // y
       ps2[2] = report[1]; // x
       ps2[3] = -report[2]; // y
-
-#if 0
-      if (report[1] & 0x80) {
-        ps2[1] |= 0x10;
-        ps2[2] |= 0x80;
-      }
-
-      if (report[2] & 0x80) {
-        ps2[2] = 0x80 - ps2[2];
-      } else if (report[2]) {
-        ps2[1] |= 0x20;
-        ps2[2] = ~ps2[2] + 1;
-      }
-#endif
 
 #ifdef MB2
       mb2_SendPS2(ps2, 4);

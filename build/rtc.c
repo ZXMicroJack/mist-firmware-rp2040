@@ -15,7 +15,7 @@
 #include "rtc.h"
 
 //RTC function
-#ifndef USBFAKE
+#ifndef NO_RTC
 static uint8_t RTCSPI(uint8_t ctrl, uint8_t rtc[7]);
 
 static uint8_t unbcd(uint8_t n) {
@@ -74,7 +74,7 @@ void debugDate(uint8_t *data) {
 #define RTCSET  4
 
 // rtc = ss mm hh DD WD MM YY, where WD MM is decimal, the rest are BCD
-#ifndef USBFAKE
+#ifndef NO_RTC
 static uint8_t RTCSPI(uint8_t ctrl, uint8_t rtc[7]) {
   uint8_t data[10];
 
@@ -106,7 +106,7 @@ static uint8_t sync_hw_set_pending = 0;
 #endif
 
 void rtc_Init() {
-#ifdef USBFAKE
+#ifdef NO_RTC
   return 0;
 #else
   debug(("rtc_Init: startup rp2040 RTC\n"));
@@ -129,7 +129,7 @@ void rtc_Init() {
 }
 
 uint8_t rtc_SetInternal() {
-#ifdef USBFAKE
+#ifdef NO_RTC
   return 0;
 #else
   uint8_t d[7], od[7];
@@ -168,7 +168,7 @@ uint8_t rtc_SetInternal() {
 }
 
 uint8_t rtc_GetInternal() {
-#ifdef USBFAKE
+#ifdef NO_RTC
   return 0;
 #else
   uint8_t d[7];
@@ -203,9 +203,7 @@ uint8_t rtc_GetInternal() {
 
 
 void rtc_AttemptSync() {
-#ifdef USBFAKE
-  return 0;
-#else
+#ifndef NO_RTC
   if (sync_hw_set_pending) {
     debug(("rtc_AttemptSync: Attempting to set HW RTC...\n"));
     if (!rtc_SetInternal()) sync_hw_set_pending = 0;
@@ -222,7 +220,7 @@ void rtc_AttemptSync() {
 
 // MiST layer set/get rtc functions
 char GetRTC(unsigned char *d) {
-#ifdef USBFAKE
+#ifdef NO_RTC
   return 0;
 #else
   datetime_t t;
@@ -246,7 +244,7 @@ char GetRTC(unsigned char *d) {
 }
 
 char SetRTC(unsigned char *d) {
-#ifdef USBFAKE
+#ifdef NO_RTC
   return 0;
 #else
   debug(("SetRTC: %d %d %d %d %d %d %d\n", d[0], d[1], d[2], d[3], d[4], d[5], d[6]));

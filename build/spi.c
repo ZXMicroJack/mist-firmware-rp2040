@@ -10,24 +10,14 @@
 #include "pico/stdlib.h"
 #include "hardware/pio.h"
 
+#include "drivers/pins.h"
+
 // #define DEBUG
 #include "drivers/debug.h"
 
-// TODO MJ interface to FPGA via SPI and all the nCS for different bits.
-
-#define MIST_CSN    17 // user io
-#define MIST_SS2    20 // data io
-#define MIST_SS3    21 // osd
-// #define MIST_SS4    24 // dmode?
-// #ifdef ZXUNO
-// #define MIST_SS4    19 // dmode?
-//TODO MJ this will probably have to change GPIO19 / P48 seems to be busy
-// #else
-#define MIST_SS4    22 // dmode?
-// #endif
-
 #define SPI_SLOW_BAUD   500000
-#define SPI_SDC_BAUD   24000000
+//#define SPI_SDC_BAUD   24000000
+#define SPI_SDC_BAUD   2000000
 #define SPI_MMC_BAUD   16000000
 
 static unsigned char spi_speed;
@@ -35,7 +25,7 @@ static unsigned char spi_speed;
 #define spi spi0
 
 void mist_spi_init() {
-  uint8_t csn_lut[] = {MIST_CSN, MIST_SS2, MIST_SS3, MIST_SS4};
+  uint8_t csn_lut[] = {GPIO_MIST_CSN, GPIO_MIST_SS2, GPIO_MIST_SS3, GPIO_MIST_SS4};
 
   for (int i=0; i<sizeof csn_lut; i++) {
     gpio_init(csn_lut[i]);
@@ -43,11 +33,7 @@ void mist_spi_init() {
     gpio_set_dir(csn_lut[i], GPIO_OUT);
   }
 
-// #ifdef ZXUNO
-//   uint8_t spi_pins[] = {16, 18, 22};
-// #else
-  uint8_t spi_pins[] = {16, 18, 19};
-// #endif
+  uint8_t spi_pins[] = {GPIO_MIST_MISO, GPIO_MIST_MOSI, GPIO_MIST_SCK};
 
   for (int i=0; i<sizeof spi_pins; i++) {
     gpio_init(spi_pins[i]);
@@ -64,39 +50,39 @@ RAMFUNC void spi_wait4xfer_end() {
 
 
 void EnableFpga() {
-  gpio_put(MIST_SS2, 0);
+  gpio_put(GPIO_MIST_SS2, 0);
 }
 
 void DisableFpga() {
   spi_wait4xfer_end();
-  gpio_put(MIST_SS2, 1);
+  gpio_put(GPIO_MIST_SS2, 1);
 }
 
 void EnableOsd() {
-  gpio_put(MIST_SS3, 0);
+  gpio_put(GPIO_MIST_SS3, 0);
 }
 
 void DisableOsd() {
   spi_wait4xfer_end();
-  gpio_put(MIST_SS3, 1);
+  gpio_put(GPIO_MIST_SS3, 1);
 }
 
 void EnableIO() {
-  gpio_put(MIST_CSN, 0);
+  gpio_put(GPIO_MIST_CSN, 0);
 }
 
 void DisableIO() {
   spi_wait4xfer_end();
-  gpio_put(MIST_CSN, 1);
+  gpio_put(GPIO_MIST_CSN, 1);
 }
 
 void EnableDMode() {
-  gpio_put(MIST_SS4, 0);
+  gpio_put(GPIO_MIST_SS4, 0);
 }
 
 void DisableDMode() {
   spi_wait4xfer_end();
-  gpio_put(MIST_SS4, 1);
+  gpio_put(GPIO_MIST_SS4, 1);
 }
 
 void spi_block(unsigned short num) {

@@ -12,6 +12,8 @@
 #include "hardware/gpio.h"
 // #include "usbrtc.h"
 
+#include "common.h"
+
 uint32_t systimer;
 
 //TODO MJ - can XMODEM be removed?  Serial to core is fine.
@@ -240,7 +242,7 @@ char GetDB9(char index, unsigned char *joy_map) {
   return 1;
 }
 
-static uint8_t legacy_mode = 0;
+static uint8_t db9_legacy_mode = 0;
 static void SetGpio(uint8_t usbjoy, uint8_t mask, uint8_t gpio) {
   gpio_put(gpio, (usbjoy & mask) ? 0 : 1);
   gpio_set_dir(gpio, (usbjoy & mask) ? GPIO_OUT : GPIO_IN);
@@ -248,11 +250,11 @@ static void SetGpio(uint8_t usbjoy, uint8_t mask, uint8_t gpio) {
 
 void DB9SetLegacy(uint8_t on) {
   DB9Update(0, 0);
-  legacy_mode = on;
+  db9_legacy_mode = on;
 }
 
 void DB9Update(uint8_t joy_num, uint8_t usbjoy) {
-  if (!legacy_mode) return;
+  if (!db9_legacy_mode) return;
   SetGpio(usbjoy, JOY_UP, GPIO_JUP);
   SetGpio(usbjoy, JOY_DOWN, GPIO_JDN);
   SetGpio(usbjoy, JOY_LEFT, GPIO_JLT);

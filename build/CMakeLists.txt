@@ -504,6 +504,8 @@ target_compile_options(mistusbxilinx PUBLIC
   ${zxtres_opts}
   ${usb_opts}
   ${picosynth_opts}
+  "-DPIODEBUG"
+  "-DNO_JAMMA"
 )
 
 ####################################################################################

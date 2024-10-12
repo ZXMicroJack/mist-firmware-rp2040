@@ -60,7 +60,7 @@ unsigned char MMC_Init(void) {
 
 unsigned char MMC_Read(unsigned long lba, unsigned char *pReadBuffer) {
   debug(("MMC_Read: lba %d pReadBuffer %x\n", lba, pReadBuffer));
-  if (!sd_readsector(spi, lba, pReadBuffer)) {
+  if (!sd_readsector(spi, lba, (uint8_t *)pReadBuffer)) {
       return 1;
   }
   return 0;
@@ -68,7 +68,7 @@ unsigned char MMC_Read(unsigned long lba, unsigned char *pReadBuffer) {
 
 unsigned char MMC_Write(unsigned long lba, const unsigned char *pWriteBuffer) {
   debug(("MMC_Write: lba %d pReadBuffer %x\n", lba, pWriteBuffer));
-  if (!sd_writesector(spi, lba, pWriteBuffer)) {
+  if (!sd_writesector(spi, lba, (uint8_t *)pWriteBuffer)) {
       return 1;
   }
   return 0;
@@ -77,7 +77,7 @@ unsigned char MMC_Write(unsigned long lba, const unsigned char *pWriteBuffer) {
 unsigned char MMC_ReadMultiple(unsigned long lba, unsigned char *pReadBuffer, unsigned long nBlockCount) {
   debug(("MMC_ReadMultiple: lba %d pReadBuffer %x nBlockCount %d\n", lba, pReadBuffer, nBlockCount));
   while (nBlockCount --) {
-    if (sd_readsector(spi, lba, pReadBuffer)) {
+    if (sd_readsector(spi, lba, (uint8_t *)pReadBuffer)) {
       return 0;
     }
     lba++;
@@ -89,7 +89,7 @@ unsigned char MMC_ReadMultiple(unsigned long lba, unsigned char *pReadBuffer, un
 unsigned char MMC_WriteMultiple(unsigned long lba, const unsigned char *pWriteBuffer, unsigned long nBlockCount) {
   debug(("MMC_WriteMultiple: lba %d pReadBuffer %x nBlockCount %d\n", lba, pWriteBuffer, nBlockCount));
   while (nBlockCount--) {
-      if (sd_writesector(spi, lba, pWriteBuffer)) {
+      if (sd_writesector(spi, lba, (uint8_t *)pWriteBuffer)) {
           return 0;
       }
       lba ++;

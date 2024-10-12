@@ -4,19 +4,6 @@
 // #define IPC_MAX_PAYLOAD 128
 
 #define IPC_GETRESPONSE     0x00
-#define IPC_FLASHDATA       0x01
-#define IPC_FLASHCOMMIT     0x02
-
-#define IPC_ECHO            0x03
-#define IPC_VERSIONMAJOR    0x04
-#define IPC_VERSIONMINOR    0x05
-
-#define IPC_REBOOT          0x06
-#define IPC_CHECKINTEGRITY  0x07
-
-#define IPC_PASSTHROUGH     0x08
-#define IPC_UPGRADEFRAGMENT 0x09
-#define IPC_UPGRADELBA      0x0A
 
 #define IPC_FLASHDATA       0x01
 #define IPC_FLASHCOMMIT     0x02
@@ -77,17 +64,19 @@ typedef struct {
 #define USB_DEVICE_DESCRIPTOR_LEN   18
 
 
-enum {
-  UPST_IDLE,
-  UPST_WORKING,
-  UPST_F_CARD,
-  UPST_F_FAILIPC,
-  UPST_F_NOAPP,
-  UPST_F_READ,
-  UPST_ENDSTOP
-};
+// enum {
+//   UPST_IDLE,
+//   UPST_WORKING,
+//   UPST_F_CARD,
+//   UPST_F_FAILIPC,
+//   UPST_F_NOAPP,
+//   UPST_F_READ,
+//   UPST_ENDSTOP
+// };
 
-#ifdef IPC_SLAVE
+int ipc_SetFastMode(uint8_t on);
+
+// slave mode communications
 void ipc_InitSlave();
 int ipc_SlaveTick();
 uint8_t ipc_GotCommand(uint8_t cmd, uint8_t *data, uint8_t len);
@@ -95,18 +84,14 @@ void ipc_Debug();
 fifo_t *ipc_GetFifo();
 void ipc_SendData(uint8_t tag, uint8_t *data, uint16_t len);
 void ipc_SendDataEx(uint8_t tag, uint8_t *data, uint16_t len, uint8_t *data2, uint16_t len2);
-#endif
 
-int ipc_SetFastMode(uint8_t on);
-
-#ifdef IPC_MASTER
+// master mode communications
 void ipc_InitMaster();
 void ipc_MasterTick();
 int ipc_Command(uint8_t cmd, uint8_t *data, uint8_t len);
 int ipc_ReadBack(uint8_t *data, uint8_t len);
 int ipc_ReadBackLen();
 uint8_t ipc_ReadKeyboard();
-#endif
 
 void ipc_HandleData(uint8_t tag, uint8_t *data, uint16_t len);
 

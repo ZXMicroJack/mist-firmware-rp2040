@@ -98,12 +98,12 @@ typedef struct {
 
 uint8_t usb_ds3_init(usb_device_t *dev, usb_device_descriptor_t *dev_desc) {
   if (sizeof (usb_xbox_info_t) < sizeof(usb_sonyds_info_t)) {
-    return;
+    return 1;
   }
 
   usb_sonyds_info_t *info = (usb_sonyds_info_t *)&dev->xbox_info;
   info->jindex = joystick_add();
-  info->lut = ds3_report_lut;
+  info->lut = (uint16_t *)ds3_report_lut;
   info->laxis_lr = 6;
   info->laxis_ud = 7;
   info->raxis_lr = 8;
@@ -115,12 +115,12 @@ uint8_t usb_ds3_init(usb_device_t *dev, usb_device_descriptor_t *dev_desc) {
 
 uint8_t usb_ds4_init(usb_device_t *dev, usb_device_descriptor_t *dev_desc) {
   if (sizeof (usb_xbox_info_t) < sizeof(usb_sonyds_info_t)) {
-    return;
+    return 1;
   }
 
   usb_sonyds_info_t *info = (usb_sonyds_info_t *)&dev->xbox_info;
   info->jindex = joystick_add();
-  info->lut = ds4_report_lut;
+  info->lut = (uint16_t *)ds4_report_lut;
   info->laxis_lr = 1;
   info->laxis_ud = 2;
   info->raxis_lr = 3;

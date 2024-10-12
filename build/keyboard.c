@@ -14,7 +14,7 @@
 #include "drivers/ps2.h"
 #include "drivers/fifo.h"
 #include "drivers/ipc.h"
-// #define DEBUG
+#define DEBUG
 #include "drivers/debug.h"
 
 // remap modifiers to each other if requested
@@ -342,6 +342,9 @@ static int mouseindex = -1;
 static char mousereport[3];
 
 void usb_ToPS2(uint8_t modifier, uint8_t keys[6]) {
+  debug(("usb_ToPS2: modifier %02X keys %02X %02X %02X %02X %02X %02X legacy %d\n",
+    modifier, keys[0], keys[1], keys[2], keys[3], keys[4], keys[5], curr_legacy_mode));
+
   if (curr_legacy_mode != LEGACY_MODE) return;
 
   static int firsttime = 1;
@@ -422,7 +425,6 @@ void usb_ToPS2(uint8_t modifier, uint8_t keys[6]) {
 void usb_ToPS2Mouse(uint8_t report[], uint16_t len) {
   if (curr_legacy_mode != LEGACY_MODE) return;
   
-#if 1
   if (len >= 3) {
       uint8_t ps2[4];
       ps2[0] = 1;
@@ -438,7 +440,6 @@ void usb_ToPS2Mouse(uint8_t report[], uint16_t len) {
       }
 #endif
   }
-#endif
 }
 
 

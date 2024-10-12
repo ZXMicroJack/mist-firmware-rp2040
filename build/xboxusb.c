@@ -234,9 +234,9 @@ static uint8_t usb_xbox_poll(usb_device_t *dev) {
 
   xinputh_interface_t input;
   uint16_t read = sizeof input;
-  uint8_t rcode = usb_in_transfer(dev, NULL, &read, &input);
+  uint8_t rcode = usb_in_transfer(dev, NULL, &read, (uint8_t *)&input);
   if (!rcode) {
-    usb_xbox_process(dev, 0, &input, read);
+    usb_xbox_process(dev, 0, (uint8_t *)&input, read);
   }
 	return 0;
 }

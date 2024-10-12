@@ -39,6 +39,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "stdio.h"
 #include "string.h"
+
+#include "pico/time.h"
+#include "hardware/watchdog.h"
+#include "drivers/cookie.h"
+
 #include "errors.h"
 #include "hardware.h"
 #include "mmc.h"
@@ -63,16 +68,26 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "mistmain.h"
 #include "settings.h"
 
+#include "drivers/fifo.h"
 #include "drivers/ipc.h"
 #include "drivers/midi.h"
 #include "drivers/pins.h"
+#include "drivers/jamma.h"
+#include "drivers/fpga.h"
 #include "drivers/gpioirq.h"
 #define DEBUG
 #include "drivers/debug.h"
 
 #include "hardware/gpio.h"
 
+#ifdef PICOSYNTH
+#include "wtsynth.h"
+#include "picosynth.h"
+#endif
+#include "rtc.h"
+
 #include "mbconfig.h"
+#include "common.h"
 
 
 #ifndef _WANT_IO_LONG_LONG

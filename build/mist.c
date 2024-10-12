@@ -16,6 +16,7 @@
 #include "pico/stdlib.h"
 
 #include "hardware/pio.h"
+#include "hardware/watchdog.h"
 
 #include "drivers/fpga.h"
 #include "drivers/flash.h"
@@ -25,10 +26,17 @@
 #include "drivers/fifo.h"
 #include "drivers/ipc.h"
 #include "drivers/kbd.h"
+#include "drivers/cookie.h"
 // #define DEBUG
 #include "drivers/debug.h"
 
 #include "mistmain.h"
+
+#ifdef PICOSYNTH
+#include "picosynth.h"
+#include "wtsynth.h"
+#endif
+
 // #include "usbdev.h"
 
 #if defined(USB) && !defined (USBFAKE)

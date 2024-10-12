@@ -234,7 +234,7 @@ void kbd_Process() {
           fifo_Put(&ps2_fifo, spacedot[i]);
         }
         
-        uint8_t *keys = modeCode[kbmode];
+        uint8_t *keys = (uint8_t *)modeCode[kbmode];
         for (int i=1; i<=keys[0]; i++) {
           fifo_Put(&ps2_fifo, keys[i]);
           fifo_Put(&ps2_fifo, WAIT);

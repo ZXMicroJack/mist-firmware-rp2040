@@ -30,6 +30,7 @@
 #include "debug.h"
 #include "joypad.h"
 #include "fifo.h"
+#include "jamma.h"
 #include "ipc.h"
 
 //--------------------------------------------------------------------+
@@ -256,7 +257,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
             hid_info[dev_addr].joypad_inst = hid_info[i].joypad_inst ? 0 : 1;
           }
         }
-        joypad_Add(hid_info[dev_addr].joypad_inst, dev_addr, vid, pid, desc_report, desc_len);
+        joypad_Add(hid_info[dev_addr].joypad_inst, dev_addr, vid, pid, (uint8_t *)desc_report, desc_len);
       }
 
   #ifdef DEBUG
@@ -780,7 +781,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
     break;
     default: {
       if (hid_info[dev_addr].joypad) {
-        uint32_t joydata = joypad_Decode(hid_info[dev_addr].joypad_inst, report, len);
+        uint32_t joydata = joypad_Decode(hid_info[dev_addr].joypad_inst, (uint8_t *)report, len);
       
         if (joydata != hid_info[dev_addr].last_joydata) {
 #ifdef DEBUG

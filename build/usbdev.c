@@ -26,22 +26,32 @@
 #include "hardware.h"
 #include "mist_cfg.h"
 
+#undef SCSI_CMD_TEST_UNIT_READY
+#undef SCSI_CMD_INQUIRY
+#undef SCSI_CMD_REPORT_LUNS
+#undef SCSI_CMD_REQUEST_SENSE
+#undef SCSI_CMD_FORMAT_UNIT
+#undef SCSI_CMD_READ_6
+#undef SCSI_CMD_READ_10
+#undef SCSI_CMD_READ_CAPACITY_10
+#undef SCSI_CMD_WRITE_6
+#undef SCSI_CMD_WRITE_10
+#undef SCSI_CMD_MODE_SENSE_6
+#undef SCSI_CMD_MODE_SENSE_10
+#include "tusb.h"
 
-#include "usb.h"
+
+// #include "usb.h"
 #ifdef USB
 #include "usbhost.h"
 #endif
 
-
 #define WORD(a) (a)&0xff, ((a)>>8)&0xff
 
-// #define DEBUG
+#define DEBUG
 #include "drivers/debug.h"
 
-// #define debug(a) printf a
-
 //#define USB_POLL_DIRECT
-
 
 void usb_dev_open(void) {}
 void usb_dev_reconnect(void) {}
@@ -93,8 +103,6 @@ static struct {
 #define MAX_TUSB_DEVS	8
 static uint8_t dev_tusb[MAX_TUSB_DEVS];
 
-uint8_t tuh_descriptor_get_device_sync(uint8_t dev_addr, uint8_t *dd, uint16_t len);
-
 void usb_init() {
   memset(dev_tusb, 0xff, sizeof dev_tusb);
   memset(device, 0, sizeof device);
@@ -132,7 +140,7 @@ void usb_attached(uint8_t dev, uint8_t idx, uint16_t vid, uint16_t pid, uint8_t 
   }
 
   if (n >= MAX_USB) {
-    printf("Error: Too many USB devices...\n");
+    debug(("Error: Too many USB devices...\n"));
     return;
   }
 
@@ -162,25 +170,25 @@ void usb_attached(uint8_t dev, uint8_t idx, uint16_t vid, uint16_t pid, uint8_t 
   switch(report[n].type) {
     case USB_TYPE_KEYBOARD:
       r = usb_kbd_class.init(&device[n], &dd);
-      report[n].usb_dev = &usb_kbd_class;
+      report[n].usb_dev = (usb_device_class_config_t *)&usb_kbd_class;
       break;
     case USB_TYPE_HID:
     case USB_TYPE_MOUSE:
       tuh_descriptor_get_device_sync(dev, &dd, sizeof dd);
       r = usb_hid_class.init(&device[n], &dd);
-      report[n].usb_dev = &usb_hid_class;
+      report[n].usb_dev = (usb_device_class_config_t *)&usb_hid_class;
       break;
     case USB_TYPE_XBOX:
       r = usb_xbox_class.init(&device[n], NULL);
-      report[n].usb_dev = &usb_xbox_class;
+      report[n].usb_dev = (usb_device_class_config_t *)&usb_xbox_class;
       break;
     case USB_TYPE_DS3:
       r = usb_sony_ds3_class.init(&device[n], &dd);
-      report[n].usb_dev = &usb_sony_ds3_class;
+      report[n].usb_dev = (usb_device_class_config_t *)&usb_sony_ds3_class;
       break;
     case USB_TYPE_DS4:
       r = usb_sony_ds4_class.init(&device[n], &dd);
-      report[n].usb_dev = &usb_sony_ds4_class;
+      report[n].usb_dev = (usb_device_class_config_t *)&usb_sony_ds4_class;
       break;
 
     default: //TBD
@@ -193,7 +201,7 @@ void usb_attached(uint8_t dev, uint8_t idx, uint16_t vid, uint16_t pid, uint8_t 
   if (!r) {
     
   }
-  printf("r returns %d\n", r);
+  debug(("r returns %d\n", r));
   
   //TODO MJ maybe do more at this point?
 }
@@ -248,11 +256,20 @@ void usb_handle_data(uint8_t dev, uint8_t *desc, uint16_t desclen) {
 void usb_deferred_poll() {
   for (int i=0; i<MAX_USB; i++) {
     if (report[i].usb_dev != NULL && report[i].new_report) {
+      debug(("[%d] last_report %d new %d type %d\n", i, report[i].last_report,
+        report[i].new_report, report[i].type));
       /* handle legacy devices */
-      if (report[i].last_report && report[i].type == USB_TYPE_KEYBOARD)
-          usb_ToPS2(report[i].last_report, &report[i].last_report[2]);
-      if (report[i].last_report && report[i].type == USB_TYPE_MOUSE)
-          usb_ToPS2Mouse(report[i].last_report, report[i].report_size);
+      if (report[i].last_report && report[i].type == USB_TYPE_KEYBOARD) {
+        if (report[i].report_size == 8) {
+          usb_ToPS2(report[i].last_report[0], &report[i].last_report[2]);
+        } else {
+          usb_ToPS2(report[i].last_report[1], &report[i].last_report[3]);
+        }
+      }
+      if (report[i].last_report && report[i].type == USB_TYPE_MOUSE) {
+        usb_ToPS2Mouse(report[i].last_report, report[i].report_size);
+      }
+
 
       if (report[i].last_report) report[i].usb_dev->poll(&device[i]);
     }
@@ -352,7 +369,7 @@ uint8_t usb_set_conf( usb_device_t *dev, uint8_t conf_value ) {
   debug(("usb_set_conf: dev %08x conf %02X\n", dev, conf_value));
 #ifndef USBFAKE
   uint8_t dev_addr = report[dev - device].dev_addr;
-  tuh_configuration_set(dev_addr, conf_value, NULL, NULL);
+  tuh_configuration_set(dev_addr, conf_value, NULL, 0);
 #endif
   return 0;
 }

@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+
+#include "pico/time.h"
+
 #include "errors.h"
 #include "hardware.h"
 #include "fdd.h"

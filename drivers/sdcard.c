@@ -16,6 +16,7 @@
 #include "spi.pio.h"
 #include "pio_spi.h"
 #include "sdcard.h"
+#include "crc16.h"
 
 #include "pins.h"
 // #define DEBUG

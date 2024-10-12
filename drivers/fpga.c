@@ -16,6 +16,7 @@
 #include "pins.h"
 #include "fpga.h"
 #include "bitfile.h"
+#include "jamma.h"
 // #define DEBUG
 #include "debug.h"
 

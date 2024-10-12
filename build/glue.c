@@ -8,6 +8,7 @@
 #include "errors.h"
 #include "usb/usb.h"
 #include "version.h"
+#include "drivers/fifo.h"
 #include "drivers/pins.h"
 #include "drivers/ipc.h"
 #include "drivers/crc16.h"

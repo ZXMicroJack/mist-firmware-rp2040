@@ -219,7 +219,7 @@ void ipc_HandleData(uint8_t tag, uint8_t *data, uint16_t len) {
 
     case IPC_PS2_DATA: {
       debug(("IPC_PS2_DATA\n"));
-      hexdump(data, len);
+      hexdump1(data, len);
 			if (data[0] == 0) {
       	for (int i=1; i<len; i++) {
         	fifo_Put(&kbdfifo, data[i]);
@@ -274,7 +274,3 @@ void mb2_SendMessages() {
 void mb2_SendMessages() {
 }
 #endif
-
-
-//   tuh_descriptor_get_device_sync(dev, dd, sizeof dd);
-//   ipc_SendData(IPC_USB_DEVICE_DESC, dd, sizeof dd);

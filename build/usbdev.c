@@ -42,6 +42,7 @@
 
 //#define USB_POLL_DIRECT
 
+
 void usb_dev_open(void) {}
 void usb_dev_reconnect(void) {}
 
@@ -159,7 +160,12 @@ void usb_attached(uint8_t dev, uint8_t idx, uint16_t vid, uint16_t pid, uint8_t 
   }
 
   switch(report[n].type) {
+    case USB_TYPE_KEYBOARD:
+      r = usb_kbd_class.init(&device[n], &dd);
+      report[n].usb_dev = &usb_kbd_class;
+      break;
     case USB_TYPE_HID:
+    case USB_TYPE_MOUSE:
       tuh_descriptor_get_device_sync(dev, &dd, sizeof dd);
       r = usb_hid_class.init(&device[n], &dd);
       report[n].usb_dev = &usb_hid_class;
@@ -242,7 +248,13 @@ void usb_handle_data(uint8_t dev, uint8_t *desc, uint16_t desclen) {
 void usb_deferred_poll() {
   for (int i=0; i<MAX_USB; i++) {
     if (report[i].usb_dev != NULL && report[i].new_report) {
-      report[i].usb_dev->poll(&device[i]);
+      /* handle legacy devices */
+      if (report[i].last_report && report[i].type == USB_TYPE_KEYBOARD)
+          usb_ToPS2(report[i].last_report, &report[i].last_report[2]);
+      if (report[i].last_report && report[i].type == USB_TYPE_MOUSE)
+          usb_ToPS2Mouse(report[i].last_report, report[i].report_size);
+
+      if (report[i].last_report) report[i].usb_dev->poll(&device[i]);
     }
   }
 }
@@ -331,10 +343,8 @@ usb_device_t *usb_get_devices() {
 
 uint8_t usb_get_conf_descr( usb_device_t *dev, uint16_t nbytes, uint8_t conf, usb_configuration_descriptor_t* dataptr ) {
   debug(("usb_get_conf_descr: dev %08x, nbytes %04X conf %02X data %08X\n", dev, nbytes, conf, dataptr));
-//#ifndef USBFAKE
   uint8_t dev_addr = report[dev - device].dev_addr;
   tuh_descriptor_get_configuration_sync(dev_addr, conf, dataptr, nbytes);
-//#endif
   return 0;
 }
 

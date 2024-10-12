@@ -22,6 +22,8 @@
 #include "usb.h"
 #include "at91sam_usb.h"
 
+extern const usb_device_class_config_t usb_kbd_class;
+
 #define BULK_IN_SIZE  AT91C_EP_IN_SIZE
 #define BULK_OUT_SIZE AT91C_EP_OUT_SIZE
 

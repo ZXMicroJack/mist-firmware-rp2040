@@ -50,9 +50,8 @@ static uint8_t hid_type[MAX_USB] = {0};
 static uint8_t hid_setup[MAX_USB] = {0};
 
 
-#ifdef MIST_USB
-#else
-#define SLOW_TEST_REQUESTS
+#ifndef MIST_USB
+// #define SLOW_TEST_REQUESTS
 #endif
 
 #if CFG_TUH_HID
@@ -177,8 +176,8 @@ static void sony_ds3_magic_package(uint8_t dev_addr, uint8_t instance) {
 void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_report, uint16_t desc_len)
 {
 #ifdef DEBUG
-  printf("HID device address = %d, instance = %d is mounted\r\n", dev_addr, instance);
-  printf("tuh_hid_mount_cb(dev_addr:%d inst:%d)\n", dev_addr, instance);
+  debug(("HID device address = %d, instance = %d is mounted\r\n", dev_addr, instance));
+  debug(("tuh_hid_mount_cb(dev_addr:%d inst:%d)\n", dev_addr, instance));
   dumphex("report", desc_report, desc_len);
 #endif
   uint16_t vid, pid;
@@ -196,7 +195,10 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
 
 
 #ifdef MIST_USB
-  usb_attached(dev_addr, instance, vid, pid, desc_report, desc_len, USB_TYPE_HID);
+  uint8_t itf_protocol = tuh_hid_interface_protocol(dev_addr, instance); 
+  uint8_t type = itf_protocol == HID_ITF_PROTOCOL_KEYBOARD ? USB_TYPE_KEYBOARD :
+    itf_protocol == HID_ITF_PROTOCOL_MOUSE ? USB_TYPE_MOUSE : USB_TYPE_HID;
+  usb_attached(dev_addr, instance, vid, pid, desc_report, desc_len, type);
 #else
   uprintf("\tvid %04X pid %04X\n", vid, pid);
 
@@ -233,18 +235,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
   // Interface protocol (hid_interface_protocol_enum_t)
   const char* protocol_str[] = { "None", "Keyboard", "Mouse" };
   uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
-
-#ifdef DEBUG
-  printf("HID Interface Protocol = %s\r\n", protocol_str[itf_protocol]);
-#endif
-  if ( itf_protocol == HID_ITF_PROTOCOL_KEYBOARD ) {
-//     ps2_EnablePort(0, true);
-//     kbd_addr = dev_addr;
-//     kbd_inst = instance;
-  } else if ( itf_protocol == HID_ITF_PROTOCOL_MOUSE ) {
-//     ps2_EnablePort(1, true);
-  } else if ( itf_protocol == HID_ITF_PROTOCOL_NONE ) {
-  }
+  debug(("HID Interface Protocol = %s\r\n", protocol_str[itf_protocol]));
 #endif
 
   // request to receive report
@@ -252,7 +243,6 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
   if ( !tuh_hid_receive_report(dev_addr, instance)) {
     debug(("Error: cannot request to receive report\n"));
   }
-
 }
 
 // Invoked when device with hid interface is un-mounted
@@ -260,19 +250,6 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance)
 {
 #ifdef MIST_USB
   usb_detached(dev_addr);
-#else
-  uprintf("tuh_hid_umount_cb(dev_addr:%d inst:%d)\n", dev_addr, instance);
-#ifdef DEBUG
-  printf("HID device address = %d, instance = %d is unmounted\r\n", dev_addr, instance);
-#endif
-  uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
-  if ( itf_protocol == HID_ITF_PROTOCOL_KEYBOARD ) {
-//     ps2_EnablePort(0, false);
-  } else if ( itf_protocol == HID_ITF_PROTOCOL_MOUSE ) {
-//     ps2_EnablePort(1, false);
-//   } else if (hid_info[dev_addr].joypad) {
-//     joypad_Add(hid_info[dev_addr].joypad_inst, dev_addr, 0, 0, NULL, 0);
-  }
 #endif
 }
 
@@ -281,34 +258,20 @@ void usb_ToPS2Mouse(uint8_t report[], uint16_t len);
 
 void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len) {
 #ifdef MIST_USB
-
-  uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
-  if ( itf_protocol == HID_ITF_PROTOCOL_KEYBOARD ) {
-    usb_ToPS2(report[0], &report[2]);
-  } else if (itf_protocol == HID_ITF_PROTOCOL_MOUSE ) {
-    usb_ToPS2Mouse(report, len);
-  }
-  
-  // if (hid_type[dev_addr] == DUALSHOCK3) {
-  // } else {
-    // uprintf("tuh_hid_report_received_cb(dev_addr:%d inst:%d)\n", dev_addr, instance);
-    // dumphex("report", report, len);
-
-    usb_handle_data(dev_addr, report, len);
-  // }
+  usb_handle_data(dev_addr, report, len);
 #else
+  uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, instance);
+  debug(("itf_protocol = %d\n", itf_protocol));
 #ifdef SLOW_TEST_REQUESTS
   if (capture) {
     capture = 0;
 #endif
-    uprintf("tuh_hid_report_received_cb(dev_addr:%d inst:%d)\n", dev_addr, instance);
+    debug(("tuh_hid_report_received_cb(dev_addr:%d inst:%d)\n", dev_addr, instance));
     dumphex("report", report, len);
 #ifdef SLOW_TEST_REQUESTS
   }
 #endif
 #endif
-  // request_report(dev_addr, instance);
-
   /* reissue the wakeup commands for dualshock3 - it takes a bit of waking up */
   if (hid_type[dev_addr] == DUALSHOCK3 && hid_setup[dev_addr]) {
     // dualshock 3

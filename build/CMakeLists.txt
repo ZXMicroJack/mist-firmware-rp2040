@@ -94,6 +94,7 @@ set(main_src
   keyboard.c
   fpgaconfig.c
   mbconfig.c
+  kbdusb.c
 )
 
 set(mainzx1_src
@@ -107,6 +108,7 @@ set(mainzx1_src
   mmc.c
   keyboard.c
   fpgaconfigzx1.c
+  kbdusb.c
 )
 
 set(usb_src

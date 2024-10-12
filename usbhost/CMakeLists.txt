@@ -58,7 +58,10 @@ pico_generate_pio_header(host_cdc_msc_hid ../drivers/ps2tx.pio)
 pico_generate_pio_header(host_cdc_msc_hid ../drivers/uart_tx.pio)
 
 target_link_options(host_cdc_msc_hid PRIVATE -Xlinker --print-memory-usage -g)
-target_compile_options(host_cdc_msc_hid PRIVATE -Wall -Wextra -g  -DPICO_SHARED_IRQ_HANDLER_HIGHEST_ORDER_PRIORITY=PICO_HIGHEST_IRQ_PRIORITY)
+target_compile_options(host_cdc_msc_hid PRIVATE -Wall -Wextra -g  
+  -DPICO_SHARED_IRQ_HANDLER_HIGHEST_ORDER_PRIORITY=PICO_HIGHEST_IRQ_PRIORITY
+  -DPIODEBUG
+)
 
 # add url via pico_set_program_url
 example_auto_set_url(host_cdc_msc_hid)

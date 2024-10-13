@@ -24,7 +24,7 @@ void tuh_xinput_report_received_cb(uint8_t dev_addr, uint8_t instance, xinputh_i
     {
 #ifdef MIST_USB
         if (xid_itf->connected && xid_itf->new_pad_data) {
-          usb_handle_data(dev_addr, (uint8_t *)xid_itf, sizeof (xinputh_interface_t));
+          usb_handle_data(dev_addr, instance, (uint8_t *)xid_itf, sizeof (xinputh_interface_t));
           debug(("[%02x, %02x], Buttons %04x, LT: %02x RT: %02x, LX: %d, LY: %d, RX: %d, RY: %d\n",
               dev_addr, instance, p->wButtons, p->bLeftTrigger, p->bRightTrigger, p->sThumbLX, p->sThumbLY, p->sThumbRX, p->sThumbRY));
         }

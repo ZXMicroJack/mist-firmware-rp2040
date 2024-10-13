@@ -161,7 +161,7 @@ void usb_detached(uint8_t dev) {
   ipc_SendData(IPC_USB_DETACHED, &dev, sizeof dev);
 }
 
-void usb_handle_data(uint8_t dev, uint8_t *desc, uint16_t desclen) {
+void usb_handle_data(uint8_t dev, uint8_t instance, uint8_t *desc, uint16_t desclen) {
   ipc_SendDataEx(IPC_USB_HANDLE_DATA, &dev, sizeof dev, desc, desclen);
 }
 #endif
@@ -614,7 +614,7 @@ static bool training_timer_callback(struct repeating_timer *t) {
 void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len) {
 #ifdef USB_ON_RP2U
   if (mistMode) {
-    usb_handle_data(dev_addr, report, len);
+    usb_handle_data(dev_addr, instance, report, len);
     tuh_hid_receive_report(dev_addr, instance);
     return;
   }

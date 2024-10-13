@@ -3,7 +3,7 @@
 #include "pico/time.h"
 #include "hardware/gpio.h"
 #include "ps2.h"
-#define DEBUG
+// #define DEBUG
 #include "debug.h"
 
 /* calculate odd parity */

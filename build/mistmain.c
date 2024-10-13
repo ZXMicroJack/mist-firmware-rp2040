@@ -75,7 +75,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "drivers/jamma.h"
 #include "drivers/fpga.h"
 #include "drivers/gpioirq.h"
-#define DEBUG
+// #define DEBUG
 #include "drivers/debug.h"
 
 #include "hardware/gpio.h"

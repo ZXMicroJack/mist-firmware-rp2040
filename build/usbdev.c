@@ -48,7 +48,7 @@
 
 #define WORD(a) (a)&0xff, ((a)>>8)&0xff
 
-#define DEBUG
+// #define DEBUG
 #include "drivers/debug.h"
 
 //#define USB_POLL_DIRECT
@@ -101,7 +101,8 @@ static struct {
 } report[MAX_USB];
 
 #define MAX_TUSB_DEVS	8
-static uint8_t dev_tusb[MAX_TUSB_DEVS];
+#define MAX_INST      4
+static uint8_t dev_tusb[MAX_TUSB_DEVS][MAX_INST];
 
 void usb_init() {
   memset(dev_tusb, 0xff, sizeof dev_tusb);
@@ -144,7 +145,9 @@ void usb_attached(uint8_t dev, uint8_t idx, uint16_t vid, uint16_t pid, uint8_t 
     return;
   }
 
-  dev_tusb[dev] = n;
+  if (idx < MAX_INST) {
+    dev_tusb[dev][idx] = n;
+  }
   report[n].dev_addr = dev;
   report[n].inst = idx;
 
@@ -209,17 +212,20 @@ void usb_attached(uint8_t dev, uint8_t idx, uint16_t vid, uint16_t pid, uint8_t 
 void usb_detached(uint8_t dev) {
   uint8_t n;
 
-  n = dev_tusb[dev];
-  if (n > MAX_USB || report[n].usb_dev == NULL) return;
-
+  for (int i=0; i< MAX_USB; i++) {
+    if (report[i].usb_dev != NULL && report[i].dev_addr == dev) {
 #ifndef USB_POLL_DIRECT
-  if (report[n].report_size) {
-    free(report[n].last_report);
-    report[n].report_size = 0;
-  }
+      if (report[i].report_size) {
+        free(report[i].last_report);
+        report[i].report_size = 0;
+      }
 #endif
-  report[n].usb_dev->release(&device[n]);
-  report[n].usb_dev = NULL;
+      report[i].usb_dev->release(&device[n]);
+      report[i].usb_dev = NULL;
+    }
+    memset(dev_tusb[dev], 0xff, sizeof dev_tusb[dev]);
+  }
+
 }
 
 #ifdef USB_POLL_DIRECT
@@ -234,11 +240,19 @@ static usb_xxx_process process_fn[] = {
 };
 #endif
 
-void usb_handle_data(uint8_t dev, uint8_t *desc, uint16_t desclen) {
+void usb_handle_data(uint8_t dev, uint8_t inst, uint8_t *desc, uint16_t desclen) {
   uint8_t n;
   
-  n = dev_tusb[dev];
-  if (n > MAX_USB || report[n].usb_dev == NULL) return;
+  if (inst < MAX_INST) {
+    n = dev_tusb[dev][inst];
+  } else {
+    for (n=0; n<MAX_USB; n++) {
+      if (report[n].dev_addr == dev && report[n].inst == inst)
+        break;
+    }
+  }
+  
+  if (n >= MAX_USB || report[n].usb_dev == NULL) return;
 
 #ifndef USB_POLL_DIRECT
   if (report[n].report_size != desclen) {

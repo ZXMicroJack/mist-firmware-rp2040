@@ -208,7 +208,7 @@ void ipc_HandleData(uint8_t tag, uint8_t *data, uint16_t len) {
       break;
 
     case IPC_USB_HANDLE_DATA:
-      usb_handle_data(data[0], data + 1, len - 1);
+      usb_handle_data(data[0], 0, data + 1, len - 1);
       break;
 #endif
 

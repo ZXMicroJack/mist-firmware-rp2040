@@ -60,3 +60,10 @@ v10 (v2.11)
 - Allow remapping of menu invoking keys on joypads
 - Improved USB keyboard stability on dual MBs.
 
+v11 (v2.12)
+-----------
+- MIDI noises improved by isolating one very noise prone GPIO
+  - need to update spectrum core
+- Fixed MKBOX USB keyboards not working
+- ROM loading, and disk reading reliablility seems better
+  - (think it was linked to noise? )

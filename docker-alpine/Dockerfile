@@ -39,6 +39,6 @@ RUN echo "export PICO_PLAYGROUND_PATH=/pico/pico-playground" >> ~/.bashrc
 RUN apk add mc vim
 RUN apk add g++-arm-none-eabi
 # XINPUT patch
-#COPY usbh.c /pico/pico-sdk/lib/tinyusb/src/host/usbh.c
+COPY usbh.c /pico/pico-sdk/lib/tinyusb/src/host/usbh.c
 CMD bash
 

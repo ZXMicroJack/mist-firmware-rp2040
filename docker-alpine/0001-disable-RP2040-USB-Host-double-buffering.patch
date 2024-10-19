@@ -1,0 +1,18 @@
+diff --git a/src/portable/raspberrypi/rp2040/rp2040_usb.c b/src/portable/raspberrypi/rp2040/rp2040_usb.c
+index df05697fe..9354e9570 100644
+--- a/src/portable/raspberrypi/rp2040/rp2040_usb.c
++++ b/src/portable/raspberrypi/rp2040/rp2040_usb.c
+@@ -179,8 +179,12 @@ void __tusb_irq_path_func(hw_endpoint_start_next_buffer)(struct hw_endpoint *ep)
+   // Also, Host mode "interrupt" endpoint hardware is only single buffered,
+   // NOTE2: Currently Host bulk is implemented using "interrupt" endpoint
+   bool const is_host = is_host_mode();
++#if 0
+   bool const force_single = (!is_host && !tu_edpt_dir(ep->ep_addr)) ||
+                             (is_host && tu_edpt_number(ep->ep_addr) != 0);
++#else
++  bool const force_single = true;
++#endif
+ 
+   if(ep->remaining_len && !force_single)
+   {
+

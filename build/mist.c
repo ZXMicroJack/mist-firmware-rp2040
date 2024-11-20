@@ -162,6 +162,16 @@ int main() {
       while (getchar_timeout_us(2) >= 0);
     }
 #endif
+#if 0 /* press SELECT with no joypad connected */
+    if (c == 'w' || c == 'W') {
+      user_io_digital_joystick(0, c == 'W' ? 0 : 0x80);
+      user_io_digital_joystick_ext(0, c == 'W' ? 0 : 0x80);
+      user_io_digital_joystick(1, c == 'W' ? 0 : 0x80);
+      user_io_digital_joystick_ext(1, c == 'W' ? 0 : 0x80);
+      printf("Pressing start realase status = %d\n", c == 'W');
+    }
+#endif
+
 
     mist_loop();
     usb_poll();

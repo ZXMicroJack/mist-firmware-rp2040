@@ -917,7 +917,7 @@ example_auto_set_url(miditest)
 pico_set_binary_type(miditest no_flash)
 target_compile_options(miditest PUBLIC 
   ${picosynth_opts}
-  #  "-DMIDI_NOT_I2S"
+  "-DMIDI_NOT_I2S"
   )
 
 

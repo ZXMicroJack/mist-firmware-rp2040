@@ -359,7 +359,7 @@ int mist_init() {
 #endif
 #endif
 
-#if defined(XILINX) && !defined(USBFAKE)
+#ifndef USBFAKE
     midi_init();
 #endif
 

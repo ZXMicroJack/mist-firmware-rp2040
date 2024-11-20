@@ -74,3 +74,22 @@ target_compile_options(drivertest PUBLIC
 pico_add_extra_outputs(drivertest)
 example_auto_set_url(drivertest)
 pico_set_binary_type(drivertest no_flash)
+
+
+# sine wave over i2s test program
+add_executable(sine_wave sine_wave.c ../drivers/audio_i2s.c)
+target_link_libraries(sine_wave pico_stdlib hardware_spi hardware_pio pico_audio hardware_dma)
+pico_generate_pio_header(sine_wave ../drivers/audio_not_i2s.pio)
+pico_enable_stdio_usb(sine_wave 1)
+pico_enable_stdio_uart(sine_wave 0)
+pico_add_extra_outputs(sine_wave)
+example_auto_set_url(sine_wave)
+pico_set_binary_type(sine_wave no_flash)
+target_compile_options(sine_wave PUBLIC
+  "-DSAMPLE_RATE=22050"
+  "-DMIDI_NOT_I2S"
+  "-DSAMPLE_LEN=512"
+  "-DPICO_AUDIO_I2S_DATA_PIN=4"
+  "-DPICO_AUDIO_I2S_CLOCK_PIN_BASE=2"
+  "-DPICO_AUDIO_I2S_PIO=1"
+)

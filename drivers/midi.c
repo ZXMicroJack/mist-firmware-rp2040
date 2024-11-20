@@ -10,8 +10,14 @@
 #define BAUDRATE 31250 // midi baudrate
 
 #ifdef USE_IRQ
+
+#if PICO_NO_FLASH
+#define CBUFF_SIZE  128
+#define CBUFF_SIZE_MASK   0x7f
+#else
 #define CBUFF_SIZE  2048
 #define CBUFF_SIZE_MASK   0x7ff
+#endif
 
 typedef struct {
   uint16_t l;

@@ -36,23 +36,18 @@
 //#define DEBUG
 #include "drivers/debug.h"
 
-
-// #include "host/usbh.h"
-
 #include "host/usbh.h"
 #include "xinput_host.h"
-// #include "/pico/pico-sdk/lib/tinyusb/src/host/usbh_classdriver.h"
 #include "host/usbh_classdriver.h"
 
 static const uint16_t xinput_lut[] = {
-  XINPUT_GAMEPAD_SHARE,
-  XINPUT_GAMEPAD_GUIDE,
-
   XINPUT_GAMEPAD_RIGHT_THUMB,
   XINPUT_GAMEPAD_LEFT_THUMB,
-
   XINPUT_GAMEPAD_RIGHT_SHOULDER,
   XINPUT_GAMEPAD_LEFT_SHOULDER,
+
+  0,
+  0,
   XINPUT_GAMEPAD_Y,
   XINPUT_GAMEPAD_X,
 
@@ -71,45 +66,6 @@ static const uint16_t xinput_lut[] = {
 // JOY_R, JOY_L, JOY_Y, JOY_X,
 // JOY_START, JOY_SELECT, JOY_B, JOY_A,
 // JOY_UP, JOY_DOWN, JOY_LEFT, JOY_RIGHT
-
-// #define JOY_RIGHT       0x01
-// #define JOY_LEFT        0x02
-// #define JOY_DOWN        0x04
-// #define JOY_UP          0x08
-// #define JOY_BTN_SHIFT   4
-// #define JOY_BTN1        0x10
-// #define JOY_BTN2        0x20
-// #define JOY_BTN3        0x40
-// #define JOY_BTN4        0x80
-// #define JOY_MOVE        (JOY_RIGHT|JOY_LEFT|JOY_UP|JOY_DOWN)
-
-// #define BUTTON1         0x01
-// #define BUTTON2         0x02
-// #define SWITCH1         0x04
-// #define SWITCH2         0x08
-
-// // virtual gamepad buttons
-// #define JOY_A      JOY_BTN1
-// #define JOY_B      JOY_BTN2
-// #define JOY_SELECT JOY_BTN3
-// #define JOY_START  JOY_BTN4
-// #define JOY_X      0x100
-// #define JOY_Y      0x200
-// #define JOY_L      0x400
-// #define JOY_R      0x800
-// #define JOY_L2     0x1000
-// #define JOY_R2     0x2000
-// #define JOY_L3     0x4000
-// #define JOY_R3     0x8000
-
-
-
-// // Right stick
-// #define JOY_RIGHT2      0x010000
-// #define JOY_LEFT2       0x020000
-// #define JOY_DOWN2       0x040000
-// #define JOY_UP2         0x080000
-
 
 uint8_t usb_xbox_init(usb_device_t *dev, usb_device_descriptor_t *dev_desc) {
 	uint8_t rcode;
@@ -157,10 +113,6 @@ void usb_xbox_process(usb_device_t *dev, int inst, uint8_t *buf, uint16_t read) 
   debug(("[%04x:%04x], Buttons %04x, LT: %02x RT: %02x, LX: %d, LY: %d, RX: %d, RY: %d\n",
       dev->vid, dev->pid, p->wButtons, p->bLeftTrigger, p->bRightTrigger, p->sThumbLX, p->sThumbLY, p->sThumbRX, p->sThumbRY));
 
-  //How to check specific buttons
-  // if (p->wButtons & XINPUT_GAMEPAD_A) TU_LOG1("You are pressing A\n");
-
-	// uint16_t buttons = p->wButtons;
 	uint8_t idx = dev->xbox_info.jindex;
 	StateUsbIdSet(dev->vid, dev->pid, 8, idx);
 
@@ -173,16 +125,11 @@ void usb_xbox_process(usb_device_t *dev, int inst, uint8_t *buf, uint16_t read) 
       if (p->wButtons & xinput_lut[i]) buttons |= m;
       m >>= 1;
     }
-    // buttons |= (p->wButtons & 0x0ff0) << 4;
-
 
     buttons |= analog_axis_to_digital(p->sThumbLX, 4096, JOY_RIGHT, JOY_LEFT);
     buttons |= analog_axis_to_digital(p->sThumbLY, 4096, JOY_UP, JOY_DOWN);
     buttons |= analog_to_digital(p->bRightTrigger, 32, JOY_R);
     buttons |= analog_to_digital(p->bLeftTrigger, 32, JOY_L);
-// #define JOY_L      0x400
-// #define JOY_R      0x800
-
 
 		StateUsbJoySet(buttons, buttons>>8, idx);
 		uint32_t vjoy = virtual_joystick_mapping(dev->vid, dev->pid, buttons);

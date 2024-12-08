@@ -29,19 +29,19 @@
 #include "debug.h"
 
 // #define TEST_PS2
-#define TEST_PS2_HOST
+// #define TEST_PS2_HOST
 // #define TEST_IPC
 // #define TEST_SDCARD_SPI
 // #define TEST_FPGA
 // #define TEST_MATRIX
 // #define TEST_FLASH
 // #define TEST_USERIO
-//#define TEST_JAMMA
+#define TEST_JAMMA
 // #define TEST_JOYPAD
 // #define TEST_DEBUG
 // #define TEST_JTAG
 // #define TEST_DB9
-#define TEST_PS2USB_SWITCH
+// #define TEST_PS2USB_SWITCH
 
 // KEY ACTION ALLOCATION
 // aAgGHjJlMNoOqQrRTuUVwWxXyYzZ
@@ -1212,7 +1212,7 @@ int main()
         printf("FLASH: (P)rogram (I)pc based program (B)ad crc ipc program\n");
         printf("KBD: (K)bd init (L)kbd process\n");
         printf("USERIO: (u)init (U)close (V)coreid\n");
-        printf("JAMMA: (j)init (J)getdata\n");
+        printf("JAMMA: (j)initusb (J)initdb9 (y)read (x)kill\n");
         printf("JTAG: (j)taginit (J)tagdetect (R)unflash (r)unserial (w)bitstore load (W)bitstore fire\n");
         break;
 

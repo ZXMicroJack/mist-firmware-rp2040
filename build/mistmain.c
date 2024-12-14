@@ -562,7 +562,9 @@ int mist_loop() {
 
     if (legacy_mode == LEGACY_MODE) {
       if (user_io_core_type() != CORE_TYPE_UNKNOWN) {
+        printf("setting legacy mode\n");
         set_legacy_mode(MIST_MODE);
+        printf("finished legacy mode\n");
       }
     } else {
       user_io_poll();

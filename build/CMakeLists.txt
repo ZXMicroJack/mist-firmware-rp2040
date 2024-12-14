@@ -325,7 +325,7 @@ set(mb2_opts
 
 ####################################################################################
 # Main build RAM test build for functionality Xilinx ZXTres
-set(testarch xilinx)
+#set(testarch xilinx)
 # set(archdefs "-DXILINX")
 # set(archdefs   "-DALTERA_FPGA" "-DQMTECH")
 
@@ -350,6 +350,7 @@ target_include_directories(mistram PUBLIC ../picosynth)
 pico_generate_pio_header(mistram ../drivers/fpga.pio)
 pico_generate_pio_header(mistram ../drivers/spi.pio)
 pico_generate_pio_header(mistram ../drivers/jamma.pio)
+pico_generate_pio_header(mistram ../drivers/jammaj.pio)
 pico_generate_pio_header(mistram ../drivers/jammadb9.pio)
 pico_generate_pio_header(mistram ../drivers/ps2.pio)
 pico_generate_pio_header(mistram ../drivers/audio_not_i2s.pio)
@@ -363,11 +364,11 @@ pico_set_binary_type(mistram no_flash)
 
 target_compile_options(mistram PUBLIC
   ${common_opts}
-  ${xilinx_opts}
-  # ${altera_opts}
+  # ${xilinx_opts}
+  ${altera_opts}
   ${ram_opts}
-  # ${neptuno_opts}
-  ${zxtres_opts}
+  ${neptuno_opts}
+  # ${zxtres_opts}
   ${picosynth_opts}
 )
 

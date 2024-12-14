@@ -1,12 +1,17 @@
 .program jammadb9
 ;.side_set 2
 reset:
-    set pins,2
-    set pins,0
-    set pins,3
-    set pins,1
+;    set pins,2
+;    set pins,0
+;    set pins,3
+;    set pins,1
 
-    set x,15
+    set pins,2
+    set pins,3
+
+
+;    set x,15
+    set x,23
 bitloop:
     set pins,3;
     set pins,1;
@@ -18,6 +23,9 @@ bitloop:
 
 % c-sdk {
 
+
+// 12 instructions
+// now 10 instructions
 static inline void jammadb9_program_init(PIO pio, uint sm, uint offset, uint load_pin, uint data_pin) {
   pio_sm_config sm_config = jammadb9_program_get_default_config(offset);
 

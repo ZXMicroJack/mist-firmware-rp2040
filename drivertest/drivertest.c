@@ -751,6 +751,8 @@ int main()
   kbd_Init();
 #endif
 
+gpioirq_Init();
+
 #ifdef TEST_PS2
   ps2_Init();x
   ps2_EnablePort(0, true);
@@ -1400,8 +1402,11 @@ int main()
 #ifdef TEST_JAMMA
       case 'j': jamma_InitEx(0); printf("joypad 0 %X 1 %X\n", jamma_GetData(0), jamma_GetData(1)); break;
       case 'J': jamma_InitEx(1); printf("joypad 0 %X 1 %X\n", jamma_GetData(0), jamma_GetData(1)); break;
-      case 'y': printf("jamma %08X\n", jamma_GetDataAll()); break;
+      case 'y': printf("db9 %08X jamma %08X\n", jamma_GetDataAll(), jamma_GetJamma()); break;
       case 'x': jamma_Kill(); printf("kill jamma\n"); break;
+      
+      case 'd': jamma_DetectPoll(0); break;
+      case 'D': jamma_DetectPoll(1); break;
 #endif
 
 #ifdef TEST_JOYPAD

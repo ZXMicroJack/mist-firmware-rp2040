@@ -37,6 +37,8 @@
 #include "wtsynth.h"
 #endif
 
+#include "drivers/pins.h"
+
 // #include "usbdev.h"
 
 #if defined(USB) && !defined (USBFAKE)
@@ -155,6 +157,32 @@ int main() {
     int c = getchar_timeout_us(2);
 //     if (forceexit) break;
     if (c == 'q') break;
+    if (c == 'w') {
+      fpga_init("ZX-Spectrum-Legacy.rbf");
+      reset_usb_boot(0, 0);
+    }
+    if (c == 'e') {
+      fpga_init("zxspectrum_20201222.np1");
+      // fpga_init("Adam_Computer.rbf");
+      reset_usb_boot(0, 0);
+    }
+    if (c == 'r') {
+      gpio_init(GPIO_FPGA_CONF_DONE);
+      gpio_init(GPIO_FPGA_NSTATUS);
+      gpio_init(GPIO_FPGA_NCONFIG);
+
+      gpio_put(GPIO_FPGA_NCONFIG, 1);
+      gpio_set_dir(GPIO_FPGA_NCONFIG, GPIO_OUT);
+      gpio_put(GPIO_FPGA_NCONFIG, 0);
+      sleep_us(100);
+      gpio_put(GPIO_FPGA_NCONFIG, 1);
+
+      gpio_init(GPIO_FPGA_CONF_DONE);
+      gpio_init(GPIO_FPGA_NSTATUS);
+      gpio_init(GPIO_FPGA_NCONFIG);
+      reset_usb_boot(0, 0);
+    }
+
 #ifdef ZXUNO
     if (c == 'j') {
       void ConfigureFPGAStdin();

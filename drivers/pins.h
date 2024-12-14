@@ -31,7 +31,9 @@
 20  w5 - MIST_SS2
 21  w6 - MIST_SS3
 22  w4 - MIST_SS4 (AE9 on neptuno2)
-23  y6 - signal high when error state to boot /BOOT.BIT
+--23  y6 - signal high when error state to boot /BOOT.BIT
+--23  y6 - debug output
+23  y6 - xdata-jamma
 24  y9 - MIST_SS4 - altera FPGA_CONF_DONE (neptuno1++)
 25  r19_pal  - altera FPGA_MSEL1 (neptuno1++)     FPGA_CONF_DONE (neptuno2)
 26  aa4_xload
@@ -209,6 +211,7 @@
 #define GPIO_RP2U_XLOAD       26 // AA4
 #define GPIO_RP2U_XSCK        27 // AB5
 #define GPIO_RP2U_XDATA       28 // AA6
+#define GPIO_RP2U_XDATAJAMMA  23 // Y6
 
 // Note: This set incorrect after query of 18/01/2024
 /*                                 USB          MIDI
@@ -274,8 +277,10 @@
 #define JAMMA_PIO           pio1
 #define JAMMA_SM            2
 #define JAMMA_OFFSET        AUDIO_I2S_INSTR
-#define JAMMA_INSTR         12
+#define JAMMA_INSTR         10
+#define JAMMAU_INSTR        5
 #define JAMMA_PIO_IRQ       PIO1_IRQ_0
+#define JAMMA2_SM           3
 
 // NOTE - PIO number not changed on PIO not changed from this, but is here for reference sake
 #define AUDIO_I2S_PIO       pio1

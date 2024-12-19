@@ -29,6 +29,16 @@ jamma FFFFFF00 - tilt switch
 jamma FEFFFF00 - service
 */
 
+// poll db9 joysticks
+#define DB9_UP          0x80
+#define DB9_DOWN        0x40
+#define DB9_LEFT        0x20
+#define DB9_RIGHT       0x10
+#define DB9_BTN1        0x08
+#define DB9_BTN2        0x04
+#define DB9_BTN3        0x02
+#define DB9_BTN4        0x01
+
 uint8_t jamma_GetMisterMode();
 void jamma_InitEx(uint8_t mister);
 void jamma_Init();
@@ -39,7 +49,11 @@ int jamma_HasChanged();
 void jamma_Kill();
 
 uint32_t jamma_GetJamma();
+uint8_t jamma_GetDepth();
 
+// MJTODO remove
+#if 0
 void jamma_DetectPoll(uint8_t reset);
+#endif
 
 #endif

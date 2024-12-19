@@ -8,10 +8,10 @@ reset:
     
 bitloop:
     wait 1 gpio 27;
-    in pins,1;
     wait 0 gpio 27;
+    in pins,1;
     jmp pin bitloop;
-    jmp reset;
+;    jmp reset;
     
 % c-sdk {
 

@@ -9,7 +9,7 @@
 #include "ps2.h"
 #include "gpioirq.h"
 #include "jamma.h"
-// #define DEBUG
+//#define DEBUG
 #include "debug.h"
 
 #include "jammadb9.pio.h"
@@ -59,14 +59,22 @@ static void gpio_callback(uint gpio, uint32_t events) {
     while (!pio_sm_is_tx_fifo_full(jamma_pio, jamma_sm))
       pio_sm_put_blocking(jamma_pio, jamma_sm, reload_data);
     
-    if (!pio_sm_is_rx_fifo_empty(jamma_pio, jamma2_sm)) {
+#if 1
+    while (!pio_sm_is_rx_fifo_empty(jamma_pio, jamma2_sm)) {
       uint32_t _data = pio_sm_get_blocking(jamma_pio, jamma2_sm);
       do_debounce(_data, &jamma_data, &debounce2_data, &debounce2, &jamma_ChangedJamma);
       if (detect_jamma_bitshift) {
         detect_jamma_bitshift --;
-        if (!detect_jamma_bitshift) jamma_bitshift = jamma_data & 0xff00;
+        if (!detect_jamma_bitshift) {
+          jamma_bitshift = 0;
+          while (!(_data & 1)) {
+            jamma_bitshift ++;
+            _data >>= 1;
+          }
+        }
       }
     }
+#endif
   }
 }
 
@@ -91,8 +99,8 @@ static void pio_callback() {
       }
     }
 #endif
-    joydata[0] = ~(data >> 24);
-    joydata[1] = ~(data >> 16);
+    joydata[0] = ~(data >> (jamma_bitshift + 8));
+    joydata[1] = ~(data >> jamma_bitshift);
   }
 
   if (!pio_sm_is_rx_fifo_empty(jamma_pio, jamma2_sm)) {
@@ -119,7 +127,8 @@ static uint8_t inited = 0;
 
 void jamma_InitDB9() {
   /* don't need to detect shifting */
-  detect_jamma_bitshift = jamma_bitshift = 0;
+  detect_jamma_bitshift = 0;
+  jamma_bitshift = 8;
 
 #ifndef NO_JAMMA
   debug(("jamma_Init: DB9 mode\n"));
@@ -156,8 +165,10 @@ void jamma_InitDB9() {
 #endif
 }
 
+#define d printf("[%d]\n", __LINE__);
+
 void jamma_InitUSB() {
-  detect_jamma_bitshift = 8;
+  detect_jamma_bitshift = 20;
   jamma_bitshift = 0;
 #ifndef NO_JAMMA
   debug(("jamma_Init: USB mode\n"));
@@ -175,23 +186,23 @@ void jamma_InitUSB() {
   gpio_set_dir(GPIO_RP2U_XDATAJAMMA, GPIO_IN);
 
 #ifdef JAMMA_OFFSET
-  pio_add_program_at_offset(jamma_pio, &jamma_program, JAMMA_OFFSET);
-  jamma_offset = JAMMA_OFFSET;
-  pio_add_program_at_offset(jamma_pio, &jammaj_program, JAMMA_OFFSET);
-  jamma_offset2 = JAMMA_OFFSET + JAMMAU_INSTR;
+  pio_add_program_at_offset(jamma_pio, &jamma_program, JAMMA_OFFSET);d
+  jamma_offset = JAMMA_OFFSET;d
+  pio_add_program_at_offset(jamma_pio, &jammaj_program, JAMMA_OFFSET + JAMMAU_INSTR);d
+  jamma_offset2 = JAMMA_OFFSET + JAMMAU_INSTR;d
 #else
   jamma_offset = pio_add_program(jamma_pio, &jamma_program);
 #endif
-  jamma_program_init(jamma_pio, jamma_sm, jamma_offset, GPIO_RP2U_XDATA);
-  pio_sm_clear_fifos(jamma_pio, jamma_sm);
-  jammaj_program_init(jamma_pio, jamma2_sm, jamma_offset2, GPIO_RP2U_XDATAJAMMA);
-  pio_sm_clear_fifos(jamma_pio, jamma2_sm);
+  jamma_program_init(jamma_pio, jamma_sm, jamma_offset, GPIO_RP2U_XDATA);d
+  pio_sm_clear_fifos(jamma_pio, jamma_sm);d
+  jammaj_program_init(jamma_pio, jamma2_sm, jamma_offset2, GPIO_RP2U_XDATAJAMMA);d
+  pio_sm_clear_fifos(jamma_pio, jamma2_sm);d
   
-  gpioirq_SetCallback(IRQ_JAMMA, gpio_callback);
-  gpio_set_irq_enabled(GPIO_RP2U_XLOAD, GPIO_IRQ_EDGE_FALL, true);
+  gpioirq_SetCallback(IRQ_JAMMA, gpio_callback);d
+  gpio_set_irq_enabled(GPIO_RP2U_XLOAD, GPIO_IRQ_EDGE_FALL, true);d
 
-  pio_sm_put_blocking(jamma_pio, jamma_sm, reload_data);
-  pio_interrupt_clear (jamma_pio, 0);
+  // pio_sm_put_blocking(jamma_pio, jamma_sm, reload_data);d
+  pio_interrupt_clear (jamma_pio, 0);d
   inited = 1;
 #endif
 }
@@ -261,11 +272,15 @@ int jamma_HasChanged() {
 }
 
 uint32_t jamma_GetDataAll() {
-  return data;
+  return data >> jamma_bitshift;
 }
 
 uint32_t jamma_GetJamma() {
-  return jamma_bitshift ? ((jamma_data >> 8)|0xff000000) : jamma_data;
+  return jamma_data >> jamma_bitshift;
+}
+
+uint8_t jamma_GetDepth() {
+  return 32 - jamma_bitshift;
 }
 
 int jamma_HasChangedJamma() {
@@ -274,6 +289,7 @@ int jamma_HasChangedJamma() {
   return changed;
 }
 
+#if 0 // MJTODO remove
 static uint64_t detect_timeout = 0;
 static uint32_t detect_clocks = 0;
 
@@ -336,4 +352,4 @@ void jamma_DetectPoll(uint8_t reset) {
   }
 #endif
 }
-
+#endif

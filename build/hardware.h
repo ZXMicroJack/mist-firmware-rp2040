@@ -86,6 +86,7 @@ unsigned char UserButton();
 void InitDB9();
 char GetDB9(char index, unsigned char *joy_map);
 void DB9SetLegacy(uint8_t on);
+void JammaToDB9();
 
 // the MiST has the user inout on the arm controller
 void EnableIO(void);

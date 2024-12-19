@@ -1,16 +1,9 @@
 .program jammadb9
 ;.side_set 2
 reset:
-;    set pins,2
-;    set pins,0
-;    set pins,3
-;    set pins,1
-
     set pins,2
     set pins,3
 
-
-;    set x,15
     set x,23
 bitloop:
     set pins,3;
@@ -19,7 +12,6 @@ bitloop:
     jmp x-- bitloop;
     push;
     irq wait 0;
-    jmp reset
 
 % c-sdk {
 

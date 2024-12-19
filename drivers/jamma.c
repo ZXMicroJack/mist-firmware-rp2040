@@ -280,7 +280,7 @@ uint32_t jamma_GetJamma() {
 }
 
 uint8_t jamma_GetDepth() {
-  return 32 - jamma_bitshift;
+  return 32 - jamma_bitshift - 1;
 }
 
 int jamma_HasChangedJamma() {

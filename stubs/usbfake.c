@@ -852,19 +852,19 @@ void kbd_usbaction(char c) {
 
     case '1': // action1
       printf("act1\n");
-      usb_handle_data(k, kbd_rep1, sizeof kbd_rep1);
+      usb_handle_data(k, 0, kbd_rep1, sizeof kbd_rep1);
       break;
     case '2': // action2
       printf("act2\n");
-      usb_handle_data(k, kbd_rep2, sizeof kbd_rep2);
+      usb_handle_data(k, 0, kbd_rep2, sizeof kbd_rep2);
       break;
     case '3': // action1
       printf("act3\n");
-      usb_handle_data(k, kbd_rep3, sizeof kbd_rep3);
+      usb_handle_data(k, 0, kbd_rep3, sizeof kbd_rep3);
       break;
     case '4': // action2
       printf("act4\n");
-      usb_handle_data(k, kbd_rep4, sizeof kbd_rep4);
+      usb_handle_data(k, 0, kbd_rep4, sizeof kbd_rep4);
       break;
   }
 #undef k
@@ -885,19 +885,19 @@ void joy1_usbaction(char c) {
 
     case '1': // action1
       printf("act1\n");
-      usb_handle_data(k, joy1_rep1, sizeof joy1_rep1);
+      usb_handle_data(k, 0, joy1_rep1, sizeof joy1_rep1);
       break;
     case '2': // action2
       printf("act2\n");
-      usb_handle_data(k, joy1_rep2, sizeof joy1_rep2);
+      usb_handle_data(k, 0, joy1_rep2, sizeof joy1_rep2);
       break;
     case '3': // action1
       printf("act3\n");
-      usb_handle_data(k, joy1_rep3, sizeof joy1_rep3);
+      usb_handle_data(k, 0, joy1_rep3, sizeof joy1_rep3);
       break;
     case '4': // action2
       printf("act4\n");
-      usb_handle_data(k, joy1_rep4, sizeof joy1_rep4);
+      usb_handle_data(k, 0, joy1_rep4, sizeof joy1_rep4);
       break;
   }
 #undef k
@@ -921,7 +921,7 @@ void joy2_usbaction(char c) {
 
     case '1': // action1
       printf("act%d\n", joy2_idx);
-      usb_handle_data(k, joy2_reps[joy2_idx], sizeof joy2_reps[joy2_idx]);
+      usb_handle_data(k, 0, joy2_reps[joy2_idx], sizeof joy2_reps[joy2_idx]);
       joy2_idx++;
       if (joy2_idx >= (sizeof joy2_reps / sizeof joy2_reps[0])) joy2_idx = 0;
       break;
@@ -946,21 +946,21 @@ void joy3_usbaction(char c) {
 
     case '1': // action1
       printf("act%d\n", joy3_idx);
-      usb_handle_data(k, joy3_reps[joy3_idx], sizeof joy3_reps[joy3_idx]);
+      usb_handle_data(k, 0, joy3_reps[joy3_idx], sizeof joy3_reps[joy3_idx]);
       joy3_idx++;
       if (joy3_idx >= (sizeof joy3_reps / sizeof joy3_reps[0])) joy3_idx = 0;
       break;
     case '2': // action2
       printf("act2\n");
-      usb_handle_data(k, joy3_rep2, sizeof joy3_rep2);
+      usb_handle_data(k, 0, joy3_rep2, sizeof joy3_rep2);
       break;
     case '3': // action1
       printf("act3\n");
-      usb_handle_data(k, joy3_rep3, sizeof joy3_rep3);
+      usb_handle_data(k, 0, joy3_rep3, sizeof joy3_rep3);
       break;
     case '4': // action2
       printf("act4\n");
-      usb_handle_data(k, joy3_rep4, sizeof joy3_rep4);
+      usb_handle_data(k, 0, joy3_rep4, sizeof joy3_rep4);
       break;
   }
 #undef k
@@ -983,7 +983,7 @@ void ds4_usbaction(char c) {
 
     case '1': // action1
       printf("act%d\n", ds4_idx);
-      usb_handle_data(k, ds4_reps[ds4_idx], sizeof ds4_reps[ds4_idx]);
+      usb_handle_data(k, 0, ds4_reps[ds4_idx], sizeof ds4_reps[ds4_idx]);
       ds4_idx++;
       if (joy3_idx >= (sizeof ds4_reps / sizeof ds4_reps[0])) ds4_idx = 0;
       break;
@@ -1010,7 +1010,7 @@ xinputh_interface_t xbox_make_report(uint16_t btn, uint8_t lt, uint8_t rt, int16
   x.pad.sThumbLY = ly;
   x.pad.sThumbRX = rx;
   x.pad.sThumbRY = ry;
-  usb_handle_data(k, &x, sizeof x);
+  usb_handle_data(k, 0, &x, sizeof x);
 }
 
 int xbox_act = 1;

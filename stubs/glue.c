@@ -148,7 +148,7 @@ void dmb() {}
 void WriteFirmware(char *name) {
 }
 
-const static char firmwareVersion[] = "v999.999 - TBD FAKE ";
+const char firmwareVersion[] = "v999.999 - TBD FAKE ";
 
 char *GetFirmwareVersion(char *name) {
   return firmwareVersion;
@@ -169,5 +169,34 @@ unsigned char ConfigureFpga(const char*) {
 
 void DB9Update(int n, uint8_t d) {
   printf("DB9Update: n %d d %02X\n", n, d);
+}
+
+#define curr_legacy_mode 0
+void usb_ToPS2(uint8_t modifier, uint8_t keys[6]) {
+  debug(("usb_ToPS2: modifier %02X keys %02X %02X %02X %02X %02X %02X legacy %d\n",
+    modifier, keys[0], keys[1], keys[2], keys[3], keys[4], keys[5], curr_legacy_mode));
+}
+
+void usb_ToPS2Mouse(uint8_t report[], uint16_t len) {
+  printf("usb_ToPS2Mouse: ");
+  for (int i=0; i<len; i++) {
+    printf("%02X ", report[i]);
+  }
+  printf("\n");
+}
+
+int UpdateFirmwareUSB() {
+	printf("UpdateFirmwareUSB();\n");
+	return 0;
+}
+
+//char firmwareVersion[] = "HELLO HELLO HELLO HELLO";
+
+extern const char *GetUSBVersion() {
+  return firmwareVersion;
+}
+
+int picosynth_GetStatus() {
+	return 0;
 }
 

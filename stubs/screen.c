@@ -47,7 +47,7 @@ void updateScreen() {
   }
 
   /* Update just the part of the display that we've changed */
-  SDL_UpdateRect(screen, 0, 0, 256*2, 192*2);
+  SDL_UpdateRect(screen, 0, 0, 640, 480);
 
 	pollKeyboard();
 }
@@ -88,6 +88,9 @@ void initScreenReal() {
 
   memset(specKeys, 0xff, sizeof specKeys);
   quit = 0;
+
+  //SDL_SetWindowPosition(screen, 100,100);
+
 }
 
 /*

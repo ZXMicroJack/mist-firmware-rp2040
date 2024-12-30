@@ -1,32 +1,16 @@
 #ifndef _JAMMA_H
 #define _JAMMA_H
 
-/*
-jamma FFFFFE00 - p1 button #4
-jamma FFFFFD00 - p1 button #3
-jamma FFFFFB00 - p1 button #2
-jamma FFFFF700 - p1 button #1
-jamma FFFFEF00 - p1 right
-jamma FFFFDF00 - p1 left
-jamma FFFFBF00 - p1 down
-jamma FFFF7F00 - p1 up
-jamma FF7FFF00 - p1 start
-jamma FFDFFF00 - coin switch #1
-jamma FFEFFF00 - test
-jamma FFFFFF00 - video ground
+/* build option - for now keep in, but if it creates issues remove it */
+// #define JAMMA_JAMMA
 
-jamma EFFFFF00 - p2 button #4
-jamma DFFFFF00 - p2 button #3
-jamma BFFFFF00 - p2 button #2
-jamma 7FFFFF00 - p2 button #1
-jamma FFFEFF00 - p2 right
-jamma FFFDFF00 - p2 left
-jamma FFFBFF00 - p2 down
-jamma FFF7FF00 - p2 up
-jamma F7FFFF00 - p2 start
-jamma FDFFFF00 - coin switch #2
-jamma FFFFFF00 - tilt switch
-jamma FEFFFF00 - service
+/*
+JAMMA
+  P1
+  TST COI STA UP_ DWN LFT RTG BT1 BT2 BT3 BT4
+
+  P2
+  SVC COI STA UP_ DWN LFT RTG BT1 BT2 BT3 BT4
 */
 
 // poll db9 joysticks
@@ -48,12 +32,9 @@ uint32_t jamma_GetDataAll();
 int jamma_HasChanged();
 void jamma_Kill();
 
+#ifdef JAMMA_JAMMA
 uint32_t jamma_GetJamma();
 uint8_t jamma_GetDepth();
-
-// MJTODO remove
-#if 0
-void jamma_DetectPoll(uint8_t reset);
 #endif
 
 #endif

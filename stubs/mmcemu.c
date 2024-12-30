@@ -37,13 +37,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "string.h"
 #include "stdbool.h"
 #include "spi.h"
-
 #include "mmc.h"
 
-
-
 #define CARDFILE    "card.pt"
-
 
 int read_sector(int sector, uint8_t *buff) {
   FILE *f = fopen(CARDFILE, "rb");
@@ -61,8 +57,6 @@ int write_sector(int sector, uint8_t *buff) {
   fclose(f);
   return 0;
 }
-
-
 
 // variables
 static unsigned char crc;

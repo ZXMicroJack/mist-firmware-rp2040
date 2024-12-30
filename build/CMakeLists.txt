@@ -95,6 +95,7 @@ set(main_src
   fpgaconfig.c
   mbconfig.c
   kbdusb.c
+  platformmenu.c
 )
 
 set(mainzx1_src
@@ -109,6 +110,7 @@ set(mainzx1_src
   keyboard.c
   fpgaconfigzx1.c
   kbdusb.c
+  platformmenu.c
 )
 
 set(usb_src
@@ -141,7 +143,7 @@ set(mistfirmware_src
   ../mist-firmware/menu-minimig.c
   ../mist-firmware/mist_cfg.c
   ../mist-firmware/neocd.c
-  ../mist-firmware/osd.c
+  # ../mist-firmware/osd.c
   ../mist-firmware/pcecd.c
   ../mist-firmware/settings.c
   ../mist-firmware/state.c
@@ -155,6 +157,7 @@ set(mistfirmware_src
   ../mist-firmware/FatFs/ffsystem.c
   ../mist-firmware/FatFs/ffunicode.c
   ../mist-firmware/usb/joymapping.c
+  osdx.c
 )
 
 set(mistfirmwareusb_src
@@ -318,6 +321,11 @@ set(usb_opts
   "-DMIST_USB"
   "-DUSB_STORAGE"
 )
+
+set(mb1_opts
+  "-DJAMMA_JAMMA"
+)
+
 set(mb2_opts
   "-DMB2"
   "-DIPC_MASTER"
@@ -370,6 +378,7 @@ target_compile_options(mistram PUBLIC
   ${neptuno_opts}
   # ${zxtres_opts}
   ${picosynth_opts}
+  ${mb1_opts}
 )
 
 
@@ -443,6 +452,7 @@ add_compile_options(-O2)
 pico_generate_pio_header(mistxilinx ../drivers/fpga.pio)
 pico_generate_pio_header(mistxilinx ../drivers/spi.pio)
 pico_generate_pio_header(mistxilinx ../drivers/jamma.pio)
+pico_generate_pio_header(mistxilinx ../drivers/jammaj.pio)
 pico_generate_pio_header(mistxilinx ../drivers/jammadb9.pio)
 pico_generate_pio_header(mistxilinx ../drivers/audio_not_i2s.pio)
 pico_generate_pio_header(mistxilinx ../drivers/audio_i2s.pio)
@@ -459,6 +469,7 @@ target_compile_options(mistxilinx PUBLIC
   ${flash_opts}
   ${zxtres_opts}
   ${picosynth_opts}
+  ${mb1_opts}
   )
 
 ####################################################################################
@@ -488,6 +499,7 @@ add_compile_options(-O2)
 pico_generate_pio_header(mistusbxilinx ../drivers/fpga.pio)
 pico_generate_pio_header(mistusbxilinx ../drivers/spi.pio)
 pico_generate_pio_header(mistusbxilinx ../drivers/jamma.pio)
+pico_generate_pio_header(mistusbxilinx ../drivers/jammaj.pio)
 pico_generate_pio_header(mistusbxilinx ../drivers/jammadb9.pio)
 pico_generate_pio_header(mistusbxilinx ../drivers/audio_not_i2s.pio)
 pico_generate_pio_header(mistusbxilinx ../drivers/audio_i2s.pio)
@@ -505,6 +517,7 @@ target_compile_options(mistusbxilinx PUBLIC
   ${zxtres_opts}
   ${usb_opts}
   ${picosynth_opts}
+  ${mb1_opts}
   # "-DPIODEBUG"
   # "-DNO_JAMMA"
 )
@@ -536,6 +549,7 @@ add_compile_options(-O2)
 pico_generate_pio_header(mistusb ../drivers/fpga.pio)
 pico_generate_pio_header(mistusb ../drivers/spi.pio)
 pico_generate_pio_header(mistusb ../drivers/jamma.pio)
+pico_generate_pio_header(mistusb ../drivers/jammaj.pio)
 pico_generate_pio_header(mistusb ../drivers/jammadb9.pio)
 pico_generate_pio_header(mistusb ../drivers/audio_not_i2s.pio)
 pico_generate_pio_header(mistusb ../drivers/audio_i2s.pio)
@@ -553,6 +567,7 @@ target_compile_options(mistusb PUBLIC
   ${neptuno_opts}
   ${usb_opts}
   ${picosynth_opts}
+  ${mb1_opts}
   )
 
 ####################################################################################
@@ -673,6 +688,7 @@ add_compile_options(-O2)
 pico_generate_pio_header(mistusbn1p ../drivers/fpga.pio)
 pico_generate_pio_header(mistusbn1p ../drivers/spi.pio)
 pico_generate_pio_header(mistusbn1p ../drivers/jamma.pio)
+pico_generate_pio_header(mistusbn1p ../drivers/jammaj.pio)
 pico_generate_pio_header(mistusbn1p ../drivers/jammadb9.pio)
 pico_generate_pio_header(mistusbn1p ../drivers/ps2.pio)
 pico_generate_pio_header(mistusbn1p ../drivers/ps2tx.pio)
@@ -688,6 +704,7 @@ target_compile_options(mistusbn1p PUBLIC
   ${neptuno_opts}
   ${usb_opts}
   ${picosynth_opts}
+  ${mb1_opts}
   )
 
 ####################################################################################

@@ -12,6 +12,9 @@
 #include "hardware/gpio.h"
 #include "usb/joymapping.h"
 #include "mist_cfg.h"
+
+// #define DEBUG
+#include "drivers/debug.h"
 // #include "usbrtc.h"
 
 #include "common.h"
@@ -256,55 +259,6 @@ void DB9Update(uint8_t joy_num, uint8_t usbjoy) {
 #else
 void InitDB9() {}
 const static uint8_t joylut[] = {JOY_UP, JOY_DOWN, JOY_LEFT, JOY_RIGHT, JOY_BTN1, JOY_BTN2, 0, 0};
-#if 0
-char GetDB9(char index, unsigned char *joy_map) {
-  // *joy_map is set to a combination of the following bitmapped values
-  // JOY_UP, JOY_DOWN, JOY_LEFT, JOY_RIGHT, JOY_BTN1, JOY_BTN2
-
-  uint32_t d = jamma_GetData(index);
-  uint8_t mask = 0x80;
-  uint8_t ndx = 0;
-  char j = 0;
-
-  while (mask) {
-    if (d & mask) j |= joylut[ndx];
-    ndx++;
-    mask >>= 1;
-  }
-
-  static uint8_t lastdb9[2];
-  if (lastdb9[index] != d) {
-    printf("GetDB9: d = %02X returns %02X\n", d, j);
-    lastdb9[index] = d;
-  }
-  
-  *joy_map = d == 0xff ? 0 : j;
-  return 1;
-}
-#else
-#if 0
-void user_io_joystick16(unsigned char joystick, unsigned short map)''
-void user_io_joystick(unsigned char joystick, unsigned char map)
-
-
-user_io_digital_joystick_ext(idx, vjoy);
-
-		StateJoySet(vjoy, idx);
-		StateJoySetExtra( vjoy>>8, idx);
-
-		uint8_t idx = joystick_renumber(0);
-#endif
-
-#if 0
-		joy_map = virtual_joystick_mapping(0x00db, 0x0000, joy_map);
-		uint8_t idx = joystick_renumber(0);
-		if (!user_io_osd_is_visible()) user_io_joystick(idx, joy_map);
-		StateJoySet(joy_map, mist_cfg.joystick_db9_fixed_index ? idx : joystick_count()); // send to OSD
-		virtual_joystick_keyboard_idx(idx, joy_map);
-
-#endif
-
-#define JAMMA_JAMMA
 
 #ifdef JAMMA_JAMMA
 const static uint16_t jammalut[2][24] = {
@@ -327,12 +281,12 @@ const static uint8_t jammadb9lut[2][24] = {
   }, {
     0, 0, 0, 0, 0, 0, 0, 0,
     DB9_RIGHT, DB9_LEFT, DB9_DOWN, DB9_UP, 0, 0, 0, 0,
-    0, 0, 0, 0, DB9_BTN4, DB9_BTN3, DB9_BTN2, DB9_BTN1,
-    0, 0, 0, 0, 0, 0, 0, 0
+    0, 0, 0, 0, DB9_BTN4, DB9_BTN3, DB9_BTN2, DB9_BTN1
   }
 };
 #endif
 
+#ifdef JAMMA_JAMMA
 static uint8_t jammadb9[2] = {0x00, 0x00};
 static uint8_t usbdb9[2] = {0x00, 0x00};
 
@@ -350,12 +304,12 @@ void JammaToDB9() {
     if (jammadb9[index] != j) {
       jammadb9[index] = j;
       jamma_SetData(index, j | usbdb9[index]);
-      printf("JammaToDB9: %02X (usb %02X)\n", j, usbdb9[index]);
-      printf("jamma %X: depth: %d\n", jamma_GetJamma(), depth);
+      debug(("JammaToDB9: %02X (usb %02X)\n", j, usbdb9[index]));
+      debug(("jamma %X: depth: %d\n", jamma_GetJamma(), depth));
     }
   }
 }
-
+#endif
 
 char GetDB9(char index, unsigned char *joy_map) {
   // *joy_map is set to a combination of the following bitmapped values
@@ -374,19 +328,20 @@ char GetDB9(char index, unsigned char *joy_map) {
     }
   }
 
+#ifdef JAMMA_JAMMA
   d = ~jamma_GetJamma();
   uint8_t depth = jamma_GetDepth();
   for (ndx = 0; ndx < depth; ndx++) {
     j |= (d & 1) ? jammalut[index][ndx] : 0;
     d >>= 1;
   }
-
+#endif
   
 #ifndef JAMMA_JAMMA
-#if 1
+#ifdef DEBUG
   static uint16_t lastdb9[2];
   if (lastdb9[index] != j) {
-    printf("GetDB9: index %d joy %04x\n", index, j);
+    debug(("GetDB9: index %d joy %04x\n", index, j));
     lastdb9[index] = j;
   }
 #endif
@@ -403,7 +358,7 @@ char GetDB9(char index, unsigned char *joy_map) {
   StateJoySet(joy_map2, idx); // send to OSD
   StateJoySetExtra( joy_map2>>8, idx);
   virtual_joystick_keyboard_idx(idx, joy_map2);
-#if 1
+#ifdef DEBUG
   static uint16_t lastdb9[2];
   if (lastdb9[index] != j) {
     printf("GetDB9: index %d (->%d) joy %04x map %04x\n", index, idx, j, joy_map2);
@@ -413,7 +368,6 @@ char GetDB9(char index, unsigned char *joy_map) {
   return 0;
 #endif
 }
-#endif
 
 const static uint8_t inv_joylut[] = {DB9_BTN4, DB9_BTN3, DB9_BTN2, DB9_BTN1, DB9_UP, DB9_DOWN, DB9_LEFT, DB9_RIGHT};
 void DB9Update(uint8_t joy_num, uint8_t usbjoy) {
@@ -427,8 +381,12 @@ void DB9Update(uint8_t joy_num, uint8_t usbjoy) {
     mask >>= 1;
   }
 
+#ifdef JAMMA_JAMMA
   usbdb9[joy_num & 1] = joydata;
   jamma_SetData(joy_num & 1, joydata | jammadb9[joy_num&1]);
+#else
+  jamma_SetData(joy_num & 1, joydata);
+#endif
 }
 
 void DB9SetLegacy(uint8_t on) {

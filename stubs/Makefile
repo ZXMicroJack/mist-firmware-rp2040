@@ -27,7 +27,8 @@ hidparser.o \
 joystick.o \
 timer.o \
 usbdebug.o \
-usbfake.o
+usbfake.o \
+kbdusb.o
 
 mistobjs=\
 arc_file.o \
@@ -51,7 +52,7 @@ menu-minimig.o \
 mist_cfg.o \
 neocd.o \
 main.o \
-osd.o \
+osdx.o \
 pcecd.o \
 settings.o \
 state.o \
@@ -64,7 +65,8 @@ diskio.o \
 ff.o \
 ffsystem.o \
 ffunicode.o \
-joymapping.o
+joymapping.o \
+platformmenu.o
 
 objs1=$(hwobjs) $(commonhwobjs) $(mistobjs)
 objs2=$(emuobjs) $(commonhwobjs) $(mistobjs) 
@@ -72,10 +74,10 @@ objs=$(hwobjs) $(emuobjs) $(commonhwobjs) $(mistobjs)
 
 # syscalls.o \
 
-copts=-m32 -I. -I../mist-firmware -I../mist-firmware/arch -I../mist-firmware/usb -I../usbhost -I../contrib/tusb_xinput/ -I..\
+copts=-m32 -I. -I../mist-firmware -I../mist-firmware/arch -I../mist-firmware/usb -I../usbhost -I../contrib/tusb_xinput/ -I.. -I../build/ \
 	-D_WANT_IO_LONG_LONG -DUSB -DUSBFAKE \
 	-DVDATE="" -DRAMFUNC= -DATTRS_H -DFAST= -DMIST_ROOT=\"\" -DNOSPIN -DCOREEXT=\"BIT\" \
-	-DCOREEXTOTHER=\"RBF\" -g -DEXCL_XBOX_JPAD -DTU_ATTR_WEAK= -Dxfer_result_t=int
+	-DCOREEXTOTHER=\"RBF\" -g -DEXCL_XBOX_JPAD -DTU_ATTR_WEAK= -Dxfer_result_t=int -DMIST -DRP2040
 
 %.o : %.c
 	gcc $(copts) -c -o$@ $<

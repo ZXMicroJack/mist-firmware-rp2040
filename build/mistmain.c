@@ -566,7 +566,9 @@ int mist_loop() {
         set_legacy_mode(MIST_MODE);
         printf("finished legacy mode\n");
       }
+#ifdef JAMMA_JAMMA
       JammaToDB9();
+#endif
     } else {
       user_io_poll();
 

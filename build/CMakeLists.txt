@@ -37,8 +37,6 @@ set(driver_src
   ../drivers/sdcard.c
   ../drivers/bitfile.c
   ../drivers/midi.c
-  #../drivers/ipc.c
-  #../drivers/flash.c
   ../drivers/debug.c
   ../drivers/fifo.c
   ../drivers/kbd.c
@@ -55,7 +53,6 @@ set(driver_mb2_src
   ../drivers/ipc.c
   ../drivers/cookie.c
   ../drivers/midi.c
-  #../drivers/flash.c
   ../drivers/gpioirq.c
   ../drivers/debug.c
   ../drivers/fifo.c
@@ -71,13 +68,10 @@ set(driver_zx1_src
 ../drivers/ps2detect.c
 ../drivers/bitfile.c
 ../drivers/midi.c
-#../drivers/ipc.c
-#../drivers/flash.c
 ../drivers/gpioirq.c
 ../drivers/debug.c
 ../drivers/fifo.c
 ../drivers/kbd.c
-#../drivers/jamma.c
 ../drivers/crc16.c
 ../drivers/bitstore.c
 )
@@ -143,7 +137,6 @@ set(mistfirmware_src
   ../mist-firmware/menu-minimig.c
   ../mist-firmware/mist_cfg.c
   ../mist-firmware/neocd.c
-  # ../mist-firmware/osd.c
   ../mist-firmware/pcecd.c
   ../mist-firmware/settings.c
   ../mist-firmware/state.c
@@ -188,12 +181,24 @@ set(picosynth_opts
   "-DPICO_AUDIO_I2S_PIO=1"
 )
 
-# mist library
-add_library(mistfirmware STATIC ${mistfirmware_src})
-target_compile_options(mistfirmware PUBLIC
+set(mistfirmware_opts_common
   "-DVDATE=\"\""
   "-DMIST"
   "-DRP2040"
+  "-DUPDATE_DB9"
+  "-DLEGACY_CORE_SUPPORT"
+  "-DCONTROL_MENU_USING_ANY_JOYPAD"
+)
+
+set(mistfirmware_opts_usb
+  "-DUSB_STORAGE"
+  "-DEXCL_XBOX_JPAD"
+)
+
+# mist library
+add_library(mistfirmware STATIC ${mistfirmware_src})
+target_compile_options(mistfirmware PUBLIC
+  ${mistfirmware_opts_common}
   "-DMIST_ROOT=\"/\""
   "-DCOREEXT=\"RBF\""
   "-DCOREEXTOTHER=\"NP1\""
@@ -201,10 +206,8 @@ target_compile_options(mistfirmware PUBLIC
 # mist library xilinx
 add_library(mistfirmwarexilinx STATIC ${mistfirmware_src})
 target_compile_options(mistfirmwarexilinx PUBLIC
-  "-DVDATE=\"\""
+  ${mistfirmware_opts_common}
   "-DXILINX"
-  "-DRP2040"
-  "-DMIST"
   "-DMIST_ROOT=\"/MIST\""
   "-DCOREEXT=\"BIT\""
   "-DCOREEXTOTHER=\"ZXT\""
@@ -213,12 +216,11 @@ target_compile_options(mistfirmwarexilinx PUBLIC
 # mist USB library
 add_library(mistfirmwareusbxilinx STATIC ${mistfirmware_src} ${mistfirmwareusb_src})
 target_compile_options(mistfirmwareusbxilinx PUBLIC
-  "-DVDATE=\"\""
-  "-DRP2040"
-  "-DMIST"
-  "-DUSB_STORAGE"
+  ${mistfirmware_opts_common}
+  ${mistfirmware_opts_usb}
+  # TODO check if needed
   "-DXILINX"
-  "-DEXCL_XBOX_JPAD"
+
   "-DMIST_ROOT=\"/MIST\""
   "-DCOREEXT=\"BIT\""
   "-DCOREEXTOTHER=\"ZXT\""
@@ -227,11 +229,8 @@ target_compile_options(mistfirmwareusbxilinx PUBLIC
 # mist USB library
 add_library(mistfirmwareusb STATIC ${mistfirmware_src} ${mistfirmwareusb_src})
 target_compile_options(mistfirmwareusb PUBLIC
-  "-DVDATE=\"\""
-  "-DRP2040"
-  "-DMIST"
-  "-DUSB_STORAGE"
-  "-DEXCL_XBOX_JPAD"
+  ${mistfirmware_opts_common}
+  ${mistfirmware_opts_usb}
   "-DMIST_ROOT=\"/\""
   "-DCOREEXT=\"RBF\""
   "-DCOREEXTOTHER=\"NP1\""
@@ -240,12 +239,12 @@ target_compile_options(mistfirmwareusb PUBLIC
 # mist library
 add_library(mistfirmwarezx1 STATIC ${mistfirmware_src})
 target_compile_options(mistfirmwarezx1 PUBLIC
-  "-DVDATE=\"\""
-  "-DRP2040"
+  ${mistfirmware_opts_common}
+  # TODO check if needed
   "-DNO_FILE_INDEX"
-  "-DMIST"
   "-DXILINX"
   "-DZXUNO"
+
   "-DMIST_ROOT=\"/MIST\""
   "-DCOREEXT=\"BIT\""
   "-DCOREEXTOTHER=\"ZX1\""
@@ -254,14 +253,13 @@ target_compile_options(mistfirmwarezx1 PUBLIC
   # mist library
 add_library(mistfirmwareusbzx1 STATIC ${mistfirmware_src} ${mistfirmwareusb_src})
 target_compile_options(mistfirmwareusbzx1 PUBLIC
-  "-DVDATE=\"\""
-  "-DRP2040"
+  ${mistfirmware_opts_common}
+  ${mistfirmware_opts_usb}
+  # TODO check if needed
   "-DNO_FILE_INDEX"
-  "-DUSB_STORAGE"
-  "-DEXCL_XBOX_JPAD"
-  "-DMIST"
   "-DXILINX"
   "-DZXUNO"
+  
   "-DMIST_ROOT=\"/MIST\""
   "-DCOREEXT=\"BIT\""
   "-DCOREEXTOTHER=\"ZX1\""

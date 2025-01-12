@@ -200,7 +200,10 @@ void WriteFirmware(char *name) {
   reset_usb_boot(0, 0);
 }
 
-const char *GetUSBVersion() {
+
+
+//const char *GetUSBVersion() {
+const char *GetHKMVersion() {
 #ifdef MB2
   uint8_t major, minor;
   static char version[] = "v_.___";

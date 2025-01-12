@@ -158,8 +158,8 @@ const static char *GetFirmwareVersion(char *status) {
 }
 
 const static char *GetUSBFWVersion(char *status) {
-  extern const char *GetUSBVersion();
-  char *v = GetUSBVersion();
+  extern const char *GetHKMVersion();
+  char *v = GetHKMVersion();
 
   if (v) {
     siprintf(status, " Update USB (%s)", v);

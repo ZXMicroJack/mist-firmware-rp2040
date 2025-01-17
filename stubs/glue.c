@@ -192,7 +192,7 @@ int UpdateFirmwareUSB() {
 
 //char firmwareVersion[] = "HELLO HELLO HELLO HELLO";
 
-extern const char *GetUSBVersion() {
+extern const char *GetHKMVersion() {
   return firmwareVersion;
 }
 

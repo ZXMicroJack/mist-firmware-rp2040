@@ -1,5 +1,7 @@
 #include <ctype.h>
 #include <stdio.h>
+#include <time.h>
+
 #include "attrs.h"
 #include "hardware.h"
 #include "user_io.h"
@@ -281,13 +283,10 @@ void Timer_Init(void) {
 
 //TODO MJ 1 ms precision timer to 4s
 // 12 bits accuracy at 1ms = 4096 ms 
-unsigned long GetTimer(unsigned long offset)
-{
-#if 0
-    	unsigned long systimer = (*AT91C_PITC_PIIR & AT91C_PITC_PICNT);
-    systimer += offset << 20;
-#endif
-    return (systimer); // valid bits [31:20]
+unsigned long GetTimer(unsigned long offset) {
+    struct timespec spec;
+    clock_gettime(CLOCK_REALTIME, &spec);
+    return spec.tv_sec * 1000 + spec.tv_nsec / 1000;
 }
 
 //TODO MJ has time expired? - in ms

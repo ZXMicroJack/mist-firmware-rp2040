@@ -16,8 +16,8 @@
 #include "drivers/debug.h"
 
 #define SPI_SLOW_BAUD   500000
-//#define SPI_SDC_BAUD   24000000
-#define SPI_SDC_BAUD   2000000
+#define SPI_SDC_BAUD   24000000
+//#define SPI_SDC_BAUD   2000000
 #define SPI_MMC_BAUD   16000000
 
 static unsigned char spi_speed;

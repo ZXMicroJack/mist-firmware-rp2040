@@ -349,22 +349,17 @@ char GetDB9(char index, unsigned char *joy_map) {
   *joy_map = d == 0xff ? 0 : j;
   return 1;
 #else
-  uint16_t joy_map2;
-
-  joy_map2 = virtual_joystick_mapping(0x00db, index, j);
-
-  uint8_t idx = mist_cfg.joystick_db9_fixed_index ? user_io_joystick_renumber(index) : joystick_count() + index;
-  if (!user_io_osd_is_visible()) user_io_joystick(idx, joy_map2);
-  StateJoySet(joy_map2, idx); // send to OSD
-  StateJoySetExtra( joy_map2>>8, idx);
-  virtual_joystick_keyboard_idx(idx, joy_map2);
-#ifdef DEBUG
   static uint16_t lastdb9[2];
   if (lastdb9[index] != j) {
-    printf("GetDB9: index %d (->%d) joy %04x map %04x\n", index, idx, j, joy_map2);
+    uint16_t joy_map2 = virtual_joystick_mapping(0x00db, index, j);
+    uint8_t idx = mist_cfg.joystick_db9_fixed_index ? user_io_joystick_renumber(index) : joystick_count() + index;
+    if (!user_io_osd_is_visible()) user_io_joystick(idx, joy_map2);
+    StateJoySet(joy_map2, idx); // send to OSD
+    StateJoySetExtra( joy_map2>>8, idx);
+    virtual_joystick_keyboard_idx(idx, joy_map2);
+    
     lastdb9[index] = j;
   }
-#endif
   return 0;
 #endif
 }

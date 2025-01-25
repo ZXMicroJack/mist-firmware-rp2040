@@ -15,5 +15,6 @@ void ps2_SetGPIOListener(void (*cb)(uint gpio, uint32_t events));
 void ps2_HealthCheck();
 void ps2_DebugQueues();
 void ps2_AttemptDetect(uint8_t clk, uint8_t data);
+void ps2_FakeKey(uint8_t ch, uint8_t code);
 
 #endif

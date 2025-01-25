@@ -8,6 +8,7 @@
 #include "usb.h"
 
 #include "drivers/jamma.h"
+#include "drivers/ps2.h"
 #include <pico/time.h>
 #include "hardware/gpio.h"
 #include "usb/joymapping.h"
@@ -260,6 +261,15 @@ void DB9Update(uint8_t joy_num, uint8_t usbjoy) {
 void InitDB9() {}
 const static uint8_t joylut[] = {JOY_UP, JOY_DOWN, JOY_LEFT, JOY_RIGHT, JOY_BTN1, JOY_BTN2, 0, 0};
 
+/*
+JAMMA
+  P1
+  TST COI STA UP_ DWN LFT RTG BT1 BT2 BT3 BT4
+
+  P2
+  SVC COI STA UP_ DWN LFT RTG BT1 BT2 BT3 BT4
+*/
+
 #ifdef JAMMA_JAMMA
 const static uint16_t jammalut[2][24] = {
   {
@@ -357,6 +367,51 @@ char GetDB9(char index, unsigned char *joy_map) {
     StateJoySet(joy_map2, idx); // send to OSD
     StateJoySetExtra( joy_map2>>8, idx);
     virtual_joystick_keyboard_idx(idx, joy_map2);
+
+    /* detect and handle coin button */
+    /* P1COIN send also '5' + 'X'
+       P2COIN send also '6' + 'Y' */
+    if (!user_io_osd_is_visible() && ((lastdb9[index] ^ j) & JOY_L)) {
+      if (j & JOY_L) {
+        debug(("P%dCOIN press\n", index+1));
+        ps2_FakeKey(0, index ? 0x36 : 0x2e); //5/6
+        ps2_FakeKey(0, index ? 0x35 : 0x22); //X/Y;
+      } else {
+        debug(("P%dCOIN release\n", index+1));
+        ps2_FakeKey(0, 0xf0);
+        ps2_FakeKey(0, index ? 0x36 : 0x2e); //5/6
+        ps2_FakeKey(0, 0xf0);
+        ps2_FakeKey(0, index ? 0x35 : 0x22); //X/Y
+      }
+    }
+
+    if (!user_io_osd_is_visible() && ((lastdb9[index] ^ j) & JOY_BTN3)) {
+      if (j & JOY_BTN3) {
+        debug(("P%dCOIN press\n", index+1));
+        ps2_FakeKey(0, index ? 0x36 : 0x2e); //5/6
+        ps2_FakeKey(0, index ? 0x35 : 0x22); //X/Y;
+      } else {
+        debug(("P%dCOIN release\n", index+1));
+        ps2_FakeKey(0, 0xf0);
+        ps2_FakeKey(0, index ? 0x36 : 0x2e); //5/6
+        ps2_FakeKey(0, 0xf0);
+        ps2_FakeKey(0, index ? 0x35 : 0x22); //X/Y
+      }
+    }
+
+    /* P1START send also kb '1'
+       P2START send also kb '2' */
+    if (!user_io_osd_is_visible() && ((lastdb9[index] ^ j) & JOY_BTN4)) {
+      if (j & JOY_BTN4) {
+        debug(("P%dSTART press\n", index+1));
+        ps2_FakeKey(0, index ? 0x1e : 0x16); //1/2
+      } else {
+        debug(("P%dSTART release\n", index+1));
+        ps2_FakeKey(0, 0xf0);
+        ps2_FakeKey(0, index ? 0x1e : 0x16); //1/2
+      }
+    }
+
     
     lastdb9[index] = j;
   }

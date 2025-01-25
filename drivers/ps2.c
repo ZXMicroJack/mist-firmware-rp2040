@@ -172,6 +172,11 @@ int ps2_GetChar(uint8_t ch) {
   return fifo_Get(&ps2port[ch].fifo_rx);
 }
 
+void ps2_FakeKey(uint8_t ch, uint8_t code) {
+  return fifo_Put(&ps2port[ch].fifo_rx, code);
+}
+
+
 void ps2_InsertChar(uint8_t ch, uint8_t data) {
 #ifndef NO_PS2_TX
   fifo_Put(&ps2port[ch].fifo, data);

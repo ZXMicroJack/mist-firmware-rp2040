@@ -67,3 +67,19 @@ v11 (v2.12)
 - Fixed MKBOX USB keyboards not working
 - ROM loading, and disk reading reliablility seems better
   - (think it was linked to noise? )
+
+v12 (v2.13)
+-----------
+- Added JAMMA interface support, including submitting PS2 keys for cores that
+don't understand coin slot.
+- Fixed joypad menu control.
+- SPI back to fast.
+- Changed USB menu to HKM menu.
+- Clean up build system.
+- Added platform menu and AV logo.
+- Fixed MIDI for Neptuno+
+- Fixed XInput mapping for L/R L2/R2
+- Added Xinput.
+
+
+

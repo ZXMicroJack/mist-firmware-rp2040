@@ -319,6 +319,17 @@ void JammaToDB9() {
     }
   }
 }
+
+void KeypressJamma(uint16_t prev, uint16_t curr, uint16_t mask, uint8_t keyscan) {
+  if (!user_io_osd_is_visible() && ((prev ^ curr) & mask)) {
+    if (curr & mask) {
+      ps2_FakeKey(0, keyscan);
+    } else {
+      ps2_FakeKey(0, 0xf0);
+      ps2_FakeKey(0, keyscan);
+    }
+  }
+}
 #endif
 
 char GetDB9(char index, unsigned char *joy_map) {
@@ -371,47 +382,14 @@ char GetDB9(char index, unsigned char *joy_map) {
     /* detect and handle coin button */
     /* P1COIN send also '5' + 'X'
        P2COIN send also '6' + 'Y' */
-    if (!user_io_osd_is_visible() && ((lastdb9[index] ^ j) & JOY_L)) {
-      if (j & JOY_L) {
-        debug(("P%dCOIN press\n", index+1));
-        ps2_FakeKey(0, index ? 0x36 : 0x2e); //5/6
-        ps2_FakeKey(0, index ? 0x35 : 0x22); //X/Y;
-      } else {
-        debug(("P%dCOIN release\n", index+1));
-        ps2_FakeKey(0, 0xf0);
-        ps2_FakeKey(0, index ? 0x36 : 0x2e); //5/6
-        ps2_FakeKey(0, 0xf0);
-        ps2_FakeKey(0, index ? 0x35 : 0x22); //X/Y
-      }
-    }
-
-    if (!user_io_osd_is_visible() && ((lastdb9[index] ^ j) & JOY_BTN3)) {
-      if (j & JOY_BTN3) {
-        debug(("P%dCOIN press\n", index+1));
-        ps2_FakeKey(0, index ? 0x36 : 0x2e); //5/6
-        ps2_FakeKey(0, index ? 0x35 : 0x22); //X/Y;
-      } else {
-        debug(("P%dCOIN release\n", index+1));
-        ps2_FakeKey(0, 0xf0);
-        ps2_FakeKey(0, index ? 0x36 : 0x2e); //5/6
-        ps2_FakeKey(0, 0xf0);
-        ps2_FakeKey(0, index ? 0x35 : 0x22); //X/Y
-      }
-    }
-
     /* P1START send also kb '1'
        P2START send also kb '2' */
-    if (!user_io_osd_is_visible() && ((lastdb9[index] ^ j) & JOY_BTN4)) {
-      if (j & JOY_BTN4) {
-        debug(("P%dSTART press\n", index+1));
-        ps2_FakeKey(0, index ? 0x1e : 0x16); //1/2
-      } else {
-        debug(("P%dSTART release\n", index+1));
-        ps2_FakeKey(0, 0xf0);
-        ps2_FakeKey(0, index ? 0x1e : 0x16); //1/2
-      }
-    }
 
+    KeypressJamma(lastdb9[index], j, JOY_L, index ? 0x36 : 0x2e); //5/6
+    KeypressJamma(lastdb9[index], j, JOY_L, index ? 0x35 : 0x22); //X/Y;
+    KeypressJamma(lastdb9[index], j, JOY_BTN3, index ? 0x36 : 0x2e); //5/6
+    KeypressJamma(lastdb9[index], j, JOY_BTN3, index ? 0x35 : 0x22); //X/Y
+    KeypressJamma(lastdb9[index], j, JOY_BTN4, index ? 0x1e : 0x16); //1/2
     
     lastdb9[index] = j;
   }

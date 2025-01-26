@@ -206,7 +206,7 @@ void WriteFirmware(char *name) {
 const char *GetHKMVersion() {
 #ifdef MB2
   uint8_t major, minor;
-  static char version[] = "v_.___";
+  static char version[] = "v_.___\0USB";
 
   debug(("Get version\n"));
 

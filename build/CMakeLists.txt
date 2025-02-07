@@ -209,6 +209,7 @@ target_compile_options(mistfirmwarexilinx PUBLIC
   ${mistfirmware_opts_common}
   "-DXILINX"
   "-DMIST_ROOT=\"/MIST\""
+  "-DCHECK_REAL_ROOT"
   "-DCOREEXT=\"BIT\""
   "-DCOREEXTOTHER=\"ZXT\""
 )
@@ -220,8 +221,8 @@ target_compile_options(mistfirmwareusbxilinx PUBLIC
   ${mistfirmware_opts_usb}
   # TODO check if needed
   "-DXILINX"
-
   "-DMIST_ROOT=\"/MIST\""
+  "-DCHECK_REAL_ROOT"
   "-DCOREEXT=\"BIT\""
   "-DCOREEXTOTHER=\"ZXT\""
 )
@@ -246,6 +247,7 @@ target_compile_options(mistfirmwarezx1 PUBLIC
   "-DZXUNO"
 
   "-DMIST_ROOT=\"/MIST\""
+  "-DCHECK_REAL_ROOT"
   "-DCOREEXT=\"BIT\""
   "-DCOREEXTOTHER=\"ZX1\""
   )
@@ -259,8 +261,8 @@ target_compile_options(mistfirmwareusbzx1 PUBLIC
   "-DNO_FILE_INDEX"
   "-DXILINX"
   "-DZXUNO"
-  
   "-DMIST_ROOT=\"/MIST\""
+  "-DCHECK_REAL_ROOT"
   "-DCOREEXT=\"BIT\""
   "-DCOREEXTOTHER=\"ZX1\""
   )

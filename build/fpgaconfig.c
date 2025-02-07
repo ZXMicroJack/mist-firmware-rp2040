@@ -51,7 +51,7 @@ static uint8_t read_next_block(void *ud, uint8_t *data) {
   configFpga *cf = (configFpga *)ud;
 
 #ifdef BUFFER_FPGA
-  debug(("read_next_block cf->c = %d cf->size = %d\n", cf->c, cf->size));
+  // debug(("read_next_block cf->c = %d cf->size = %d\n", cf->c, cf->size));
 #endif
   if (f_read(&cf->file, data, cf->size > 512 ? 512 : cf->size, &br) != FR_OK) {
     cf->error = 1;
@@ -92,7 +92,7 @@ uint8_t read_next_block_buffered(void *user_data, uint8_t *block) {
   uint8_t result = 0;
   
   configFpga *brl = (configFpga *)user_data;
-  debug(("read_next_block_buffered cf->c = %d\n", brl->c));
+  // debug(("read_next_block_buffered cf->c = %d\n", brl->c));
   if (brl->c) {
     memcpy(block, brl->buff[brl->l], 512);
     brl->c --;
@@ -125,7 +125,7 @@ void BootFromFlash() {
 #endif
 
 #ifdef XILINX
-uint8_t chipType = A200T;
+uint8_t chipType = UNKNOWN;
 
 uint32_t GotoBitstreamOffset(FIL *f, uint32_t len) {
   // uint8_t *blk;
@@ -149,12 +149,12 @@ uint32_t GotoBitstreamOffset(FIL *f, uint32_t len) {
 }
 #endif
 
-unsigned char ConfigureFpga(const char *bitfile) {
+static unsigned char ConfigureFpgaLL(const char *bitfile) {
   // configFpga cf;
   uint32_t fileSize;
   configFpga *cf;
 
-  debug(("ConfigureFpgaEx: %s\n", bitfile ? bitfile : "null"));
+  debug(("ConfigureFpgaLL: %s\n", bitfile ? bitfile : "null"));
 
   inhibit_reset = 1;
 
@@ -268,3 +268,58 @@ unsigned char ConfigureFpga(const char *bitfile) {
   return result;
 }
 
+#ifdef XILINX
+static uint8_t DetectCore() {
+  uint8_t ct;
+
+  // wait max 100 msec for a valid core type
+  uint32_t time = GetTimer(100);
+  do {
+    EnableIO();
+    ct = SPI(0xff);
+    DisableIO();
+    SPI(0xff);         // for old minimig core
+  } while( ((ct == 0) || (ct == 0xff)) && !CheckTimer(time));
+
+  printf("DetectedCore %02X\n", ct);
+  return ct;
+}
+#endif
+
+unsigned char ConfigureFpga(const char *bitfile) {
+#ifdef XILINX
+  unsigned char r;
+  debug(("ConfigureFpga: %s (chipType = %d)\n", bitfile ? bitfile : "null", chipType));
+  if (!fpga_IsConfirmedType() && bitfile == NULL) {
+    FIL file;
+
+    if (f_open(&file, "CORE.BIT", FA_READ) == FR_OK) {
+      debug(("ConfigureFpga: CORE.BIT exists - use that one to detect type\n"));
+      f_close(&file);
+
+    } else if (f_open(&file, "CORE.ZXT", FA_READ) == FR_OK) {
+      uint8_t proposedChipType;
+      f_close(&file);
+      debug(("ConfigureFpga: CORE.ZXT exists going to try different fpgas\n"));
+
+      /* don't know chip type, a chip specific bitfile doesn't exist */
+      for (proposedChipType = A35T; proposedChipType < AXXXT_TYPES; proposedChipType++) {
+        debug(("ConfigureFpga: Trying chiptype %d\n", proposedChipType));
+
+        fpga_SetType(proposedChipType);
+        r = ConfigureFpgaLL("CORE.ZXT");
+        uint8_t coreId = DetectCore();
+        debug(("ConfigureFpga: coreId = %02X\n", coreId));
+        if (coreId != 0xff) {
+          debug(("ConfigureFpga: type discovered\n"));
+          fpga_ConfirmType();
+          return r;
+        }
+      }
+    }
+  }
+  return ConfigureFpgaLL(bitfile);
+#else
+  return ConfigureFpgaLL(bitfile);
+#endif
+}

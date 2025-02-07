@@ -227,6 +227,11 @@ void fpga_SetType(uint8_t type) {
     fpgaType = type;
   }
 }
+
+uint8_t fpga_IsConfirmedType() {
+  return fpgaTypeSet != AXXXT_TYPES;
+}
+
 #endif
 
 int fpga_configure(void *user_data, uint8_t (*next_block)(void *, uint8_t *), uint32_t assumelength) {

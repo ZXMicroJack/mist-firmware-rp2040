@@ -20,5 +20,6 @@ int fpga_ResetButtonState();
 uint8_t fpga_GetType();
 void fpga_SetType(uint8_t type);
 void fpga_ConfirmType();
+uint8_t fpga_IsConfirmedType();
 
 #endif

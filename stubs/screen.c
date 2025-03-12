@@ -236,8 +236,12 @@ void processKey(uint16_t scancode, int pressed) {
     case SDLK_3: if (pressed) usbaction('3'); break;
     case SDLK_4: if (pressed) usbaction('4'); break;
 
-    case SDLK_F1: ctrl_joypad = 0; break;
-    case SDLK_F2: ctrl_joypad = 1; break;
+    case SDLK_F1: d = 0x3a; break;
+    case SDLK_F2: d = 0x3b; break;
+    case SDLK_F3: d = 0x3c; break;
+
+    case SDLK_F5: ctrl_joypad = 0; break;
+    case SDLK_F6: ctrl_joypad = 1; break;
 
 
     case SDLK_y:

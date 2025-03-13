@@ -13,6 +13,7 @@
 #include "hardware/gpio.h"
 #include "usb/joymapping.h"
 #include "mist_cfg.h"
+#include "user_io.h"
 
 // #define DEBUG
 #include "drivers/debug.h"
@@ -374,6 +375,9 @@ char GetDB9(char index, unsigned char *joy_map) {
   if (lastdb9[index] != j) {
     uint16_t joy_map2 = virtual_joystick_mapping(0x00db, index, j);
     uint8_t idx = mist_cfg.joystick_db9_fixed_index ? user_io_joystick_renumber(index) : joystick_count() + index;
+
+    idx = (idx ^ mist_cfg.joystick_db9_swap) & 1;
+
     if (!user_io_osd_is_visible()) user_io_joystick(idx, joy_map2);
     StateJoySet(joy_map2, idx); // send to OSD
     StateJoySetExtra( joy_map2>>8, idx);

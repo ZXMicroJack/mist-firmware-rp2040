@@ -41,10 +41,6 @@
 
 #include "host/usbh.h"
 #include "xinput_host.h"
-// #include "/pico/pico-sdk/lib/tinyusb/src/host/usbh_classdriver.h"
-#include "host/usbh_classdriver.h"
-
-
 
 uint8_t usb_kbd_init(usb_device_t *dev, usb_device_descriptor_t *dev_desc) {
 	return 0;

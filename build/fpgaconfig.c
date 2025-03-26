@@ -121,6 +121,7 @@ void BootFromFlash() {
   fpga_claim(false);
   int r = fpga_reset();
   debug(("fpga_reset returns %d\n", r));
+  core_detect = 1;
 }
 #endif
 
@@ -157,6 +158,7 @@ static unsigned char ConfigureFpgaLL(const char *bitfile) {
   debug(("ConfigureFpgaLL: %s\n", bitfile ? bitfile : "null"));
 
   inhibit_reset = 1;
+  core_detect = 1;
 
   /* handle JTAGMODE - sleep for 60s and poll for recognisable core, 
      otherwise, reset back to core menu. */

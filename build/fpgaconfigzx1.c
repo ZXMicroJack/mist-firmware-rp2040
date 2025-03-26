@@ -31,6 +31,7 @@
 
 // #define DEBUG
 #include "drivers/debug.h"
+#include "common.h"
 
 typedef struct {
   FIL file;
@@ -100,6 +101,7 @@ void ConfigureFPGAFlash()
 {
   configFpga cf;
   uint32_t size, offset;
+  core_detect = 1;
   int result = jtag_get_length((uint8_t *)FPGA_IMAGE_POS, 512, &size, &offset);
 
   debug(("result %d size %d offset %d\n", result, size, offset));
@@ -115,6 +117,7 @@ void ConfigureFPGAFlash()
 
 void ConfigureFPGAStdin() {
   configFpga cf;
+  core_detect = 1;
 
   while (getchar_timeout_us(2) >= 0)
     ;
@@ -146,6 +149,7 @@ void BootFromFlash() {
 unsigned char ConfigureFpga(const char *bitfile) {
   configFpga cf;
   uint32_t size;
+  core_detect = 1;
 
 #if PICO_NO_FLASH
   printf("ConfigureFpga: bitfile=%s\n", bitfile);

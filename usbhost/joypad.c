@@ -1,7 +1,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "bsp/board.h"
 #include "tusb.h"
 #include "ps2.h"
 // #define DEBUG

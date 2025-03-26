@@ -42,10 +42,10 @@
 // #include "usbdev.h"
 
 #if defined(USB) && !defined (USBFAKE)
-#include "bsp/board.h"
 #include "tusb.h"
 #endif
 
+#include "mist_cfg.h"
 
 void FatalError(unsigned long error) {
   unsigned long i;
@@ -104,6 +104,7 @@ static void usb_and_audio_core() {
 #endif
 #ifdef USB
     tuh_task();
+    cdc_task();
 #endif
   }
 }
@@ -157,6 +158,7 @@ int main() {
     int c = getchar_timeout_us(2);
 //     if (forceexit) break;
     if (c == 'q') break;
+#if 0
     if (c == 'w') {
       fpga_init("ZX-Spectrum-Legacy.rbf");
       reset_usb_boot(0, 0);
@@ -166,6 +168,53 @@ int main() {
       // fpga_init("Adam_Computer.rbf");
       reset_usb_boot(0, 0);
     }
+    if (c == 't') {
+      memset(&mist_cfg, 0, sizeof(mist_cfg));
+      // ini_parse(&mist_ini_cfg, "gng", 0);
+      ini_parse(&mist_ini_cfg, "gnga", 0);
+      // ini_parse(&mist_ini_cfg, "aliens", 0);
+      printf("gnga - should be no match\n");
+      printf("joystick_db9_swap = %d\n", mist_cfg.joystick_db9_swap);
+    }
+
+    if (c == 'y') {
+      memset(&mist_cfg, 0, sizeof(mist_cfg));
+      // ini_parse(&mist_ini_cfg, "gng", 0);
+      ini_parse(&mist_ini_cfg, "menu", 0);
+      // ini_parse(&mist_ini_cfg, "aliens", 0);
+      printf("menu - should be no match\n");
+      printf("joystick_db9_swap = %d\n", mist_cfg.joystick_db9_swap);
+    }
+
+    if (c == 'u') {
+      memset(&mist_cfg, 0, sizeof(mist_cfg));
+      ini_parse(&mist_ini_cfg, "gng", 0);
+      // ini_parse(&mist_ini_cfg, "aliens", 0);
+      printf("gng - should be match\n");
+      printf("joystick_db9_swap = %d\n", mist_cfg.joystick_db9_swap);
+    }
+
+    if (c == 'i') {
+      memset(&mist_cfg, 0, sizeof(mist_cfg));
+      // ini_parse(&mist_ini_cfg, "gng", 0);
+      ini_parse(&mist_ini_cfg, "aliens", 0);
+      printf("aliens - should be match\n");
+      printf("joystick_db9_swap = %d\n", mist_cfg.joystick_db9_swap);
+    }
+
+    if (c == 'o') {
+      memset(&mist_cfg, 0, sizeof(mist_cfg));
+      // ini_parse(&mist_ini_cfg, "gng", 0);
+      ini_parse(&mist_ini_cfg, NULL, 0);
+      printf("NULL - should be no match\n");
+      printf("joystick_db9_swap = %d\n", mist_cfg.joystick_db9_swap);
+    }
+
+    if (c == 'p') {
+      printf("nothing - just read status\n");
+      printf("joystick_db9_swap = %d\n", mist_cfg.joystick_db9_swap);
+    }
+
     if (c == 'r') {
       gpio_init(GPIO_FPGA_CONF_DONE);
       gpio_init(GPIO_FPGA_NSTATUS);
@@ -182,6 +231,7 @@ int main() {
       gpio_init(GPIO_FPGA_NCONFIG);
       reset_usb_boot(0, 0);
     }
+#endif
 
 #ifdef ZXUNO
     if (c == 'j') {

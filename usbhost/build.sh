@@ -1,2 +1,2 @@
 #!/bin/bash
-docker run --rm -ti -v`pwd`/..:/work picobuild2 bash
+docker run --name usbhost --rm -ti -v`pwd`/..:/work picobuild3 bash

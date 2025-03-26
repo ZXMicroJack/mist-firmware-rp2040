@@ -38,7 +38,6 @@
 
 #include "host/usbh.h"
 #include "xinput_host.h"
-#include "host/usbh_classdriver.h"
 
 static const uint16_t xinput_lut[] = {
   XINPUT_GAMEPAD_RIGHT_THUMB,

@@ -28,21 +28,13 @@
 #include <string.h>
 #include <stdarg.h>
 
-#include "bsp/board.h"
 #include "tusb.h"
 #include "ps2.h"
 #include "joypad.h"
 
-// #define CFG_TUH_CDC 0
-
-// #include <stdio.h>
-// #include <stdint.h>
-// #include <pico/time.h>
-// 
 #include "hardware/clocks.h"
 #include "hardware/structs/clocks.h"
 #include "hardware/uart.h"
-// #include "hardware/flash.h"
 
 #include "pico/bootrom.h"
 #include "pico/stdlib.h"
@@ -274,18 +266,21 @@ void cdc_task(void)
 //--------------------------------------------------------------------+
 // Blinking Task
 //--------------------------------------------------------------------+
+
+const char hello[] = "Hello world!\r\n";
 void led_blinking_task(void)
 {
-  const uint32_t interval_ms = 1000;
+  const uint32_t interval_ms = 1000000;
   static uint32_t start_ms = 0;
 
   static bool led_state = false;
 
   // Blink every interval ms
-  if ( board_millis() - start_ms < interval_ms) return; // not enough time
+  if ( time_us_64() - start_ms < interval_ms) return; // not enough time
   start_ms += interval_ms;
 
-  board_led_write(led_state);
+  //board_led_write(led_state);
+  // usb_cdc_write(hello, sizeof hello);
   led_state = 1 - led_state; // toggle
 
 

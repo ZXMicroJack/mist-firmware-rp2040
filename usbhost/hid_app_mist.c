@@ -23,7 +23,6 @@
  *
  */
 
-#include "bsp/board.h"
 #include "tusb.h"
 // #define DEBUG
 #ifdef MIST_USB
@@ -36,11 +35,14 @@
 #ifdef PIODEBUG
 #define printf dbgprintf
 #define uprintf dbgprintf
-#else
-// #define printf debugprintf
 #endif
 
 #define MAX_USB 8
+
+#ifdef USBDEV
+#undef debug
+#define debug(a) { qprintf a; qprintf("\r"); }
+#endif
 
 enum {
   NORMAL,

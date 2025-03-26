@@ -23,7 +23,7 @@ include(example_auto_set_url.cmake)
 # Build project
 
 #include_directories(../drivers . ../usbhost)
-include_directories(../drivers .) # nousb
+include_directories(../drivers .. .) # nousb
 
 # fpga program  
 add_executable(rp2ur rp2u.c

@@ -21,6 +21,45 @@ void hexdump(uint8_t *buf, int len) {
 }
 #endif
 
+#if defined(USB) && !defined(PIODEBUG)
+uint8_t usbdebug = 1;
+static char str[256];
+uint16_t usb_cdc_write(const char *pData, uint16_t length);
+int usbprintf(const char *fmt, ...) {
+  int i;
+
+  if (!usbdebug) return;
+
+  va_list argp;
+  va_start(argp, fmt);
+  int l = vsprintf(str, fmt, argp);
+
+  /* if bytes written to buffer */
+  if (l >= 0) {
+#if 1
+    int c = 0;
+    for (int i=0; i<l; i++) {
+      if (str[i] == '\n') c++;
+    }
+
+    /* if \n found */
+    if (c && (l+c) < sizeof str) {
+      i = l;
+      l = l + c;
+      while (i) {
+        str[i+c] = str[i];
+        if (str[i] == '\n') { c--; str[i+c] = '\r'; }
+        i--;
+      }
+    }
+#endif
+    usb_cdc_write(str, l);
+  }
+  return l;
+}
+
+#endif
+
 #ifdef PIODEBUG
 #include "uart_tx.pio.h"
 

@@ -122,6 +122,7 @@ void HandleFpga(void) {
 extern void inserttestfloppy();
 
 uint8_t legacy_mode = DEFAULT_MODE;
+uint8_t core_detect = 1;
 
 void set_legacy_mode(uint8_t mode) {
   if (mode != legacy_mode) {
@@ -218,8 +219,6 @@ int mist_init() {
     inhibit_reset = 1;
     gpio_set_irq_enabled(GPIO_RESET_FPGA, GPIO_IRQ_EDGE_FALL, true);
 #endif
-    // Timer_Init();
-    USART_Init(115200);
 
     iprintf("\rMinimig by Dennis van Weeren");
     iprintf("\rARM Controller by Jakub Bednarski\r\r");
@@ -573,12 +572,18 @@ int mist_loop() {
       user_io_poll();
 
       // MJ: check for legacy core and switch support on
-      if (user_io_core_type() == CORE_TYPE_UNKNOWN) {
-        set_legacy_mode(LEGACY_MODE);
-      } else {
-#if defined(XILINX) && !defined(ZXUNO)
-        fpga_ConfirmType();
-#endif
+      if (core_detect) {
+        if (user_io_core_type() == CORE_TYPE_UNKNOWN) {
+          set_legacy_mode(LEGACY_MODE);
+        } else {
+  #if defined(XILINX) && !defined(ZXUNO)
+          fpga_ConfirmType();
+  #endif
+  #ifdef USB
+          platform_UpdateDebugMode();
+  #endif
+        }
+        core_detect = 0;
       }
 
       // MIST (atari) core supports the same UI as Minimig

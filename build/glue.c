@@ -20,6 +20,8 @@
 #include "pico/bootrom.h"
 #include "pico/time.h"
 
+#include "usbdev.h"
+
 //TODO MJ non USB stuff here
 void MCUReset() {}
 
@@ -41,8 +43,38 @@ void storage_control_poll() {
 //TODO MJ No WiFi present at the moment - would need routing through fpga
 bool eth_present = 0;
 
-// #if defined(USBFAKE) || !defined(USB)
-//TODO MJ PL2303 is a non CDC serial port over USB - maybe can use?
+#ifdef USB
+void pl2303_settings(uint32_t rate, uint8_t bits, uint8_t parity, uint8_t stop) {}
+
+int8_t pl2303_present(void) {
+  return usb_cdc_is_configured() ? 1 : 0;
+}
+
+void pl2303_tx(uint8_t *data, uint8_t len) {
+  usb_cdc_write(data, len);
+}
+
+void pl2303_tx_byte(uint8_t byte) {
+  usb_cdc_putc(byte);
+}
+
+static int pl2303_char = -1;
+uint8_t pl2303_rx_available(void) {
+  pl2303_char = pl2303_char < 0 ? usb_cdc_getc() : pl2303_char;
+  return pl2303_char >= 0;
+}
+uint8_t pl2303_rx(void) {
+  uint8_t ch = pl2303_char < 0 ? usb_cdc_getc() : pl2303_char;
+  pl2303_char = -1;
+  return ch;
+}
+int8_t pl2303_is_blocked(void) {
+  return 0;
+}
+uint8_t get_pl2303s(void) {
+  return pl2303_present();
+}
+#else
 int8_t pl2303_present(void) {
   return 0;
 }
@@ -61,7 +93,7 @@ int8_t pl2303_is_blocked(void) {
 uint8_t get_pl2303s(void) {
   return 0;
 }
-// #endif
+#endif
 
 #ifndef USB
 // return number of joysticks

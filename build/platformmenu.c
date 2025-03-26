@@ -62,6 +62,23 @@ static char StartupSequenceSet(uint8_t idx) {
 }
 #endif
 
+static uint8_t debugon = 0;
+#ifdef USB
+extern uint8_t usbdebug;
+void platform_UpdateDebugMode() {
+  extern uint16_t usb_cdc_write(const char *pData, uint16_t length);
+  const char plat[] = "platform_UpdateDebugMode!\r\n";
+  usb_cdc_write(plat, sizeof plat);
+  if (!strcmp(user_io_get_core_name(), "MENU")) {
+    usbdebug = 1;
+  } else {
+    usbdebug = debugon;
+  }
+}
+#else
+void platform_UpdateDebugMode() {}
+#endif
+
 static char GetMenuPage_Platform(uint8_t idx, char action, menu_page_t *page) {
   if (action == MENU_PAGE_EXIT) return 0;
 
@@ -208,6 +225,11 @@ static char GetMenuItem_Platform(uint8_t idx, char action, menu_item_t *item) {
           item->active = 0;
           break;
 
+        case 4:
+          item->item = debugon ? " Debug ON" : " Debug OFF";
+          item->active = 1;
+          break;
+
         default:
           return 0;
 			}
@@ -227,6 +249,11 @@ static char GetMenuItem_Platform(uint8_t idx, char action, menu_item_t *item) {
           DialogBox("\n     Display MiSTLita menu\n         on startup?", MENU_DIALOG_YESNO, StartupSequenceSet);
 					break;
 #endif
+
+        case 4:
+          debugon = ! debugon;
+          platform_UpdateDebugMode();
+          break;
 			}
 			break;
 		case MENU_ACT_LEFT:

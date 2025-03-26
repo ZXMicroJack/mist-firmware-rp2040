@@ -6,7 +6,7 @@
 #include "host/usbh_classdriver.h"
 #include "usbhost.h"
 
-//#define DEBUG
+// #define DEBUG
 #include "../drivers/debug.h"
 
 #define XBOX_VID                                0x045E // Microsoft Corporation
@@ -65,6 +65,7 @@ void tuh_xinput_mount_cb(uint8_t dev_addr, uint8_t instance, const xinputh_inter
   tuh_xinput_set_led(dev_addr, instance, 1, true);
   tuh_xinput_set_rumble(dev_addr, instance, 0, 0, true);
   tuh_xinput_receive_report(dev_addr, instance);
+  debug(("XINPUT MOUNTED %02x %d\n", dev_addr, instance));
 
 #ifdef MIST_USB
   usb_attached(dev_addr, instance, vid, pid, (uint8_t *)xinput_itf, sizeof (xinputh_interface_t), USB_TYPE_XBOX);

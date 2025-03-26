@@ -36,6 +36,8 @@ void usb_dev_reconnect(void);
 uint8_t  usb_cdc_is_configured(void);
 uint16_t usb_cdc_write(const char *pData, uint16_t length);
 uint16_t usb_cdc_read(char *pData, uint16_t length);
+void usb_cdc_putc(uint8_t ch);
+int usb_cdc_getc(void);
 
 uint8_t  usb_storage_is_configured(void);
 uint16_t usb_storage_write(const char *pData, uint16_t length);

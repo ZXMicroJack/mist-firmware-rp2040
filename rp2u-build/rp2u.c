@@ -27,13 +27,11 @@
 #include "ipc.h"
 #include "pins.h"
 #include "gpioirq.h"
-// #define printf uprintf
 // #define DEBUG
 // #define DEBUG_PS2
 #include "debug.h"
 
 #ifdef USB
-#include "bsp/board.h"
 #include "tusb.h"
 #endif
 

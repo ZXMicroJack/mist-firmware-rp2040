@@ -74,11 +74,18 @@
 // Size of buffer to hold descriptors and other data used for enumeration
 #define CFG_TUH_ENUMERATION_BUFSIZE 256
 
+#define CFG_TUH_CDC_LINE_CONTROL_ON_ENUM (CDC_CONTROL_LINE_STATE_DTR|CDC_CONTROL_LINE_STATE_RTS)
+
 #if 1
 #define CFG_TUH_HUB                 1
-#define CFG_TUH_CDC                 0
+#define CFG_TUH_CDC                 2
+#define CFG_TUH_MIDI                0
 #define CFG_TUH_HID                 5 // typical keyboard + mouse device can have 3-4 HID interfaces
 #define CFG_TUH_MSC                 1
+#define CFG_TUH_CDC_FTDI	    1
+#define CFG_TUH_CDC_CP210X          1
+#define CFG_TUH_CDC_CH34X           1
+#define CFG_TUH_CDC_PL2303          1
 #define CFG_TUH_VENDOR              0
 #ifdef EXCLUDE_XBOX_CONTROLLER
 #define CFG_TUH_XINPUT              0

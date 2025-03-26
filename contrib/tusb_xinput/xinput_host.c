@@ -78,11 +78,11 @@ typedef struct
 
 static xinputh_device_t _xinputh_dev[CFG_TUH_DEVICE_MAX];
 
-// TU_ATTR_ALWAYS_INLINE
-// static inline bool usbh_edpt_xfer(uint8_t dev_addr, uint8_t ep_addr, uint8_t * buffer, uint16_t total_bytes)
-// {
-//   return usbh_edpt_xfer_with_callback(dev_addr, ep_addr, buffer, total_bytes, NULL, 0);
-// }
+TU_ATTR_ALWAYS_INLINE
+static inline bool usbh_edpt_xfer(uint8_t dev_addr, uint8_t ep_addr, uint8_t * buffer, uint16_t total_bytes)
+{
+  return usbh_edpt_xfer_with_callback(dev_addr, ep_addr, buffer, total_bytes, NULL, 0);
+}
 
 TU_ATTR_ALWAYS_INLINE static inline xinputh_device_t *get_dev(uint8_t dev_addr)
 {
@@ -258,9 +258,15 @@ bool tuh_xinput_set_rumble(uint8_t dev_addr, uint8_t instance, uint8_t lValue, u
 //--------------------------------------------------------------------+
 // USBH API
 //--------------------------------------------------------------------+
-void xinputh_init(void)
+bool xinputh_init(void)
 {
     tu_memclr(_xinputh_dev, sizeof(_xinputh_dev));
+    return true;
+}
+
+bool xinputh_deinit(void)
+{
+    return true;
 }
 
 bool xinputh_open(uint8_t rhport, uint8_t dev_addr, tusb_desc_interface_t const *desc_itf, uint16_t max_len)
@@ -604,24 +610,3 @@ void xinputh_close(uint8_t dev_addr)
     tu_memclr(xinput_dev, sizeof(xinputh_device_t));
 }
 
-#if 0
-#ifndef DRIVER_NAME
-#if CFG_TUSB_DEBUG >= CFG_TUH_LOG_LEVEL
-  #define DRIVER_NAME(_name)    .name = _name,
-#else
-  #define DRIVER_NAME(_name)
-#endif
-#endif
-
-usbh_class_driver_t const usbh_xinput_driver =
-{
-    DRIVER_NAME("XINPUT")
-    .init       = xinputh_init,
-    .open       = xinputh_open,
-    .set_config = xinputh_set_config,
-    .xfer_cb    = xinputh_xfer_cb,
-    .close      = xinputh_close
-};
-
-#endif
-#endif

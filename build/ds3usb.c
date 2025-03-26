@@ -38,7 +38,6 @@
 
 #include "host/usbh.h"
 #include "xinput_host.h"
-#include "host/usbh_classdriver.h"
 
 static const uint16_t ds3_report_lut[] = {
   0x0204, //r3

@@ -24,17 +24,34 @@
  * This file is part of the TinyUSB stack.
  */
 
+#include <stdarg.h>
+
 #include "tusb.h"
-#include "bsp/board.h"
-#include "fifo.h"
+#include "drivers/fifo.h"
 
 #if CFG_TUH_CDC
+
+#ifdef USBDEV
+uint16_t usb_cdc_write(const char *pData, uint16_t length);
+static char str[256];
+void qprintf(const char *fmt, ...) {
+  va_list argp;
+  va_start(argp, fmt);
+  vsprintf(str, fmt, argp);
+
+  // console --> cdc interfaces
+  usb_cdc_write(str, strlen(str));
+}
+
+#undef debug
+#define debug(a) { qprintf a; qprintf("\r"); }
+#endif
 
 static uint8_t cdc_started = 0;
 static fifo_t cdc_in;
 static fifo_t cdc_out;
-static uint8_t cdc_in_fifo[256];
-static uint8_t cdc_out_fifo[256];
+static uint8_t cdc_in_fifo[1024];
+static uint8_t cdc_out_fifo[1024];
 
 static void cdc_init() {
   if (!cdc_started) {
@@ -44,8 +61,16 @@ static void cdc_init() {
   }
 }
 
-uint8_t  usb_cdc_is_configured(void) {
+uint8_t usb_cdc_is_configured(void) {
   return tuh_cdc_mounted(0);
+}
+
+void usb_cdc_putc(uint8_t ch) {
+  fifo_Put(&cdc_out, ch);
+}
+
+int usb_cdc_getc(void) {
+  return fifo_Get(&cdc_in);
 }
 
 uint16_t usb_cdc_write(const char *pData, uint16_t length) { 
@@ -69,60 +94,29 @@ uint16_t usb_cdc_read(char *pData, uint16_t length) {
   return i;
 }
 
-#if 0
-//--------------------------------------------------------------------+
-// MACRO TYPEDEF CONSTANT ENUM DECLARATION
-//--------------------------------------------------------------------+
-
-
-//------------- IMPLEMENTATION -------------//
-int xboard_getchar();
-
-size_t get_console_inputs(uint8_t* buf, size_t bufsize)
-{
-  size_t count = 0;
-  while (count < bufsize)
-  {
-    int ch = xboard_getchar();
-    if ( ch <= 0 ) break;
-
-    buf[count] = (uint8_t) ch;
-    count++;
-  }
-
-  return count;
-}
-#endif
-
 void cdc_task(void)
 {
   uint8_t buf[64]; // +1 for extra null character
-  int count;
+  int count = 0;
 
   cdc_init();
 
-  // pass data to CDC
-  while (count < sizeof buf) {
-    int c = fifo_Get(&cdc_out);
-    if (c < 0) {
-      break;
-    } else {
-      buf[count++] = c;
-    }
-  }
+  // pass data to CDC - just one
+  if (tuh_cdc_mounted(0)) {
+    uint32_t available = tuh_cdc_write_available(0);
+    available = available > sizeof buf ? sizeof buf : available;
 
-  // loop over all mounted interfaces
-  for(uint8_t idx=0; idx<CFG_TUH_CDC; idx++)
-  {
-    if ( tuh_cdc_mounted(idx) )
-    {
-      // console --> cdc interfaces
-      if (count)
-      {
-        tuh_cdc_write(idx, buf, count);
-        tuh_cdc_write_flush(idx);
+    while (count < available) {
+      int c = fifo_Get(&cdc_out);
+      if (c < 0) {
+        break;
+      } else {
+        buf[count++] = c;
       }
     }
+
+    tuh_cdc_write(0, buf, count);
+    tuh_cdc_write_flush(0);
   }
 }
 
@@ -141,10 +135,10 @@ void tuh_cdc_rx_cb(uint8_t idx)
 
 void tuh_cdc_mount_cb(uint8_t idx)
 {
-  tuh_cdc_itf_info_t itf_info = { 0 };
+  tuh_itf_info_t itf_info = { 0 };
   tuh_cdc_itf_get_info(idx, &itf_info);
 
-  printf("CDC Interface is mounted: address = %u, itf_num = %u\r\n", itf_info.daddr, itf_info.bInterfaceNumber);
+  printf("CDC Interface is mounted: address = %u, itf_num = %u\r\n", itf_info.daddr);
 
 #ifdef CFG_TUH_CDC_LINE_CODING_ON_ENUM
   // CFG_TUH_CDC_LINE_CODING_ON_ENUM must be defined for line coding is set by tinyusb in enumeration
@@ -156,14 +150,20 @@ void tuh_cdc_mount_cb(uint8_t idx)
     printf("  Parity  : %u, Data Width: %u\r\n", line_coding.parity  , line_coding.data_bits);
   }
 #endif
+
+
+  // Set Line Coding upon mounted
+  cdc_line_coding_t new_line_coding = { 115200, CDC_LINE_CODING_STOP_BITS_1, CDC_LINE_CODING_PARITY_NONE, 8 };
+  tuh_cdc_set_line_coding(idx, &new_line_coding, NULL, 0);
+
 }
 
 void tuh_cdc_umount_cb(uint8_t idx)
 {
-  tuh_cdc_itf_info_t itf_info = { 0 };
+  tuh_itf_info_t itf_info = { 0 };
   tuh_cdc_itf_get_info(idx, &itf_info);
 
-  printf("CDC Interface is unmounted: address = %u, itf_num = %u\r\n", itf_info.daddr, itf_info.bInterfaceNumber);
+  printf("CDC Interface is unmounted: address = %u, itf_num = %u\r\n", itf_info.daddr);
 }
 
 #else

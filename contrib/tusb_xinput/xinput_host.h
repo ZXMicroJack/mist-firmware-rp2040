@@ -8,9 +8,6 @@
  extern "C" {
 #endif
 
-// #include "host/usbh_pvt.h"
-#include "host/usbh_classdriver.h"
-
 //--------------------------------------------------------------------+
 // Class Driver Configuration
 //--------------------------------------------------------------------+

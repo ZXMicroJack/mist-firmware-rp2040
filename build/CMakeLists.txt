@@ -88,7 +88,6 @@ set(main_src
   keyboard.c
   fpgaconfig.c
   mbconfig.c
-  kbdusb.c
   platformmenu.c
 )
 
@@ -103,16 +102,17 @@ set(mainzx1_src
   mmc.c
   keyboard.c
   fpgaconfigzx1.c
-  kbdusb.c
   platformmenu.c
 )
 
 set(usb_src
   ../usbhost/hid_app_mist.c
   ../usbhost/msc_app.c
+  ../usbhost/cdc_app.c
   ../usbhost/xinput.c
   ../contrib/tusb_xinput/xinput_host.c
   xboxusb.c
+  kbdusb.c
   ds3usb.c
 )
 
@@ -225,6 +225,7 @@ target_compile_options(mistfirmwareusbxilinx PUBLIC
   "-DCHECK_REAL_ROOT"
   "-DCOREEXT=\"BIT\""
   "-DCOREEXTOTHER=\"ZXT\""
+  "-Diprintf=usbprintf"
 )
 
 # mist USB library
@@ -235,6 +236,7 @@ target_compile_options(mistfirmwareusb PUBLIC
   "-DMIST_ROOT=\"/\""
   "-DCOREEXT=\"RBF\""
   "-DCOREEXTOTHER=\"NP1\""
+  "-Diprintf=usbprintf"
   )
 
 # mist library
@@ -265,6 +267,7 @@ target_compile_options(mistfirmwareusbzx1 PUBLIC
   "-DCHECK_REAL_ROOT"
   "-DCOREEXT=\"BIT\""
   "-DCOREEXTOTHER=\"ZX1\""
+  "-Diprintf=usbprintf"
   )
 
 ####################################################################################
@@ -320,6 +323,7 @@ set(usb_opts
   "-DUSB"
   "-DMIST_USB"
   "-DUSB_STORAGE"
+  "-Diprintf=usbprintf"
 )
 
 set(mb1_opts
@@ -576,7 +580,7 @@ add_executable(mistmb2xilinxram
   ${driver_mb2_src}
   ${main_src}
   # ${picosynth_src}
-  ${usb_src}
+  # ${usb_src}
   )
 
 target_link_libraries(mistmb2xilinxram 
@@ -825,7 +829,7 @@ target_compile_options(mistusbzx1 PUBLIC
 add_executable(mistmb2ram
   ${driver_mb2_src}
   ${main_src}
-  ${usb_src}
+  # ${usb_src}
   )
 
 target_link_libraries(mistmb2ram 
@@ -835,6 +839,9 @@ target_link_libraries(mistmb2ram
   hardware_pio 
   hardware_rtc 
   hardware_i2c
+  hardware_flash
+  # tinyusb_host 
+  # tinyusb_board
   pico_multicore)
 add_compile_options(-O2)
 pico_generate_pio_header(mistmb2ram ../drivers/fpga.pio)
@@ -845,6 +852,7 @@ pico_generate_pio_header(mistmb2ram ../drivers/uart_tx.pio)
 pico_enable_stdio_usb(mistmb2ram 1)
 
 target_include_directories(mistmb2ram PUBLIC ../picosynth)
+# target_include_directories(mistmb2ram PUBLIC ../usbhost)
 
 pico_enable_stdio_uart(mistmb2ram 0)
 pico_add_extra_outputs(mistmb2ram)
@@ -856,6 +864,7 @@ target_compile_options(mistmb2ram PUBLIC
   ${ram_opts}
   ${neptuno_opts}
   ${mb2_opts}
+  # ${usb_opts}
   )
 
 

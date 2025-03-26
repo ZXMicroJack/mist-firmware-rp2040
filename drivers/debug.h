@@ -7,6 +7,10 @@ void hexdump1(uint8_t *buf, int len);
 void debuginit();
 int dbgprintf(const char *fmt, ...);
 #define debug(a) dbgprintf a
+#elif defined(USB)
+extern uint8_t usbdebug;
+int usbprintf(const char *fmt, ...);
+#define debug(a) usbprintf a
 #else
 #define debuginit()
 #define debug(a) printf a

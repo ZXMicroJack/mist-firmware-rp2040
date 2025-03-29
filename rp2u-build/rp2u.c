@@ -537,9 +537,10 @@ int main()
     hid_app_task();
 #endif
 
-#if CFG_TUH_CDC
-    cdc_app_task();
-#endif
+// not used so disabled in this build
+// #if CFG_TUH_CDC
+//     cdc_app_task();
+// #endif
 
     if (reboot == 0xaa) {
       break;

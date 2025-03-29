@@ -6,9 +6,7 @@
 #if (TUSB_OPT_HOST_ENABLED && CFG_TUH_XINPUT)
 
 #include "host/usbh.h"
-// #include "host/usbh_pvt.h"
 #include "host/usbh_classdriver.h"
-// #include "usbh_classdriver.h"
 #include "xinput_host.h"
 
 #pragma GCC diagnostic push
@@ -610,3 +608,4 @@ void xinputh_close(uint8_t dev_addr)
     tu_memclr(xinput_dev, sizeof(xinputh_device_t));
 }
 
+#endif

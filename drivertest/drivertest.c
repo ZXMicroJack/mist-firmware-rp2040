@@ -1402,7 +1402,14 @@ gpioirq_Init();
 #ifdef TEST_JAMMA
       case 'j': jamma_InitEx(0); printf("joypad 0 %X 1 %X\n", jamma_GetData(0), jamma_GetData(1)); break;
       case 'J': jamma_InitEx(1); printf("joypad 0 %X 1 %X\n", jamma_GetData(0), jamma_GetData(1)); break;
+#if 0
       case 'y': printf("db9 %08X jamma %08X depth %d\n", jamma_GetDataAll(), jamma_GetJamma(), jamma_GetDepth()); break;
+#endif
+      case 'y': {
+        extern void debug_joystates();
+        debug_joystates();
+        break;
+      }
       case 'x': jamma_Kill(); printf("kill jamma\n"); break;
       
       // case 'd': jamma_DetectPoll(0); break;

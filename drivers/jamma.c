@@ -102,16 +102,50 @@ static void gpio_callback(uint gpio, uint32_t events) {
   }
 }
 
-static void pio_callback() {
-  uint32_t _data;
-  pio_interrupt_clear (jamma_pio, 0);
+#define MAX_JOYSTATES 16
 
-  if (!pio_sm_is_rx_fifo_empty(jamma_pio, jamma_sm)) {
-    _data = pio_sm_get_blocking(jamma_pio, jamma_sm);
-    do_debounce(_data, &db9_data, &db9_debounce_data, &db9_debounce, &db9_Changed);
-    joydata[0] = ~(db9_data >> (jamma_bitshift + 8));
-    joydata[1] = ~(db9_data >> jamma_bitshift);
+uint32_t joystates[MAX_JOYSTATES];
+uint32_t pio_ints = 0;
+uint32_t nrstates = 0;
+
+void debug_joystates() {
+  printf("pio_ints = %d; nrstates = %d\n", pio_ints, nrstates);
+#if 0
+  for (int i=0; i<MAX_JOYSTATES; i++) {
+    printf("%d = %08X\n", i, joystates[i]);
+    joystates[i] = 0;
   }
+#endif
+  int i;
+  uint32_t _data;
+  while (!pio_sm_is_rx_fifo_empty(jamma_pio, jamma_sm)) {
+    _data = pio_sm_get_blocking(jamma_pio, jamma_sm);
+    joystates[i & (MAX_JOYSTATES-1)] = _data;
+    i ++;
+  }
+  for (int i=0; i<MAX_JOYSTATES; i++) {
+    printf("%d = %08X\n", i, joystates[i]);
+    joystates[i] = 0;
+  }
+
+}
+
+static void pio_callback() {
+  int i = 0;
+  uint32_t _data;
+
+  while (!pio_sm_is_rx_fifo_empty(jamma_pio, jamma_sm)) {
+    _data = pio_sm_get_blocking(jamma_pio, jamma_sm);
+    joystates[i & (MAX_JOYSTATES-1)] = _data;
+    i ++;
+    
+    // do_debounce(_data, &db9_data, &db9_debounce_data, &db9_debounce, &db9_Changed);
+    // joydata[0] = ~(db9_data >> (jamma_bitshift + 8));
+    // joydata[1] = ~(db9_data >> jamma_bitshift);
+  }
+  nrstates = i;
+  pio_ints ++;
+  pio_interrupt_clear (jamma_pio, 0);
 
 #ifdef JAMMA_JAMMA
   if (!pio_sm_is_rx_fifo_empty(jamma_pio, jamma2_sm)) {
@@ -161,7 +195,7 @@ void jamma_InitDB9() {
   pio_sm_clear_fifos(jamma_pio, jamma2_sm);
 #endif
   irq_set_exclusive_handler (JAMMA_PIO_IRQ, pio_callback);
-  pio_set_irq0_source_enabled(jamma_pio, jamma_sm, true);
+  pio_set_irq0_source_enabled(jamma_pio, pis_interrupt0, true);
 #ifdef JAMMA_JAMMA
   pio_set_irq0_source_enabled(jamma_pio, jamma2_sm, true);
 #endif

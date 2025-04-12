@@ -1,7 +1,7 @@
 .program jammadb9
 ;.side_set 2
-;    set y,15;
-;reset:
+    set y,7;
+reset:
     set pins,2;
     set pins,3;
     set x,23;
@@ -11,7 +11,7 @@ bitloop:
     in pins,1;
     jmp x-- bitloop;
     push;
-;    jmp y-- reset;
+    jmp y-- reset;
     irq wait 0;
 
 % c-sdk {
@@ -24,7 +24,7 @@ static inline void jammadb9_program_init(PIO pio, uint sm, uint offset, uint loa
 
   sm_config_set_set_pins(&sm_config, load_pin, 2);
   sm_config_set_in_pins(&sm_config, data_pin);
-  sm_config_set_clkdiv(&sm_config, 10);
+  sm_config_set_clkdiv(&sm_config, 3000);
   sm_config_set_in_shift(&sm_config, true, false, 24);
 
   sm_config_set_fifo_join(&sm_config, PIO_FIFO_JOIN_RX);

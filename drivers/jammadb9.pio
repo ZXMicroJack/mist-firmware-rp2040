@@ -1,10 +1,12 @@
 .program jammadb9
-;.side_set 2
+.side_set 2 optional
     set y,7;
 reset:
     set pins,2;
     set pins,3;
     set x,23;
+;    set x,23 side 2;
+;    nop side 3;
 bitloop:
     set pins,3;
     set pins,1;
@@ -22,9 +24,13 @@ bitloop:
 static inline void jammadb9_program_init(PIO pio, uint sm, uint offset, uint load_pin, uint data_pin) {
   pio_sm_config sm_config = jammadb9_program_get_default_config(offset);
 
+  sm_config_set_sideset_pins(&sm_config, load_pin);
   sm_config_set_set_pins(&sm_config, load_pin, 2);
+
   sm_config_set_in_pins(&sm_config, data_pin);
-  sm_config_set_clkdiv(&sm_config, 3000);
+  sm_config_set_clkdiv(&sm_config, 10);
+  // set 1 it appears as FFF - no buttons
+  // set 4 it appears as FF9, A,START
   sm_config_set_in_shift(&sm_config, true, false, 24);
 
   sm_config_set_fifo_join(&sm_config, PIO_FIFO_JOIN_RX);

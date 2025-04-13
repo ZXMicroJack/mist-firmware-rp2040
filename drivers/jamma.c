@@ -110,12 +110,13 @@ uint32_t nrstates = 0;
 
 void debug_joystates() {
   printf("pio_ints = %d; nrstates = %d\n", pio_ints, nrstates);
-#if 0
+#if 1
   for (int i=0; i<MAX_JOYSTATES; i++) {
     printf("%d = %08X\n", i, joystates[i]);
     joystates[i] = 0;
   }
 #endif
+#if 0
   int i;
   uint32_t _data;
   while (!pio_sm_is_rx_fifo_empty(jamma_pio, jamma_sm)) {
@@ -127,7 +128,7 @@ void debug_joystates() {
     printf("%d = %08X\n", i, joystates[i]);
     joystates[i] = 0;
   }
-
+#endif
 }
 
 static void pio_callback() {
@@ -146,7 +147,6 @@ static void pio_callback() {
   nrstates = i;
   pio_ints ++;
   pio_interrupt_clear (jamma_pio, 0);
-
 #ifdef JAMMA_JAMMA
   if (!pio_sm_is_rx_fifo_empty(jamma_pio, jamma2_sm)) {
     _data = pio_sm_get_blocking(jamma_pio, jamma2_sm);
@@ -155,7 +155,13 @@ static void pio_callback() {
 #endif
 }
 
+static struct repeating_timer read_timer;
 static uint8_t inited = 0;
+
+static bool ReadKick(struct repeating_timer *t) {
+  pio_interrupt_clear (jamma_pio, 0);
+  return true;
+}
 
 void jamma_InitDB9() {
   /* don't need to detect shifting */
@@ -200,6 +206,7 @@ void jamma_InitDB9() {
   pio_set_irq0_source_enabled(jamma_pio, jamma2_sm, true);
 #endif
   irq_set_enabled (JAMMA_PIO_IRQ, true);
+  // add_repeating_timer_ms(500, ReadKick, NULL, &read_timer);
   inited = 2;
 #endif
 }

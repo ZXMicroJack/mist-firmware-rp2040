@@ -133,11 +133,9 @@ void debug_joystates() {
 
 static void pio_callback() {
   int i = 0;
-  uint32_t _data;
 
   while (!pio_sm_is_rx_fifo_empty(jamma_pio, jamma_sm)) {
-    _data = pio_sm_get_blocking(jamma_pio, jamma_sm);
-    joystates[i & (MAX_JOYSTATES-1)] = _data;
+    joystates[i & (MAX_JOYSTATES-1)] = pio_sm_get_blocking(jamma_pio, jamma_sm);
     i ++;
     
     // do_debounce(_data, &db9_data, &db9_debounce_data, &db9_debounce, &db9_Changed);
@@ -146,13 +144,13 @@ static void pio_callback() {
   }
   nrstates = i;
   pio_ints ++;
-  pio_interrupt_clear (jamma_pio, 0);
 #ifdef JAMMA_JAMMA
   if (!pio_sm_is_rx_fifo_empty(jamma_pio, jamma2_sm)) {
     _data = pio_sm_get_blocking(jamma_pio, jamma2_sm);
     do_debounce(_data, &jamma_data, &jamma_debounce_data, &jamma_debounce, &jamma_Changed);
   }
 #endif
+  pio_interrupt_clear (jamma_pio, 0);
 }
 
 static struct repeating_timer read_timer;

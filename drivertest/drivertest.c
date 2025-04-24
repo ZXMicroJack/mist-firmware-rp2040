@@ -1407,7 +1407,10 @@ gpioirq_Init();
 #endif
       case 'y': {
         extern void debug_joystates();
+        extern void check();
         debug_joystates();
+        check();
+        
         break;
       }
       case 'x': jamma_Kill(); printf("kill jamma\n"); break;

@@ -20,7 +20,9 @@
 #endif
 
 uint16_t reload_data = 0x0000;
-uint8_t joydata[2];
+uint16_t joydata[2];
+uint8_t joydata_ext[2];
+uint8_t is_md[2];
 
 static PIO jamma_pio = JAMMA_PIO;
 static unsigned jamma_sm = JAMMA_SM;
@@ -102,7 +104,7 @@ static void gpio_callback(uint gpio, uint32_t events) {
   }
 }
 
-#define MAX_JOYSTATES 16
+#define MAX_JOYSTATES 8
 
 uint32_t joystates[MAX_JOYSTATES];
 uint32_t pio_ints = 0;
@@ -131,20 +133,115 @@ void debug_joystates() {
 #endif
 }
 
+uint8_t is_md[2] = {0,0};
+uint8_t md_prev[2] = {0,0};
+
+
+#if 0
+#define JOY_BTN_SHIFT   4
+#define JOY_BTN1        0x10
+#define JOY_BTN2        0x20
+#define JOY_BTN3        0x40
+#define JOY_BTN4        0x80
+#define JOY_MOVE        (JOY_RIGHT|JOY_LEFT|JOY_UP|JOY_DOWN)
+
+#define BUTTON1         0x01
+#define BUTTON2         0x02
+#define SWITCH1         0x04
+#define SWITCH2         0x08
+
+// virtual gamepad buttons
+#define JOY_L2     0x1000
+#define JOY_R2     0x2000
+#define JOY_L3     0x4000
+#define JOY_R3     0x8000
+#endif
+
+#define JOY_A      0x01
+#define JOY_B      0x02
+#define JOY_SELECT 0x04
+#define JOY_START  0x08
+#define JOY_X      0x10
+#define JOY_Y      0x20
+#define JOY_L      0x40 // Z
+#define JOY_R      0x80 // C
+
+#define JOY_RIGHT       0x01
+#define JOY_LEFT        0x02
+#define JOY_DOWN        0x04
+#define JOY_UP          0x08
+
+#ifdef MDDEBUG
+#define mddebug(a) printf a
+#else
+#define mddebug(a)
+#endif
+static uint8_t process_frame_stick(uint8_t stick, uint8_t this) {
+  uint8_t nr = 0;
+
+  mddebug(("stick %d: md_prev[stick] %02X this %02X\n", stick, md_prev[stick], this));
+  if ((md_prev[stick] & 0xf0) == 0xf0) {
+    mddebug(("6 button this %02X\n", this));
+    joydata_ext[stick] &= ~(JOY_SELECT|JOY_X|JOY_Y|JOY_L);
+    joydata_ext[stick] |= ((this & 0x20) ? JOY_X : 0) |
+      ((this & 0x40) ? JOY_Y : 0) |
+      ((this & 0x80) ? JOY_L : 0) |
+      ((this & 0x10) ? JOY_SELECT : 0);
+    nr ++;
+  } else if ((md_prev[stick] & 0x30) == 0x30) {
+    mddebug(("3a button this %02X\n", this));
+    joydata_ext[stick] &= ~(JOY_B | JOY_R);
+    joydata_ext[stick] |= ((this & 0x08) ? JOY_B : 0) | ((this & 0x04) ? JOY_R : 0);
+    nr ++;
+  } else if ((this & 0x30) == 0x30) {
+    mddebug(("3b button this %02X\n", this));
+    joydata_ext[stick] &= ~(JOY_START | JOY_A);
+    joydata_ext[stick] |= ((this & 0x04) ? JOY_START : 0) | ((this & 0x08) ? JOY_A : 0);
+    nr ++;
+  } else if ((this & 0x30) != 0x30 && (md_prev[stick] & 0x30) != 0x30) {
+    mddebug(("regular button this %02X\n", this));
+    //joydata[stick] = (this >> 4) | ((this & 0x08) ? JOY_B : 0) | ((this & 0x04) ? JOY_R : 0);
+    joydata[stick] = this >> 4;
+  }
+
+  md_prev[stick] = this;
+  return nr;
+}
+
+static void process_frame(uint32_t data) {
+  is_md[1] = process_frame_stick(1, ~data >> 8);
+  is_md[0] = process_frame_stick(0, ~data >> 16);
+}
+
+void check() {
+  // md_prev[0] = md_prev[1] = 0x00;
+  // for (int i = 0; i<sizeof(joystates) / sizeof (joystates[0]); i++) {
+  //   process_frame(joystates[i]);
+  // }
+  printf("stick1: %02X %02X stick2: %02X %02X\n", 
+    joydata_ext[0], joydata[0], joydata_ext[1], joydata[1]);
+}
+
 static void pio_callback() {
   int i = 0;
 
+  md_prev[0] = md_prev[1] = 0x00;
   while (!pio_sm_is_rx_fifo_empty(jamma_pio, jamma_sm)) {
+    process_frame(pio_sm_get_blocking(jamma_pio, jamma_sm));
+#if 0
     joystates[i & (MAX_JOYSTATES-1)] = pio_sm_get_blocking(jamma_pio, jamma_sm);
+    // process_frame(joystates[i & (MAX_JOYSTATES-1)]);
     i ++;
     
     // do_debounce(_data, &db9_data, &db9_debounce_data, &db9_debounce, &db9_Changed);
     // joydata[0] = ~(db9_data >> (jamma_bitshift + 8));
     // joydata[1] = ~(db9_data >> jamma_bitshift);
+#endif
   }
   nrstates = i;
   pio_ints ++;
 #ifdef JAMMA_JAMMA
+  uint32_t _data;
   if (!pio_sm_is_rx_fifo_empty(jamma_pio, jamma2_sm)) {
     _data = pio_sm_get_blocking(jamma_pio, jamma2_sm);
     do_debounce(_data, &jamma_data, &jamma_debounce_data, &jamma_debounce, &jamma_Changed);
@@ -164,6 +261,9 @@ static bool ReadKick(struct repeating_timer *t) {
 void jamma_InitDB9() {
   /* don't need to detect shifting */
   init_jamma();
+
+  memset(&is_md, 0, sizeof is_md);
+  memset(&joydata_ext, 0, sizeof joydata_ext);
   detect_jamma_bitshift = 0;
   jamma_bitshift = 8;
 
@@ -317,7 +417,7 @@ void jamma_SetData(uint8_t inst, uint32_t data) {
 
 uint32_t jamma_GetData(uint8_t inst) {
   debug(("jamma_GetData: %d returns %02X\n", inst, joydata[inst]));
-  return joydata[inst];
+  return ~joydata[inst];
 }
 
 int jamma_HasChanged() {

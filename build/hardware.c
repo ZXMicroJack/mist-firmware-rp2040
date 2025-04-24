@@ -283,6 +283,39 @@ void KeypressJamma(uint16_t prev, uint16_t curr, uint16_t mask, uint8_t keyscan)
 }
 #endif
 
+#if 0
+#define JOY_RIGHT       0x01
+#define JOY_LEFT        0x02
+#define JOY_DOWN        0x04
+#define JOY_UP          0x08
+#define JOY_BTN_SHIFT   4
+#define JOY_BTN1        0x10
+#define JOY_BTN2        0x20
+#define JOY_BTN3        0x40
+#define JOY_BTN4        0x80
+#define JOY_MOVE        (JOY_RIGHT|JOY_LEFT|JOY_UP|JOY_DOWN)
+
+#define BUTTON1         0x01
+#define BUTTON2         0x02
+#define SWITCH1         0x04
+#define SWITCH2         0x08
+
+// virtual gamepad buttons
+#define JOY_A      JOY_BTN1
+#define JOY_B      JOY_BTN2
+#define JOY_SELECT JOY_BTN3
+#define JOY_START  JOY_BTN4
+#define JOY_X      0x100
+#define JOY_Y      0x200
+#define JOY_L      0x400
+#define JOY_R      0x800
+#define JOY_L2     0x1000
+#define JOY_R2     0x2000
+#define JOY_L3     0x4000
+#define JOY_R3     0x8000
+#endif
+
+
 char GetDB9(char index, unsigned char *joy_map) {
   // *joy_map is set to a combination of the following bitmapped values
   // JOY_UP, JOY_DOWN, JOY_LEFT, JOY_RIGHT, JOY_BTN1, JOY_BTN2
@@ -292,7 +325,7 @@ char GetDB9(char index, unsigned char *joy_map) {
   uint8_t ndx = 0;
   uint16_t j = 0;
 
-  if (d != 0xff) { // joystick is properly set up
+  if ((d&0xff) != 0xff) { // joystick is properly set up
     while (mask) {
       if (d & mask) j |= joylut[ndx];
       ndx++;

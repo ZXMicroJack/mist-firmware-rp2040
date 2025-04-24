@@ -1,18 +1,38 @@
 .program jammadb9
 .side_set 2 optional
-    set y,7;
-reset:
+    set y,7
+framerep:
     set x,23 side 2;
-    nop side 3 [3];
-bitloop:
+    nop      side 3;
+bitloop2:
     in pins,1 side 1;
-    jmp x-- bitloop side 3;
-    push;
-    jmp y-- reset;
+    jmp x-- bitloop2 side 3;
+;    push;
+    jmp y-- framerep;
     irq wait 0;
+
+
 
 % c-sdk {
 
+#if 0
+    set y,15;
+reset:
+    set x,15 side 2;
+    nop side 3 [3];
+
+bitloop:
+    in pins,1 side 1;
+    jmp x-- bitloop side 3;
+    set x,7;
+
+clkloop:
+    nop side 1;
+    jmp x-- clkloop side 3;
+
+    jmp y-- reset;
+    irq wait 0;
+#endif
 
 // 12 instructions
 // now 10 instructions
@@ -28,7 +48,7 @@ static inline void jammadb9_program_init(PIO pio, uint sm, uint offset, uint loa
   // set 4 it appears as FF9, A,START
   sm_config_set_in_shift(&sm_config,
     /* shift_right */ true,
-    /* autopush */ false, 
+    /* autopush */ true, 
     24);
 
   sm_config_set_fifo_join(&sm_config, PIO_FIFO_JOIN_RX);

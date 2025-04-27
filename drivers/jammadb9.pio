@@ -2,16 +2,13 @@
 .side_set 2 optional
     set y,7
 framerep:
-    set x,23 side 2;
-    nop      side 3;
+    set x,23 side 2; was 2 / 0 (no strobe)
+    nop      side 3; was 3 / 1
 bitloop2:
     in pins,1 side 1;
     jmp x-- bitloop2 side 3;
-;    push;
     jmp y-- framerep;
     irq wait 0;
-
-
 
 % c-sdk {
 

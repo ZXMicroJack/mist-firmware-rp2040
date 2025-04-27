@@ -320,10 +320,30 @@ char GetDB9(char index, unsigned char *joy_map) {
   // *joy_map is set to a combination of the following bitmapped values
   // JOY_UP, JOY_DOWN, JOY_LEFT, JOY_RIGHT, JOY_BTN1, JOY_BTN2
 
-  uint32_t d = jamma_GetData(index);
+  uint32_t d = jamma_GetDataMD(index);
   uint32_t mask = 0x80;
   uint8_t ndx = 0;
   uint16_t j = 0;
+
+  if (d != ((uint32_t)-1)) {
+    static uint16_t lastdb9[2];
+    if (lastdb9[index] != d) {
+      uint16_t joy_map2 = virtual_joystick_mapping(0x00db, index, d);
+      uint8_t idx = mist_cfg.joystick_db9_fixed_index ? user_io_joystick_renumber(index) : joystick_count() + index;
+
+      idx = (idx ^ mist_cfg.joystick_db9_swap) & 1;
+
+      if (!user_io_osd_is_visible()) user_io_joystick(idx, joy_map2);
+      StateJoySet(joy_map2, idx); // send to OSD
+      StateJoySetExtra( joy_map2>>8, idx);
+      virtual_joystick_keyboard_idx(idx, joy_map2);
+
+      lastdb9[index] = d;
+    }
+    return 0;
+  }
+
+  d = ~jamma_GetData(index);
 
   if ((d&0xff) != 0xff) { // joystick is properly set up
     while (mask) {
@@ -332,6 +352,8 @@ char GetDB9(char index, unsigned char *joy_map) {
       mask >>= 1;
     }
   }
+  j |= d & 0xff00; // copy rest of buttons from MD
+
 
 #ifdef JAMMA_JAMMA
   d = ~jamma_GetJamma();

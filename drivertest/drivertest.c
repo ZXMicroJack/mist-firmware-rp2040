@@ -1402,6 +1402,22 @@ gpioirq_Init();
 #ifdef TEST_JAMMA
       case 'j': jamma_InitEx(0); printf("joypad 0 %X 1 %X\n", jamma_GetData(0), jamma_GetData(1)); break;
       case 'J': jamma_InitEx(1); printf("joypad 0 %X 1 %X\n", jamma_GetData(0), jamma_GetData(1)); break;
+      case 'Y': {
+        uint32_t prev[2] = {0,0}, now[2];
+        while (getchar_timeout_us(10) < 0) {
+          now[0] = jamma_GetDataMD(0);
+          if (now[0] == (uint32_t)-1) now[0] = jamma_GetData(0);
+          now[1] = jamma_GetDataMD(1);
+          if (now[1] == (uint32_t)-1) now[1] = jamma_GetData(1);
+          if (prev[0] != now[0] || prev[1] != now[1]) {
+            printf("0-%08X 1-%08X\n", now[0], now[1]);
+            prev[0] = now[0];
+            prev[1] = now[1];
+          }
+        }
+        break;
+      }
+
 #if 0
       case 'y': printf("db9 %08X jamma %08X depth %d\n", jamma_GetDataAll(), jamma_GetJamma(), jamma_GetDepth()); break;
 #endif
@@ -1409,7 +1425,7 @@ gpioirq_Init();
         extern void debug_joystates();
         extern void check();
         debug_joystates();
-        check();
+        // check();
         
         break;
       }

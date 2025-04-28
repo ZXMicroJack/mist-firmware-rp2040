@@ -285,20 +285,29 @@ static void pio_callback() {
     // joydata[1] = ~(db9_data >> jamma_bitshift);
 #endif
   }
-  is_md[0] = nr[0];
-  is_md[1] = nr[1];
+  is_md[0] = is_md[0] << 1 | (nr[0] ? 1 : 0);
+  is_md[1] = is_md[1] << 1 | (nr[1] ? 1 : 0);
 
   nrstates = i;
   pio_ints ++;
-#ifdef JAMMA_JAMMA
-  uint32_t _data;
-  if (!pio_sm_is_rx_fifo_empty(jamma_pio, jamma2_sm)) {
-    _data = pio_sm_get_blocking(jamma_pio, jamma2_sm);
-    do_debounce(_data, &jamma_data, &jamma_debounce_data, &jamma_debounce, &jamma_Changed);
-  }
-#endif
+// #ifdef JAMMA_JAMMA
+//   uint32_t _data;
+//   if (!pio_sm_is_rx_fifo_empty(jamma_pio, jamma2_sm)) {
+//     _data = pio_sm_get_blocking(jamma_pio, jamma2_sm);
+//     do_debounce(_data, &jamma_data, &jamma_debounce_data, &jamma_debounce, &jamma_Changed);
+//   }
+// #endif
   pio_interrupt_clear (jamma_pio, 0);
 }
+
+#ifdef JAMMA_JAMMA
+static void pio2_callback() {
+  while (!pio_sm_is_rx_fifo_empty(jamma_pio, jamma2_sm)) {
+    jamma_data = pio_sm_get_blocking(jamma_pio, jamma2_sm);
+  }
+  pio_interrupt_clear (jamma_pio, 1);
+}
+#endif
 
 static struct repeating_timer read_timer;
 static uint8_t inited = 0;
@@ -351,9 +360,13 @@ void jamma_InitDB9() {
   irq_set_exclusive_handler (JAMMA_PIO_IRQ, pio_callback);
   pio_set_irq0_source_enabled(jamma_pio, pis_interrupt0, true);
 #ifdef JAMMA_JAMMA
-  pio_set_irq0_source_enabled(jamma_pio, jamma2_sm, true);
+  irq_set_exclusive_handler (JAMMA2_PIO_IRQ, pio2_callback);
+  pio_set_irq1_source_enabled(jamma_pio, pis_interrupt1, true);
 #endif
   irq_set_enabled (JAMMA_PIO_IRQ, true);
+#ifdef JAMMA_JAMMA
+  irq_set_enabled (JAMMA2_PIO_IRQ, true);
+#endif
   // add_repeating_timer_ms(500, ReadKick, NULL, &read_timer);
   inited = 2;
 #endif

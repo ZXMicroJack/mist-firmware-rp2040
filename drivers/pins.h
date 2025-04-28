@@ -287,6 +287,7 @@
 #define JAMMAU_INSTR        5
 #define JAMMA_PIO_IRQ       PIO1_IRQ_0
 #define JAMMA2_SM           3
+#define JAMMA2_PIO_IRQ      PIO1_IRQ_1
 
 // debug PIO is only on dual for now
 // #define DEBUG_PIO       pio0

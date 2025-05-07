@@ -426,7 +426,7 @@ void jamma_Kill() {
   gpio_set_irq_enabled(GPIO_RP2U_XLOAD, GPIO_IRQ_EDGE_FALL, false);
   pio_set_irq0_source_enabled(jamma_pio, jamma_sm, false);
 #ifdef JAMMA_JAMMA
-  pio_set_irq0_source_enabled(jamma_pio, jamma2_sm, false);
+  pio_set_irq1_source_enabled(jamma_pio, jamma2_sm, false);
 #endif
   gpioirq_SetCallback(IRQ_JAMMA, NULL);
 

@@ -326,8 +326,12 @@ char GetDB9(char index, unsigned char *joy_map) {
   uint16_t j = 0;
 
   if (d != ((uint32_t)-1)) {
+#if 0
+    j = d & 0xfff;
+#else
     static uint16_t lastdb9[2];
     if (lastdb9[index] != d) {
+      printf("lastdb9[index] = %08X\n", d);
       uint16_t joy_map2 = virtual_joystick_mapping(0x00db, index, d);
       uint8_t idx = mist_cfg.joystick_db9_fixed_index ? user_io_joystick_renumber(index) : joystick_count() + index;
 
@@ -341,20 +345,22 @@ char GetDB9(char index, unsigned char *joy_map) {
       lastdb9[index] = d;
     }
     return 0;
-  }
+#endif
+  } else {
+    d = ~jamma_GetData(index);
 
-  d = ~jamma_GetData(index);
-
-  if ((d&0xff) != 0xff) { // joystick is properly set up
-    while (mask) {
-      if (d & mask) j |= joylut[ndx];
-      ndx++;
-      mask >>= 1;
+    if ((d&0xff) != 0xff) { // joystick is properly set up
+      while (mask) {
+        if (d & mask) j |= joylut[ndx];
+        ndx++;
+        mask >>= 1;
+      }
     }
+    // j |= d & 0xff00; // copy rest of buttons from MD
   }
-  j |= d & 0xff00; // copy rest of buttons from MD
 
 
+#if 0
 #ifdef JAMMA_JAMMA
   d = ~jamma_GetJamma();
   uint8_t depth = jamma_GetDepth();
@@ -362,6 +368,7 @@ char GetDB9(char index, unsigned char *joy_map) {
     j |= (d & 1) ? jammalut[index][ndx] : 0;
     d >>= 1;
   }
+#endif
 #endif
   
 #ifndef JAMMA_JAMMA

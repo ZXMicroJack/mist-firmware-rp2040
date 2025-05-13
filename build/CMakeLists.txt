@@ -327,7 +327,7 @@ set(usb_opts
 )
 
 set(mb1_opts
-  "-DJAMMA_JAMMAx"
+  "-DJAMMA_JAMMA"
 )
 
 set(mb2_opts

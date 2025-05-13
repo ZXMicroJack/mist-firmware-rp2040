@@ -316,6 +316,15 @@ void KeypressJamma(uint16_t prev, uint16_t curr, uint16_t mask, uint8_t keyscan)
 #endif
 
 
+static uint32_t x[8];
+static void dbgx(uint8_t idx, uint32_t d) {
+  if (x[idx] != d) {
+    printf("dbgx %d %08X\n", idx, d);
+    x[idx] = d;
+  }
+}
+
+
 char GetDB9(char index, unsigned char *joy_map) {
   // *joy_map is set to a combination of the following bitmapped values
   // JOY_UP, JOY_DOWN, JOY_LEFT, JOY_RIGHT, JOY_BTN1, JOY_BTN2
@@ -325,8 +334,10 @@ char GetDB9(char index, unsigned char *joy_map) {
   uint8_t ndx = 0;
   uint16_t j = 0;
 
+  dbgx((index<<2), d);
+  // if a Megadrive controller was detected...
   if (d != ((uint32_t)-1)) {
-#if 0
+#if 1
     j = d & 0xfff;
 #else
     static uint16_t lastdb9[2];
@@ -348,6 +359,7 @@ char GetDB9(char index, unsigned char *joy_map) {
 #endif
   } else {
     d = ~jamma_GetData(index);
+    dbgx((index<<2)+1, d);
 
     if ((d&0xff) != 0xff) { // joystick is properly set up
       while (mask) {
@@ -360,9 +372,10 @@ char GetDB9(char index, unsigned char *joy_map) {
   }
 
 
-#if 0
+#if 1
 #ifdef JAMMA_JAMMA
   d = ~jamma_GetJamma();
+  dbgx((index<<2)+2, d);
   uint8_t depth = jamma_GetDepth();
   for (ndx = 0; ndx < depth; ndx++) {
     j |= (d & 1) ? jammalut[index][ndx] : 0;

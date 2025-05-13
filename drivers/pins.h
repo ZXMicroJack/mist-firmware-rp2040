@@ -283,7 +283,7 @@
 #define JAMMA_PIO           pio1
 #define JAMMA_SM            2
 #define JAMMA_OFFSET        AUDIO_I2S_INSTR
-#define JAMMA_INSTR         12
+#define JAMMA_INSTR         7
 #define JAMMAU_INSTR        5
 #define JAMMA_PIO_IRQ       PIO1_IRQ_0
 #define JAMMA2_SM           3

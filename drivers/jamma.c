@@ -290,13 +290,16 @@ static void pio_callback() {
 
   nrstates = i;
   pio_ints ++;
-// #ifdef JAMMA_JAMMA
-//   uint32_t _data;
-//   if (!pio_sm_is_rx_fifo_empty(jamma_pio, jamma2_sm)) {
-//     _data = pio_sm_get_blocking(jamma_pio, jamma2_sm);
-//     do_debounce(_data, &jamma_data, &jamma_debounce_data, &jamma_debounce, &jamma_Changed);
-//   }
-// #endif
+ #ifdef JAMMA_JAMMA
+   uint32_t _data;
+  //  if (!pio_sm_is_rx_fifo_empty(jamma_pio, jamma2_sm)) {
+  //    _data = pio_sm_get_blocking(jamma_pio, jamma2_sm);
+  //    do_debounce(_data, &jamma_data, &jamma_debounce_data, &jamma_debounce, &jamma_Changed);
+  //  }
+  // while (!pio_sm_is_rx_fifo_empty(jamma_pio, jamma2_sm)) {
+  //   jamma_data = pio_sm_get_blocking(jamma_pio, jamma2_sm);
+  // }
+ #endif
   pio_interrupt_clear (jamma_pio, 0);
 }
 
@@ -350,7 +353,10 @@ void jamma_InitDB9() {
   jamma_offset = pio_add_program(jamma_pio, &jammadb9_program);
 #endif
   jammadb9_program_init(jamma_pio, jamma_sm, jamma_offset, GPIO_RP2U_XLOAD, GPIO_RP2U_XDATA);
+
 #ifdef JAMMA_JAMMA
+  pio_add_program_at_offset(jamma_pio, &jammaj_program, JAMMA_OFFSET + JAMMA_INSTR);
+  jamma_offset2 = JAMMA_OFFSET + JAMMA_INSTR;
   jammadb9_program_init(jamma_pio, jamma2_sm, jamma_offset, GPIO_RP2U_XLOAD, GPIO_RP2U_XDATAJAMMA);
 #endif
   pio_sm_clear_fifos(jamma_pio, jamma_sm);
@@ -426,7 +432,7 @@ void jamma_Kill() {
   gpio_set_irq_enabled(GPIO_RP2U_XLOAD, GPIO_IRQ_EDGE_FALL, false);
   pio_set_irq0_source_enabled(jamma_pio, jamma_sm, false);
 #ifdef JAMMA_JAMMA
-  pio_set_irq1_source_enabled(jamma_pio, jamma2_sm, false);
+  // pio_set_irq1_source_enabled(jamma_pio, jamma2_sm, false);
 #endif
   gpioirq_SetCallback(IRQ_JAMMA, NULL);
 
@@ -437,6 +443,9 @@ void jamma_Kill() {
 #endif
   if (inited == 2) {
     pio_remove_program(jamma_pio, &jammadb9_program, jamma_offset);
+#ifdef JAMMA_JAMMA
+    pio_remove_program(jamma_pio, &jammaj_program, jamma_offset2);
+#endif
   } else {
     pio_remove_program(jamma_pio, &jamma_program, jamma_offset);
 #ifdef JAMMA_JAMMA

@@ -5,6 +5,7 @@
 .program jammaj
 reset:
     push;
+    irq wait 2 rel;
     
 bitloop:
     wait 1 gpio 27;

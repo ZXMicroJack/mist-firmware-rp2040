@@ -7,43 +7,15 @@
 #include "menu.h"
 #include "osd.h"
 #include "errors.h"
+#include "drivers/jamma.h"
 
 extern unsigned char Error;
 
-// #define ZXUNO
+static char GetMenuItem_DB9Mode(uint8_t idx, char action, menu_item_t *item);
 
-/* for now there is only one entry in BOARD.INI for boot_menu, this is used
-   only for ZXUNO.  For now only ZXUNO writes and reads BOARD.INI. */
+// ZXUNO only : boot menu or zxuno mode
 #ifdef ZXUNO
 static uint8_t boot_menu = 1;
-
-// core ini vars
-const ini_var_t board_ini_vars[] = {
-  {"BOOT_MENU", (void*)(&(boot_menu)), UINT8, 0, 1, 1}
-};
-
-const ini_section_t board_ini_sections[] = {
-  {1, "BOARD"},
-};
-
-// mist ini config
-const ini_cfg_t board_ini_cfg = {
-  MIST_ROOT"/BOARD.INI",
-  board_ini_sections,
-  board_ini_vars,
-  (int)(sizeof(board_ini_sections) / sizeof(ini_section_t)),
-  (int)(sizeof(board_ini_vars)     / sizeof(ini_var_t))
-};
-
-
-void settings_board_load() {
-  boot_menu = 1;
-  ini_parse(&board_ini_cfg, 0, 0);
-}
-
-void settings_board_save() {
-  ini_save(&board_ini_cfg, 0);
-}
 
 uint8_t settings_boot_menu() {
   return boot_menu;
@@ -61,6 +33,63 @@ static char StartupSequenceSet(uint8_t idx) {
 	return 0;
 }
 #endif
+
+#ifndef ZXUNO
+static char GetMenuItem_Platform(uint8_t idx, char action, menu_item_t *item);
+static char GetMenuPage_Platform(uint8_t idx, char action, menu_page_t *page);
+static char KeyEvent_Platform(uint8_t key);
+
+static uint8_t jamma_mode = MODE_DB9;
+static uint8_t new_jamma_mode = MODE_DB9;
+
+static char SaveDB9Mode(uint8_t idx) {
+  if (jamma_mode != new_jamma_mode && idx == 0) {
+    jamma_mode = new_jamma_mode;
+    settings_board_save();
+  }
+  SetupMenu(GetMenuPage_Platform, GetMenuItem_Platform, KeyEvent_Platform);
+	return 0;
+}
+#endif
+
+// core ini vars
+const ini_var_t board_ini_vars[] = {
+#ifdef ZXUNO
+  {"BOOT_MENU", (void*)(&(boot_menu)), UINT8, 0, 1, 1}
+#else
+  {"DB9_MODE", (void*)(&(jamma_mode)), UINT8, 0, MODE_MAX-1, 1}
+#endif
+};
+
+const ini_section_t board_ini_sections[] = {
+  {1, "BOARD"},
+};
+
+// mist ini config
+const ini_cfg_t board_ini_cfg = {
+  MIST_ROOT"/BOARD.INI",
+  board_ini_sections,
+  board_ini_vars,
+  (int)(sizeof(board_ini_sections) / sizeof(ini_section_t)),
+  (int)(sizeof(board_ini_vars)     / sizeof(ini_var_t))
+};
+
+void settings_board_load() {
+#ifdef ZXUNO
+  boot_menu = 1;
+#else
+  jamma_mode = MODE_DB9; // default
+#endif
+  ini_parse(&board_ini_cfg, 0, 0);
+
+#ifndef ZXUNO
+  jamma_SetMode(jamma_mode);
+#endif
+}
+
+void settings_board_save() {
+  ini_save(&board_ini_cfg, 0);
+}
 
 static uint8_t debugon = 0;
 #ifdef USB
@@ -186,6 +215,14 @@ const static char *GetUSBFWVersion(char *status) {
   return status;
 }
 
+#ifndef ZXUNO
+const static char *jammaModes[] = {
+  " DB9",
+  " JAMMA",
+  " MEGADRIVE"
+};
+#endif
+
 static char GetMenuItem_Platform(uint8_t idx, char action, menu_item_t *item) {
   static char status[40];
 	item->stipple = 0;
@@ -195,7 +232,6 @@ static char GetMenuItem_Platform(uint8_t idx, char action, menu_item_t *item) {
 	item->newsub = 0;
 	item->item = "";
 
-  // printf("GetMenuItem_Platform: idx %d action %d item %p\n", idx, action, item);
 	switch (action) {
 		case MENU_ACT_GET:
 			switch(idx) 
@@ -226,10 +262,19 @@ static char GetMenuItem_Platform(uint8_t idx, char action, menu_item_t *item) {
           break;
 
         case 4:
-          item->item = debugon ? " Debug ON" : " Debug OFF";
+          sprintf(status, " Debug - %s", debugon ? "ON" : "OFF");
+          item->item = status;
           item->active = 1;
           break;
 
+#ifndef ZXUNO
+        case 5: {
+          sprintf(status, " DB9 mode - %s", jammaModes[jamma_GetMode()]);
+          item->item = status;
+          item->active = 1;
+          break;
+        }
+#endif
         default:
           return 0;
 			}
@@ -254,6 +299,15 @@ static char GetMenuItem_Platform(uint8_t idx, char action, menu_item_t *item) {
           debugon = ! debugon;
           platform_UpdateDebugMode();
           break;
+
+#ifndef ZXUNO
+        case 5: {
+          SetupMenu(GetMenuPage_Platform, GetMenuItem_DB9Mode, KeyEvent_Platform);
+          break;
+        }
+#endif
+
+
 			}
 			break;
 		case MENU_ACT_LEFT:
@@ -270,3 +324,59 @@ static char GetMenuItem_Platform(uint8_t idx, char action, menu_item_t *item) {
 void SetupPlatformMenu() {
   SetupMenu(GetMenuPage_Platform, GetMenuItem_Platform, KeyEvent_Platform);
 }
+
+#ifndef ZXUNO
+static char GetMenuItem_DB9Mode(uint8_t idx, char action, menu_item_t *item) {
+  static char status[40];
+	item->stipple = 0;
+	item->active = 1;
+	item->page = 0;
+	item->newpage = 0;
+	item->newsub = 0;
+	item->item = "";
+
+  // printf("GetMenuItem_Platform: idx %d action %d item %p\n", idx, action, item);
+	switch (action) {
+		case MENU_ACT_GET:
+			switch(idx) 
+      {
+				case 0:
+#ifndef MB2
+        case 1:
+#endif
+        case 2:
+					item->item = jammaModes[idx];
+					item->active = 1;
+					break;
+
+        default:
+          return 0;
+			}
+			break;
+		case MENU_ACT_SEL:
+			switch(idx) {
+				case 0:
+#ifndef MB2
+        case 1:
+#endif
+        case 2:
+          new_jamma_mode = idx;
+          jamma_SetMode(idx);
+          DialogBox("\n    Save setting to\n      BOARD.INI?", MENU_DIALOG_YESNO, SaveDB9Mode);
+
+          // settings_board_save();
+					break;
+			}
+			break;
+		case MENU_ACT_LEFT:
+		case MENU_ACT_RIGHT:
+		case MENU_ACT_PLUS:
+		case MENU_ACT_MINUS:
+		default:
+			return 0;
+	}
+	return 1;
+
+}
+#endif
+

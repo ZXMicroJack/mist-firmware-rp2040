@@ -300,6 +300,7 @@ set(flash_opts_zx1
 set(ram_opts
   "-DBUFFER_FPGA"
   "-DNO_FILE_INDEX"
+  "-DNO_LOGO"
 )
 set(zxtres_opts
   "-DMIST_ROOT=\"/MIST\""

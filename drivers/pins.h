@@ -268,7 +268,13 @@
 #define FPGA_IMAGE_POS        0x100A0000
 
 
+// NOTE - PIO number not changed on PIO not changed from this, but is here for reference sake
 /* SM / PIO allocation */
+#define AUDIO_I2S_PIO       pio1
+#define AUDIO_I2S_SM        1
+#define AUDIO_I2S_OFFSET    0
+#define AUDIO_I2S_INSTR     20
+
 #define FPGA_PIO            pio1
 #define FPGA_SM             0
 #define FPGA_OFFSET         AUDIO_I2S_INSTR
@@ -277,16 +283,11 @@
 #define JAMMA_PIO           pio1
 #define JAMMA_SM            2
 #define JAMMA_OFFSET        AUDIO_I2S_INSTR
-#define JAMMA_INSTR         12
+#define JAMMA_INSTR         8
 #define JAMMAU_INSTR        5
 #define JAMMA_PIO_IRQ       PIO1_IRQ_0
 #define JAMMA2_SM           3
-
-// NOTE - PIO number not changed on PIO not changed from this, but is here for reference sake
-#define AUDIO_I2S_PIO       pio1
-#define AUDIO_I2S_SM        1
-#define AUDIO_I2S_OFFSET    0
-#define AUDIO_I2S_INSTR     20
+#define JAMMA2_PIO_IRQ      PIO1_IRQ_1
 
 // debug PIO is only on dual for now
 // #define DEBUG_PIO       pio0

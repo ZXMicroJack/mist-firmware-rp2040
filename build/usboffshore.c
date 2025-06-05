@@ -23,7 +23,7 @@
 static uint8_t storedDD[USB_DEVICE_DESCRIPTOR_LEN];
 static uint8_t config[MAX_USB][256];
 
-static uint32_t jammaData = 0xffff0000;
+static uint32_t jammaData = 0x00000000;
 
 #ifdef MB2USB
 void tuh_task() {
@@ -37,6 +37,8 @@ static uint8_t kbdfifo_buf[64];
 static fifo_t mousefifo;
 static uint8_t mousefifo_buf[64];
 
+static JAMMA_MODE jamma_mode = MODE_DB9;
+
 #ifdef USB_ON_CORE2
 static fifo_t kbdusbfifo;
 static uint8_t kbdusbfifo_buf[64];
@@ -46,6 +48,7 @@ static uint8_t mouseusbfifo_buf[64];
 
 static uint8_t jamma[2] = {0,0};
 static uint8_t jamma_prev[2] = {0,0};
+
 #endif
 
 /********************************************/
@@ -54,8 +57,18 @@ void jamma_Init() {
 }
 
 uint32_t jamma_GetData(uint8_t inst) {
-  uint8_t d = ~(inst ? (jammaData >> 8) : jammaData);
+  uint16_t d = (inst ? (jammaData >> 16) : jammaData);
   return d;
+}
+
+void jamma_SetMode(JAMMA_MODE mode) {
+  uint8_t d = mode;
+  jamma_mode = mode;
+  ipc_Command(IPC_SETJAMMAMODE, &d, sizeof d);
+}
+
+JAMMA_MODE jamma_GetMode(void) {
+  return jamma_mode;
 }
 
 #ifdef USB_ON_CORE2

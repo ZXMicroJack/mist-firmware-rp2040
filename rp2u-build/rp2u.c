@@ -129,6 +129,8 @@ static bool watchdog_Callback(struct repeating_timer *t) {
   return true;
 }
 
+static uint32_t prev_jamma = 0;
+
 uint8_t ps2_rp2m_buf[4][64]; // kbd in, mse in, kbd host in, mse host in
 fifo_t ps2_rp2m_fifo[4];
 
@@ -204,6 +206,11 @@ uint8_t ipc_GotCommand(uint8_t cmd, uint8_t *data, uint8_t len) {
     case IPC_SENDJAMMA:
       jamma_SetData(data[0], data[1]);
       break;
+    
+    case IPC_SETJAMMAMODE:
+      jamma_SetMode(data[0]);
+      break;
+
 
 #ifdef USB_ON_RP2U
     case IPC_USB_SETCONFIG: {
@@ -467,9 +474,10 @@ void kbd_core() {
 
 		// in MiST mode, pass DB9 joypad changes up to RP2M
     if (mistMode) {
-      if (jamma_HasChanged()) {
-        uint32_t data = jamma_GetDataAll();
-        ipc_SendData(IPC_UPDATE_JAMMA, (uint8_t *)&data, sizeof data);
+      uint32_t jamma = (jamma_GetData(0) << 16) | jamma_GetData(1);
+      if (prev_jamma != jamma) {
+        ipc_SendData(IPC_UPDATE_JAMMA, (uint8_t *)&jamma, sizeof jamma);
+        prev_jamma = jamma;
         printf("Jamma updated\n");
       }
     }
@@ -497,8 +505,6 @@ int main()
   // default on
   uint8_t ramCookie = cookie_IsPresent2();
   mistMode = ramCookie == MIST_MODE;
-
-  // sleep_ms(1000); // usb settle delay
 
   cookie_Reset();
   gpioirq_Init();
@@ -529,7 +535,6 @@ int main()
     if (c == 'q') break;
 		if (c == 'm') mistMode = !mistMode;
 #endif
-//     printf("in loop\n");
 #ifdef USB
     tuh_task();
 #endif
@@ -545,7 +550,6 @@ int main()
     if (reboot == 0xaa) {
       break;
     }
-//     printf("gpio: %d\n", gpio_get(GPIO_RP2U_XLOAD));
   }
   
   reset_usb_boot(0, 0);

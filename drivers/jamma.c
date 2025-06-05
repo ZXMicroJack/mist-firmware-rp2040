@@ -19,8 +19,36 @@
 #include "jammaj.pio.h"
 #endif
 
-uint16_t reload_data = 0x0000;
-uint8_t joydata[2];
+/* copied from user-io */
+#define JOY_RIGHT       0x01
+#define JOY_LEFT        0x02
+#define JOY_DOWN        0x04
+#define JOY_UP          0x08
+#define JOY_BTN_SHIFT   4
+#define JOY_BTN1        0x10
+#define JOY_BTN2        0x20
+#define JOY_BTN3        0x40
+#define JOY_BTN4        0x80
+#define JOY_MOVE        (JOY_RIGHT|JOY_LEFT|JOY_UP|JOY_DOWN)
+
+#define BUTTON1         0x01
+#define BUTTON2         0x02
+#define SWITCH1         0x04
+#define SWITCH2         0x08
+
+// virtual gamepad buttons
+#define JOY_A      JOY_BTN1
+#define JOY_B      JOY_BTN2
+#define JOY_SELECT JOY_BTN3
+#define JOY_START  JOY_BTN4
+#define JOY_X      0x100
+#define JOY_Y      0x200
+#define JOY_L      0x400
+#define JOY_R      0x800
+#define JOY_L2     0x1000
+#define JOY_R2     0x2000
+#define JOY_L3     0x4000
+#define JOY_R3     0x8000
 
 static PIO jamma_pio = JAMMA_PIO;
 static unsigned jamma_sm = JAMMA_SM;
@@ -32,13 +60,12 @@ static uint jamma_offset;
 static uint jamma_offset2;
 #endif
 
+static uint16_t reload_data = 0x0000;
+static uint16_t joydata_md[2];
+static uint16_t joydata[2];
 static uint8_t detect_jamma_bitshift;
 static uint8_t jamma_bitshift;
-
 static uint32_t db9_data;
-static uint8_t db9_Changed;
-static uint32_t db9_debounce;
-static uint32_t db9_debounce_data;
 
 #ifdef JAMMA_JAMMA
 static uint32_t jamma_data;
@@ -49,12 +76,16 @@ static uint8_t jamma_Changed;
 
 #define DEBOUNCE_COUNT    120
 
+static uint8_t is_md[2] = {0,0};
+static uint8_t md_prev[2] = {0,0};
+
+static JAMMA_MODE mode = MODE_DB9;
+static struct repeating_timer read_timer;
+static uint8_t inited = 0;
+
 static void init_jamma() {
   db9_data = 0;
-  db9_Changed = 0;
-  db9_debounce = 0;
-  db9_debounce_data = 0;
-
+  
 #ifdef JAMMA_JAMMA
   jamma_data = 0;
   jamma_debounce = 0;
@@ -76,6 +107,23 @@ static void do_debounce(uint32_t _data, uint32_t *data, uint32_t *debounce_data,
       *data = _data;
     }
   }
+}
+
+void jamma_SetMode(JAMMA_MODE new_mode) {
+  if (new_mode == mode) return;
+  
+  if (inited == 2) {
+    jamma_Kill();
+    // printf("setting mode to from %d to %d\n", mode, new_mode);
+    mode = new_mode;
+    jamma_InitEx(1);
+  } else {
+    mode = new_mode;
+  }
+}
+
+JAMMA_MODE jamma_GetMode() {
+  return mode;
 }
 
 static void gpio_callback(uint gpio, uint32_t events) {
@@ -102,30 +150,128 @@ static void gpio_callback(uint gpio, uint32_t events) {
   }
 }
 
-static void pio_callback() {
-  uint32_t _data;
-  pio_interrupt_clear (jamma_pio, 0);
-
-  if (!pio_sm_is_rx_fifo_empty(jamma_pio, jamma_sm)) {
-    _data = pio_sm_get_blocking(jamma_pio, jamma_sm);
-    do_debounce(_data, &db9_data, &db9_debounce_data, &db9_debounce, &db9_Changed);
-    joydata[0] = ~(db9_data >> (jamma_bitshift + 8));
-    joydata[1] = ~(db9_data >> jamma_bitshift);
-  }
-
-#ifdef JAMMA_JAMMA
-  if (!pio_sm_is_rx_fifo_empty(jamma_pio, jamma2_sm)) {
-    _data = pio_sm_get_blocking(jamma_pio, jamma2_sm);
-    do_debounce(_data, &jamma_data, &jamma_debounce_data, &jamma_debounce, &jamma_Changed);
-  }
-#endif
+static uint8_t db9_translate(uint8_t d) {
+  return (d >> 4) | ((d & 8) << 1) | ((d & 4)) << 3;
 }
 
-static uint8_t inited = 0;
+#ifdef MDDEBUG
+#define mddebug(a) printf a
+#else
+#define mddebug(a)
+#endif
+
+static uint8_t process_frame_stick(uint8_t stick, uint8_t this) {
+  uint8_t nr = 0;
+
+  mddebug(("stick %d: md_prev[stick] %02X this %02X\n", stick, md_prev[stick], this));
+  if ((md_prev[stick] & 0xf0) == 0xf0) {
+    mddebug(("6 button this %02X\n", this));
+    joydata_md[stick] &= ~(JOY_SELECT|JOY_X|JOY_Y|JOY_L);
+    joydata_md[stick] |= ((this & 0xe0) << 3) | ((this & 0x10) << 2);
+    nr ++;
+  } else if ((md_prev[stick] & 0x30) == 0x30) {
+    mddebug(("3a button this %02X\n", this));
+    joydata_md[stick] &= ~(JOY_B | JOY_R);
+    joydata_md[stick] |= ((this & 0x08) << 2) | ((this & 0x04) << 9);
+    nr ++;
+  } else if ((this & 0x30) == 0x30) {
+    mddebug(("3b button this %02X\n", this));
+    joydata_md[stick] &= ~(JOY_START | JOY_A);
+    joydata_md[stick] |= ((this & 0x04) << 5) | ((this & 0x08) << 1);
+    nr ++;
+  } else if ((this & 0x30) != 0x30 && (md_prev[stick] & 0x30) != 0x30) {
+    mddebug(("regular button this %02X\n", this));
+    if (is_md[stick]) {
+      joydata_md[stick] &= ~(JOY_B | JOY_MOVE);
+      joydata_md[stick] |= (this >> 4) | 
+        ((this & 0x08) << 1);
+    } else {
+      joydata[stick] = db9_translate(this);
+    }
+  }
+
+  md_prev[stick] = this;
+  return nr;
+}
+
+static void process_frame(uint8_t nr[2], uint32_t data) {
+  nr[1] += process_frame_stick(1, ~data >> 8);
+  nr[0] += process_frame_stick(0, ~data >> 16);
+}
+
+static void pio_callback_md() {
+  int i = 0;
+  uint8_t nr[2] = {0,0};
+
+  md_prev[0] = md_prev[1] = 0x00;
+  while (!pio_sm_is_rx_fifo_empty(jamma_pio, jamma_sm)) {
+    process_frame(nr, pio_sm_get_blocking(jamma_pio, jamma_sm));
+  }
+  is_md[0] = is_md[0] << 1 | (nr[0] ? 1 : 0);
+  is_md[1] = is_md[1] << 1 | (nr[1] ? 1 : 0);
+}
+
+static void pio_callback_jamma() {
+  uint32_t d;
+  uint16_t w;
+
+  while (!pio_sm_is_rx_fifo_empty(jamma_pio, jamma_sm)) {
+    d = ~pio_sm_get_blocking(jamma_pio, jamma_sm);
+
+    w = (d >> 8) & 0xf0ff;
+    joydata[0] = 
+      ((w & 0xc000) >> 8) | // btn4/btn3
+      ((w & 0x2000) >> 3) | // joy l
+      ((w & 0x1000) >> 1) | // joy r
+      ((w & 0x00f0) >> 4) | // directions
+      ((w & 0x000c) << 2) | // button b / a
+      ((w & 0x0002) << 7) | // button x
+      ((w & 0x0001) << 9); // button y
+
+    w = (d >> 16) & 0xff0f;
+    joydata[1] = 
+      ((w & 0x0c00) >> 4) | // btn4/btn3
+      ((w & 0x0200) << 1) | // joy l
+      ((w & 0x0100) << 3) | // joy r
+      (w & 0x000f) | // directions
+      ((w & 0xc000) >> 10) | // button b / a
+      ((w & 0x2000) >> 5) | // button x
+      ((w & 0x1000) >> 3); // button y
+  }
+}
+
+static void pio_callback_db9() {
+  uint32_t d;
+  while (!pio_sm_is_rx_fifo_empty(jamma_pio, jamma_sm)) {
+    d = ~pio_sm_get_blocking(jamma_pio, jamma_sm);
+    joydata[0] = db9_translate((d >> 16) & 0xff);
+    joydata[1] = db9_translate((d >> 8) & 0xff);
+  }
+}
+
+typedef void (*jamma_cb_t)();
+
+static jamma_cb_t jamma_cb[MODE_MAX] = {
+  pio_callback_db9,
+  pio_callback_jamma,
+  pio_callback_md
+};
+
+static void pio_callback() {
+  jamma_cb[mode]();
+  pio_interrupt_clear (jamma_pio, 0);
+}
+
+static bool ReadKick(struct repeating_timer *t) {
+  pio_interrupt_clear (jamma_pio, 7);
+  return inited == 2;
+}
 
 void jamma_InitDB9() {
   /* don't need to detect shifting */
   init_jamma();
+
+  memset(&is_md, 0, sizeof is_md);
   detect_jamma_bitshift = 0;
   jamma_bitshift = 8;
 
@@ -147,26 +293,28 @@ void jamma_InitDB9() {
 #endif
 
 #ifdef JAMMA_OFFSET
-  pio_add_program_at_offset(jamma_pio, &jammadb9_program, JAMMA_OFFSET);
+  pio_add_program_at_offset(jamma_pio, 
+    mode == MODE_DB9 ? &jammadb9ns_program : &jammadb9_program,
+    JAMMA_OFFSET);
   jamma_offset = JAMMA_OFFSET;
 #else
-  jamma_offset = pio_add_program(jamma_pio, &jammadb9_program);
+  if (mode == MODE_DB9) {
+    jamma_offset = pio_add_program(jamma_pio, &jammadb9_program);
+  } else {
+    jamma_offset = pio_add_program(jamma_pio, &jammadb9ns_program);
+  }
 #endif
-  jammadb9_program_init(jamma_pio, jamma_sm, jamma_offset, GPIO_RP2U_XLOAD, GPIO_RP2U_XDATA);
-#ifdef JAMMA_JAMMA
-  jammadb9_program_init(jamma_pio, jamma2_sm, jamma_offset, GPIO_RP2U_XLOAD, GPIO_RP2U_XDATAJAMMA);
-#endif
+
+  jammadb9_program_init(jamma_pio, jamma_sm, jamma_offset, GPIO_RP2U_XLOAD, 
+    mode == MODE_JAMMA ? GPIO_RP2U_XDATAJAMMA : GPIO_RP2U_XDATA, mode != MODE_DB9);
+
   pio_sm_clear_fifos(jamma_pio, jamma_sm);
-#ifdef JAMMA_JAMMA
-  pio_sm_clear_fifos(jamma_pio, jamma2_sm);
-#endif
   irq_set_exclusive_handler (JAMMA_PIO_IRQ, pio_callback);
-  pio_set_irq0_source_enabled(jamma_pio, jamma_sm, true);
-#ifdef JAMMA_JAMMA
-  pio_set_irq0_source_enabled(jamma_pio, jamma2_sm, true);
-#endif
+  pio_set_irq0_source_enabled(jamma_pio, pis_interrupt0, true);
   irq_set_enabled (JAMMA_PIO_IRQ, true);
+
   inited = 2;
+  add_repeating_timer_ms(20, ReadKick, NULL, &read_timer);
 #endif
 }
 
@@ -211,7 +359,6 @@ void jamma_InitUSB() {
   gpioirq_SetCallback(IRQ_JAMMA, gpio_callback);
   gpio_set_irq_enabled(GPIO_RP2U_XLOAD, GPIO_IRQ_EDGE_FALL, true);
 
-  // pio_sm_put_blocking(jamma_pio, jamma_sm, reload_data);d
   pio_interrupt_clear (jamma_pio, 0);
   inited = 1;
 #endif
@@ -220,21 +367,26 @@ void jamma_InitUSB() {
 void jamma_Kill() {
 #ifndef NO_JAMMA
   if (!inited) return;
+
+  if (inited == 2) cancel_repeating_timer(&read_timer);
+
   // disable interrupts
   gpio_set_irq_enabled(GPIO_RP2U_XLOAD, GPIO_IRQ_EDGE_FALL, false);
   pio_set_irq0_source_enabled(jamma_pio, jamma_sm, false);
 #ifdef JAMMA_JAMMA
-  pio_set_irq0_source_enabled(jamma_pio, jamma2_sm, false);
+  if (inited == 1) pio_set_irq1_source_enabled(jamma_pio, jamma2_sm, false);
 #endif
   gpioirq_SetCallback(IRQ_JAMMA, NULL);
 
   // shutdown sm
   pio_sm_set_enabled(jamma_pio, jamma_sm, false);
 #ifdef JAMMA_JAMMA
-  pio_sm_set_enabled(jamma_pio, jamma2_sm, false);
+  if (inited == 1) pio_sm_set_enabled(jamma_pio, jamma2_sm, false);
 #endif
   if (inited == 2) {
-    pio_remove_program(jamma_pio, &jammadb9_program, jamma_offset);
+    pio_remove_program(jamma_pio,
+      mode == MODE_DB9 ? &jammadb9ns_program : &jammadb9_program,
+      jamma_offset);
   } else {
     pio_remove_program(jamma_pio, &jamma_program, jamma_offset);
 #ifdef JAMMA_JAMMA
@@ -274,21 +426,17 @@ void jamma_SetData(uint8_t inst, uint32_t data) {
   debug(("jamma_SetData: inst %d data %08X\n", inst, data));
   joydata[inst] = data & 0xff;
   reload_data = (joydata[1] << 8) | joydata[0];
-}
+ }
 
 uint32_t jamma_GetData(uint8_t inst) {
-  debug(("jamma_GetData: %d returns %02X\n", inst, joydata[inst]));
-  return joydata[inst];
-}
-
-int jamma_HasChanged() {
-  uint8_t changed = db9_Changed;
-  db9_Changed = 0;
-  return changed;
-}
-
-uint32_t jamma_GetDataAll() {
-  return db9_data >> jamma_bitshift;
+  if (mode == MODE_DB9) {
+    return joydata[inst];
+  } else if (mode == MODE_JAMMA) {
+    return joydata[inst];
+  } else if (mode == MODE_MEGADRIVE) {
+    return is_md[inst] ? joydata_md[inst] : joydata[inst];
+  }
+  return 0;
 }
 
 #ifdef JAMMA_JAMMA
@@ -298,11 +446,5 @@ uint32_t jamma_GetJamma() {
 
 uint8_t jamma_GetDepth() {
   return 32 - jamma_bitshift - 1;
-}
-
-int jamma_HasChangedJamma() {
-  uint8_t changed = jamma_Changed;
-  jamma_Changed = 0;
-  return changed;
 }
 #endif

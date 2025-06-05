@@ -210,8 +210,6 @@ void DB9Update(uint8_t joy_num, uint8_t usbjoy) {
 }
 #else
 void InitDB9() {}
-const static uint8_t joylut[] = {JOY_UP, JOY_DOWN, JOY_LEFT, JOY_RIGHT, JOY_BTN1, JOY_BTN2, 0, 0};
-
 /*
 JAMMA
   P1
@@ -222,18 +220,6 @@ JAMMA
 */
 
 #ifdef JAMMA_JAMMA
-const static uint16_t jammalut[2][24] = {
-  {
-    JOY_Y, JOY_X, JOY_A, JOY_B, JOY_RIGHT, JOY_LEFT, JOY_DOWN, JOY_UP,
-    0, 0, 0, 0, JOY_R, JOY_L, JOY_BTN3, JOY_BTN4, 
-    0, 0, 0, 0, 0, 0, 0, 0
-  }, {
-    0, 0, 0, 0, 0, 0, 0, 0,
-    JOY_RIGHT, JOY_LEFT, JOY_DOWN, JOY_UP, 0, 0, 0, 0,
-    JOY_R, JOY_L, JOY_BTN3, JOY_BTN4, JOY_Y, JOY_X, JOY_A, JOY_B
-  }
-};
-
 const static uint8_t jammadb9lut[2][24] = {
   {
     DB9_BTN4, DB9_BTN3, DB9_BTN2, DB9_BTN1, DB9_RIGHT, DB9_LEFT, DB9_DOWN, DB9_UP,
@@ -284,46 +270,10 @@ void KeypressJamma(uint16_t prev, uint16_t curr, uint16_t mask, uint8_t keyscan)
 #endif
 
 char GetDB9(char index, unsigned char *joy_map) {
-  // *joy_map is set to a combination of the following bitmapped values
-  // JOY_UP, JOY_DOWN, JOY_LEFT, JOY_RIGHT, JOY_BTN1, JOY_BTN2
-
   uint32_t d = jamma_GetData(index);
-  uint32_t mask = 0x80;
-  uint8_t ndx = 0;
-  uint16_t j = 0;
-
-  if (d != 0xff) { // joystick is properly set up
-    while (mask) {
-      if (d & mask) j |= joylut[ndx];
-      ndx++;
-      mask >>= 1;
-    }
-  }
-
-#ifdef JAMMA_JAMMA
-  d = ~jamma_GetJamma();
-  uint8_t depth = jamma_GetDepth();
-  for (ndx = 0; ndx < depth; ndx++) {
-    j |= (d & 1) ? jammalut[index][ndx] : 0;
-    d >>= 1;
-  }
-#endif
-  
-#ifndef JAMMA_JAMMA
-#ifdef DEBUG
   static uint16_t lastdb9[2];
-  if (lastdb9[index] != j) {
-    debug(("GetDB9: index %d joy %04x\n", index, j));
-    lastdb9[index] = j;
-  }
-#endif
-
-  *joy_map = d == 0xff ? 0 : j;
-  return 1;
-#else
-  static uint16_t lastdb9[2];
-  if (lastdb9[index] != j) {
-    uint16_t joy_map2 = virtual_joystick_mapping(0x00db, index, j);
+  if (lastdb9[index] != d) {
+    uint16_t joy_map2 = virtual_joystick_mapping(0x00db, index, d);
     uint8_t idx = mist_cfg.joystick_db9_fixed_index ? user_io_joystick_renumber(index) : joystick_count() + index;
 
     idx = (idx ^ mist_cfg.joystick_db9_swap) & 1;
@@ -339,16 +289,18 @@ char GetDB9(char index, unsigned char *joy_map) {
     /* P1START send also kb '1'
        P2START send also kb '2' */
 
-    KeypressJamma(lastdb9[index], j, JOY_L, index ? 0x36 : 0x2e); //5/6
-    KeypressJamma(lastdb9[index], j, JOY_L, index ? 0x35 : 0x22); //X/Y;
-    KeypressJamma(lastdb9[index], j, JOY_BTN3, index ? 0x36 : 0x2e); //5/6
-    KeypressJamma(lastdb9[index], j, JOY_BTN3, index ? 0x35 : 0x22); //X/Y
-    KeypressJamma(lastdb9[index], j, JOY_BTN4, index ? 0x1e : 0x16); //1/2
-    
-    lastdb9[index] = j;
+#ifndef MB2
+    if (jamma_GetMode() == MODE_JAMMA) {
+      KeypressJamma(lastdb9[index], d, JOY_L, index ? 0x36 : 0x2e); //5/6
+      KeypressJamma(lastdb9[index], d, JOY_L, index ? 0x35 : 0x22); //X/Y;
+      KeypressJamma(lastdb9[index], d, JOY_BTN3, index ? 0x36 : 0x2e); //5/6
+      KeypressJamma(lastdb9[index], d, JOY_BTN3, index ? 0x35 : 0x22); //X/Y
+      KeypressJamma(lastdb9[index], d, JOY_BTN4, index ? 0x1e : 0x16); //1/2
+    }
+#endif
+    lastdb9[index] = d;
   }
   return 0;
-#endif
 }
 
 const static uint8_t inv_joylut[] = {DB9_BTN4, DB9_BTN3, DB9_BTN2, DB9_BTN1, DB9_UP, DB9_DOWN, DB9_LEFT, DB9_RIGHT};

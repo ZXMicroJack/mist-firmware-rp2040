@@ -1401,7 +1401,31 @@ gpioirq_Init();
 
 #ifdef TEST_JAMMA
       case 'j': jamma_InitEx(0); printf("joypad 0 %X 1 %X\n", jamma_GetData(0), jamma_GetData(1)); break;
-      case 'J': jamma_InitEx(1); printf("joypad 0 %X 1 %X\n", jamma_GetData(0), jamma_GetData(1)); break;
+      case 'J': {
+        int w = getchar();
+        if (w >= '0' && w <= '2') {
+          jamma_SetMode(w - '0');
+          jamma_InitEx(1);
+          printf("joypad 0 %X 1 %X\n", jamma_GetData(0), jamma_GetData(1)); break;
+        }
+        break;
+      }
+      case 'Y': {
+        uint32_t prev[2] = {0,0}, now[2];
+        while (getchar_timeout_us(10) < 0) {
+          for (int i=0; i<2; i++) {
+            now[i] = jamma_GetData(i);
+          }
+         
+          if (prev[0] != now[0] || prev[1] != now[1]) {
+            printf("0-%08X 1-%08X\n", now[0], now[1]);
+            prev[0] = now[0];
+            prev[1] = now[1];
+          }
+        }
+        break;
+      }
+
       case 'y': printf("db9 %08X jamma %08X depth %d\n", jamma_GetDataAll(), jamma_GetJamma(), jamma_GetDepth()); break;
       case 'x': jamma_Kill(); printf("kill jamma\n"); break;
       

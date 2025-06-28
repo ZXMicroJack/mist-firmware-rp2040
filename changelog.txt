@@ -81,5 +81,22 @@ don't understand coin slot.
 - Fixed XInput mapping for L/R L2/R2
 - Added Xinput.
 
+v13 (v2.14)
+-----------
+- added USB serial port (FTDI/CH341/PL2303/CDC)
+- Ability to make universal SD card (for all platforms)
+- DB9 swap for JAMMA corrections for core that have swapped controls.
+
+v14 (v2.15)
+-----------
+- Fix core loading from ZX3 files where the trailing data causes firmware to crash.
+- Fixed joypad swapping interfering with USB joypad.
+- Stopped legacy dribbling of db9 signals on startup
+- Fixed FPGA buffering issue.
+- Fixed USB to DB9
+- Driving db9 working again.
+- Fixed echoing of DB9 messages, flash update message.
+- Added MEGA 6 button.
+- Fixed direct mode for Amiga.
 
 

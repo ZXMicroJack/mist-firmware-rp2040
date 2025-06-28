@@ -19,7 +19,7 @@
 #include "crc16.h"
 
 #include "pins.h"
-// #define DEBUG
+//#define DEBUG
 #include "debug.h"
 
 static int is_sdhc = 0;
@@ -313,12 +313,12 @@ static uint8_t sd_readsector_ll(pio_spi_inst_t *spi, uint32_t lba, uint8_t *sect
   if (!sector) gpio_put(SD_DIRECT_MODE_GPIO, 0);
 #endif
   get_bytes(spi, sector, 512);
-  
-  uint8_t crc[2];
-  get_bytes(spi, crc, sizeof crc);
 #ifdef SD_DIRECT_MODE_GPIO
   if (!sector) gpio_put(SD_DIRECT_MODE_GPIO, 1);
 #endif
+  
+  uint8_t crc[2];
+  get_bytes(spi, crc, sizeof crc);
   sd_select(spi, 1);
   
   uint16_t crcw = (crc[0] << 8) | crc[1];

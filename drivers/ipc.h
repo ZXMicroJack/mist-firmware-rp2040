@@ -40,6 +40,7 @@
 #define IPC_SETMISTER       0x15
 #define IPC_SETFASTMODE     0x16
 #define IPC_USB_SETCONFIG   0x17
+#define IPC_SETJAMMAMODE    0x18
 
 // return codes
 #define IPC_USB_ATTACHED        0x40

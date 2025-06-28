@@ -298,8 +298,9 @@ set(flash_opts_zx1
   "-DPICOSYNTH"
 )
 set(ram_opts
-  "-DBUFFER_FPGA"
+  # "-DBUFFER_FPGA"
   "-DNO_FILE_INDEX"
+  "-DNO_LOGO"
 )
 set(zxtres_opts
   "-DMIST_ROOT=\"/MIST\""
@@ -337,7 +338,7 @@ set(mb2_opts
 
 ####################################################################################
 # Main build RAM test build for functionality Xilinx ZXTres
-#set(testarch xilinx)
+set(testarch xilinx)
 # set(archdefs "-DXILINX")
 # set(archdefs   "-DALTERA_FPGA" "-DQMTECH")
 
@@ -376,11 +377,11 @@ pico_set_binary_type(mistram no_flash)
 
 target_compile_options(mistram PUBLIC
   ${common_opts}
-  # ${xilinx_opts}
-  ${altera_opts}
+  ${xilinx_opts}
+  # ${altera_opts}
   ${ram_opts}
-  ${neptuno_opts}
-  # ${zxtres_opts}
+  # ${neptuno_opts}
+  ${zxtres_opts}
   ${picosynth_opts}
   ${mb1_opts}
 )

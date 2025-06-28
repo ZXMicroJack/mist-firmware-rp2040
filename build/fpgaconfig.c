@@ -22,17 +22,25 @@
 
 #include "drivers/fpga.h"
 #include "drivers/bitfile.h"
-//#define DEBUG
+// #define DEBUG
 #include "drivers/debug.h"
 
+#define NO_ERROR          0
+#define NO_READ           1
+#define NO_READ_NEAREND   2 
+
+#define NEAREND           (64*1024)
+
 // NB: These for production
-#ifndef PICO_NO_FLASH
+#if !PICO_NO_FLASH
 #define BUFFER_SIZE     16 // PACKETS
 #define BUFFER_SIZE_MASK  0xf
 #else
 // NB: Use these for debugging mechanism.
-#define BUFFER_SIZE     4 // PACKETS
-#define BUFFER_SIZE_MASK  0x3
+// #define BUFFER_SIZE     4 // PACKETS
+// #define BUFFER_SIZE_MASK  0x3
+#define BUFFER_SIZE     2 // PACKETS
+#define BUFFER_SIZE_MASK  0x1
 #endif
 #define NR_BLOCKS(a) (((a)+511)>>9)
 
@@ -51,15 +59,20 @@ static uint8_t read_next_block(void *ud, uint8_t *data) {
   configFpga *cf = (configFpga *)ud;
 
 #ifdef BUFFER_FPGA
-  // debug(("read_next_block cf->c = %d cf->size = %d\n", cf->c, cf->size));
+  debug(("read_next_block cf->c = %d cf->size = %d\n", cf->c, cf->size));
 #endif
   if (f_read(&cf->file, data, cf->size > 512 ? 512 : cf->size, &br) != FR_OK) {
-    cf->error = 1;
+    debug(("read_next_block: Failed to read\n"));
+    debug(("read_next_block: Failed to read\n"));
+    debug(("read_next_block: Failed to read\n"));
+    debug(("read_next_block: Failed to read\n"));
+    cf->error = cf->size <= NEAREND ? NO_READ_NEAREND : NO_READ;
     return 0;
   }
 
   if (br > cf->size) {
-    cf->error = 0;
+    debug(("read_next_block: Finished br %d size %d\n", br, cf->size));
+    cf->error = NO_ERROR;
     f_close(&cf->file);
     return 0;
   }
@@ -72,6 +85,9 @@ static uint8_t read_next_block(void *ud, uint8_t *data) {
 
 static void read_next_block_buffered_fill(configFpga *brl) {
   uint8_t result;
+
+  debug(("read_next_block_buffered_fill: size %d error %d\n", 
+    brl->size, brl->error));
 
   if (!brl->size) return; // no more blocks don't try to read more.
   if (brl->error) return; // error encountered
@@ -92,7 +108,7 @@ uint8_t read_next_block_buffered(void *user_data, uint8_t *block) {
   uint8_t result = 0;
   
   configFpga *brl = (configFpga *)user_data;
-  // debug(("read_next_block_buffered cf->c = %d\n", brl->c));
+  debug(("read_next_block_buffered cf->c = %d / %d\n", brl->c, BUFFER_SIZE));
   if (brl->c) {
     memcpy(block, brl->buff[brl->l], 512);
     brl->c --;
@@ -217,7 +233,7 @@ static unsigned char ConfigureFpgaLL(const char *bitfile) {
   }
 
   fileSize = cf->size = f_size(&cf->file);
-  cf->error = 0;
+  cf->error = NO_ERROR;
 
   debug(("cf.size = %ld\n", cf->size));
   iprintf("FPGA bitstream file %s opened, file size = %ld\r", bitfile, cf->size);
@@ -262,7 +278,11 @@ static unsigned char ConfigureFpgaLL(const char *bitfile) {
 #endif
   fpga_claim(false);
 
-  int result = !cf->error;
+#ifdef XILINX
+  int result = cf->error != NO_READ;
+#else
+  int result = cf->error == NO_ERROR;
+#endif
   free(cf);
 
   // returns 1 if success / 0 on fail

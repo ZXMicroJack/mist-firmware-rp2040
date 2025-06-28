@@ -362,8 +362,8 @@ int mist_init() {
     midi_init();
 #endif
 
-#ifdef ZXUNO
     settings_board_load();
+#ifdef ZXUNO
     settings_load(1);
     if (!settings_boot_menu() || (prev_cdir == fs.cdir)) {
       BootFromFlash();

@@ -23,11 +23,24 @@ JAMMA
 #define DB9_BTN3        0x02
 #define DB9_BTN4        0x01
 
+typedef enum {
+  MODE_DB9,
+  MODE_JAMMA,
+  MODE_MEGADRIVE,
+  MODE_MAX
+} JAMMA_MODE;
+
+
+void jamma_SetMode(JAMMA_MODE new_mode);
+JAMMA_MODE jamma_GetMode();
+
 uint8_t jamma_GetMisterMode();
 void jamma_InitEx(uint8_t mister);
 void jamma_Init();
 void jamma_SetData(uint8_t inst, uint32_t data);
 uint32_t jamma_GetData(uint8_t inst);
+uint32_t jamma_GetDataMD(uint8_t inst);
+
 uint32_t jamma_GetDataAll();
 int jamma_HasChanged();
 void jamma_Kill();

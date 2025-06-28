@@ -139,6 +139,8 @@ bool test_fpga_get_next_block_stdin(void *user_data, uint8_t *data) {
 
 #define TEST_WRITE_BLOCK 0x80010
 
+static uint16_t db9data = 0;
+
 void test_sector_read(pio_spi_inst_t *spi) {
   uint8_t sect[512];
   printf("------ READ SECTORS ------\n");
@@ -1401,8 +1403,61 @@ gpioirq_Init();
 
 #ifdef TEST_JAMMA
       case 'j': jamma_InitEx(0); printf("joypad 0 %X 1 %X\n", jamma_GetData(0), jamma_GetData(1)); break;
-      case 'J': jamma_InitEx(1); printf("joypad 0 %X 1 %X\n", jamma_GetData(0), jamma_GetData(1)); break;
-      case 'y': printf("db9 %08X jamma %08X depth %d\n", jamma_GetDataAll(), jamma_GetJamma(), jamma_GetDepth()); break;
+      case 'J': {
+        int w = getchar();
+        if (w >= '0' && w <= '2') {
+          jamma_SetMode(w - '0');
+          jamma_InitEx(1);
+          printf("joypad 0 %X 1 %X\n", jamma_GetData(0), jamma_GetData(1)); break;
+        }
+        break;
+      }
+      case 'Y': {
+        uint32_t prev[2] = {0,0}, now[2];
+        while (getchar_timeout_us(10) < 0) {
+          for (int i=0; i<2; i++) {
+            now[i] = jamma_GetData(i);
+          }
+         
+          if (prev[0] != now[0] || prev[1] != now[1]) {
+            printf("0-%08X 1-%08X\n", now[0], now[1]);
+            prev[0] = now[0];
+            prev[1] = now[1];
+          }
+        }
+        break;
+      }
+
+      case 'y': {
+        extern int pioints;
+        db9data = db9data ? (db9data >> 1) : 0x8000;
+        jamma_SetData(0, db9data>>8);
+        jamma_SetData(1, db9data&0xff);
+        printf("db9data %04X pioints %d\n", db9data, pioints);
+        break;
+      }
+
+      case 'k': {
+        static uint8_t inited = 0;
+        if (!inited) {
+          ipc_InitMaster();
+          inited = 1;
+        }
+
+        static uint16_t jammadata = 0;
+        jammadata = jammadata ? (jammadata >> 1) : 0x8000;
+
+        uint8_t data[2];
+        data[0] = 0;
+        data[1] = jammadata>>8;
+        ipc_Command(IPC_SENDJAMMA, data, sizeof data);
+        data[0] = 1;
+        data[1] = jammadata&0xff;
+        ipc_Command(IPC_SENDJAMMA, data, sizeof data);
+        break;
+      }
+
+      // case 'y': printf("db9 %08X jamma %08X depth %d\n", jamma_GetDataAll(), jamma_GetJamma(), jamma_GetDepth()); break;
       case 'x': jamma_Kill(); printf("kill jamma\n"); break;
       
       // case 'd': jamma_DetectPoll(0); break;

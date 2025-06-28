@@ -89,7 +89,7 @@ uint8_t readback_fifo_buf[4096];
 
 void ipc_Debug() {
   debug(("len %d got_cmd %d error %d response %02X\n", len, got_cmd, error, response));
-  hexdump1(cmdbuff, 130);
+//  hexdump1(cmdbuff, 130);
 }
 
 fifo_t *ipc_GetFifo() {

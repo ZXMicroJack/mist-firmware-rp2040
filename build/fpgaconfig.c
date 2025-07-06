@@ -196,7 +196,7 @@ static unsigned char ConfigureFpgaLL(const char *bitfile) {
     // load the default core.
     if (n>0) {
       inhibit_reset = 0;
-      return 1;
+      return ERROR_NONE;
     } else {
       bitfile = NULL;
     }
@@ -209,7 +209,7 @@ static unsigned char ConfigureFpgaLL(const char *bitfile) {
     fpga_claim(false);
     fpga_reset();
     inhibit_reset = 0;
-    return 1;
+    return ERROR_NONE;
   }
 #endif
 
@@ -226,7 +226,7 @@ static unsigned char ConfigureFpgaLL(const char *bitfile) {
     printf("!!! booting from flash!!!\n");
     BootFromFlash();
     inhibit_reset = 0;
-    return 1;
+    return ERROR_NONE;
 #else
     FatalError(4);
 #endif
@@ -279,9 +279,9 @@ static unsigned char ConfigureFpgaLL(const char *bitfile) {
   fpga_claim(false);
 
 #ifdef XILINX
-  int result = cf->error != NO_READ;
+  int result = cf->error != NO_READ ? ERROR_NONE : ERROR_READ_BITSTREAM_FAILED;
 #else
-  int result = cf->error == NO_ERROR;
+  int result = cf->error == NO_ERROR ? ERROR_NONE : ERROR_READ_BITSTREAM_FAILED;
 #endif
   free(cf);
 

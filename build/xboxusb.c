@@ -76,7 +76,7 @@ uint8_t usb_xbox_init(usb_device_t *dev, usb_device_descriptor_t *dev_desc) {
 	dev->xbox_info.interval = 4;
 	dev->xbox_info.inEp.epAddr = 0x01;
 	dev->xbox_info.inEp.epType = EP_TYPE_INTR;
-	dev->xbox_info.inEp.maxPktSize = XBOX_EP_MAXPKTSIZE;
+	dev->xbox_info.inEp.maxPktSize = 32;
 	dev->xbox_info.inEp.bmNakPower = USB_NAK_NOWAIT;
 	dev->xbox_info.inEp.bmSndToggle = 0;
 	dev->xbox_info.inEp.bmRcvToggle = 0;

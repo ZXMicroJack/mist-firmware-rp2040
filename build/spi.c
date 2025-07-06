@@ -108,6 +108,7 @@ void spi_write(const char *addr, uint16_t len) {
 unsigned char SPI(unsigned char outByte) {
   uint8_t dst;
   spi_write_read_blocking (spi, &outByte, &dst, 1);
+  debug(("SPI: in %02X out %02X\n", outByte, dst));
   return dst;
 }
 

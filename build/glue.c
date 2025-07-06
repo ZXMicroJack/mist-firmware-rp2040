@@ -301,3 +301,6 @@ unsigned char CheckFirmware(char *name) {
 // ps2rx F0
 // ps2rx 12
 
+
+uint8_t *asix_get_mac(void) {
+}

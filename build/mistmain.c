@@ -94,6 +94,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #error "newlib lacks support of long long type in IO functions. Please use a toolchain that was compiled with option --enable-newlib-io-long-long."
 #endif
 
+#define d printf(__FILE__"[%d]\n", __LINE__);
+
 const char version[] = {"$VER:ATH" VDATE};
 
 unsigned char Error;
@@ -290,7 +292,7 @@ int mist_init() {
 #ifdef USB_STORAGE
     }
 #endif
-
+d
     if (!FindDrive()) {
 #ifdef BOOT_FLASH_ON_ERROR
         BootFromFlash();
@@ -299,7 +301,7 @@ int mist_init() {
         FatalError(ERROR_INVALID_DATA);
 #endif
     }
-
+d
     disk_ioctl(fs.pdrv, GET_SECTOR_COUNT, &storage_size);
     storage_size >>= 11;
 
@@ -311,16 +313,16 @@ int mist_init() {
 #ifdef ZXUNO
     DWORD prev_cdir = fs.cdir;
 #endif
-    ChangeDirectoryName(MIST_ROOT);
+    ChangeDirectoryName(MIST_ROOT);d
 
-    arc_reset();
+    arc_reset();d
 
-    font_load();
+    font_load();d
 
-    user_io_init();
+    user_io_init();d
 
     // tos config also contains cdc redirect settings used by minimig
-    tos_config_load(-1);
+    tos_config_load(-1);d
 
     char mod = -1;
 
@@ -334,10 +336,10 @@ int mist_init() {
             mod = arc_open(s);
         }
     }
-
-    if(mod < 0 || !strlen(arc_get_rbfname())) {
+d
+    if(mod < 0 || !strlen(arc_get_rbfname())) {d
         fpga_init(NULL); // error opening default ARC, try with default RBF
-    } else {
+    d} else {
         user_io_set_core_mod(mod);
         strncpy(s, arc_get_rbfname(), sizeof(s)-5);
 #ifdef XILINX
@@ -347,9 +349,9 @@ int mist_init() {
 #endif
         fpga_init(s);
     }
-
+d
     usb_dev_open();
-
+d
 #ifdef ZXUNO
   DB9SetLegacy(0);
 #else
@@ -357,11 +359,11 @@ int mist_init() {
     jamma_InitEx(1);
 #endif
 #endif
-
+d
 #ifndef USBFAKE
     midi_init();
 #endif
-
+d
     settings_board_load();
 #ifdef ZXUNO
     settings_load(1);

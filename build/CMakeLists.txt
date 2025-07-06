@@ -33,13 +33,13 @@ set(driver_src
   ../drivers/fpga.c
   ../drivers/pio_spi.c
   ../drivers/ps2.c
-  ../drivers/ps2detect.c
+  #  ../drivers/ps2detect.c
   ../drivers/sdcard.c
   ../drivers/bitfile.c
   ../drivers/midi.c
   ../drivers/debug.c
   ../drivers/fifo.c
-  ../drivers/kbd.c
+  # ../drivers/kbd.c
   ../drivers/jamma.c
   ../drivers/gpioirq.c
   ../drivers/crc16.c
@@ -150,6 +150,47 @@ set(mistfirmware_src
   ../mist-firmware/FatFs/ffsystem.c
   ../mist-firmware/FatFs/ffunicode.c
   ../mist-firmware/usb/joymapping.c
+  ../mist-firmware/zx_col.c
+  ../mist-firmware/snes.c
+  osdx.c
+)
+
+set(mistfirmwareram_src
+  ../mist-firmware/arc_file.c
+  ../mist-firmware/archie.c
+  ../mist-firmware/boot.c
+  ../mist-firmware/cdc_control.c
+  ../mist-firmware/config.c
+  ../mist-firmware/cue_parser.c
+  ../mist-firmware/data_io.c
+  ../mist-firmware/fat_compat.c
+  ../mist-firmware/fdd.c
+  ../mist-firmware/font.c
+  ../mist-firmware/fpga.c
+  ../mist-firmware/hdd.c
+  ../mist-firmware/idxfile.c
+  ../mist-firmware/ikbd.c
+  ../mist-firmware/ini_parser.c
+  ../mist-firmware/menu-8bit.c
+  ../mist-firmware/menu.c
+  ../mist-firmware/menu-minimig.c
+  ../mist-firmware/mist_cfg.c
+  ../mist-firmware/neocd.c
+  ../mist-firmware/pcecd.c
+  ../mist-firmware/settings.c
+  ../mist-firmware/state.c
+  ../mist-firmware/swap.c
+  tosram.c
+  ../mist-firmware/user_io.c
+  ../mist-firmware/utils.c
+  ../mist-firmware/xmodem.c
+  ../mist-firmware/FatFs/diskio.c
+  ../mist-firmware/FatFs/ff.c
+  ../mist-firmware/FatFs/ffsystem.c
+  ../mist-firmware/FatFs/ffunicode.c
+  ../mist-firmware/usb/joymapping.c
+  ../mist-firmware/zx_col.c
+  ../mist-firmware/snes.c
   osdx.c
 )
 
@@ -188,6 +229,8 @@ set(mistfirmware_opts_common
   "-DUPDATE_DB9"
   "-DLEGACY_CORE_SUPPORT"
   "-DCONTROL_MENU_USING_ANY_JOYPAD"
+  "-DSPI_MINIMIGV1_HACK=SPI\(0xff\)\\\;"
+  "-DEnableFpgaMinimig=EnableFpga"
 )
 
 set(mistfirmware_opts_usb
@@ -196,12 +239,27 @@ set(mistfirmware_opts_usb
 )
 
 # mist library
+add_library(mistfirmwareram STATIC ${mistfirmwareram_src})
+target_compile_options(mistfirmwareram PUBLIC
+  ${mistfirmware_opts_common}
+  "-DMIST_ROOT=\"/\""
+  "-DCOREEXT=\"RBF\""
+  "-DCOREEXTOTHER=\"NP1\""
+  "-Diprintf=printf"
+  "-DNO_FILE_INDEX"
+  "-DNO_LOGO"
+  "-DNO_HELP_TEXTS"
+  "-DHARDFILES=1"
+  "-DNO_CUSTOM_HELPTEXT"
+)
+
 add_library(mistfirmware STATIC ${mistfirmware_src})
 target_compile_options(mistfirmware PUBLIC
   ${mistfirmware_opts_common}
   "-DMIST_ROOT=\"/\""
   "-DCOREEXT=\"RBF\""
   "-DCOREEXTOTHER=\"NP1\""
+  "-Diprintf=printf"
 )
 # mist library xilinx
 add_library(mistfirmwarexilinx STATIC ${mistfirmware_src})
@@ -212,6 +270,23 @@ target_compile_options(mistfirmwarexilinx PUBLIC
   "-DCHECK_REAL_ROOT"
   "-DCOREEXT=\"BIT\""
   "-DCOREEXTOTHER=\"ZXT\""
+)
+
+# mist library xilinx
+add_library(mistfirmwarexilinxram STATIC ${mistfirmwareram_src})
+target_compile_options(mistfirmwarexilinxram PUBLIC
+  ${mistfirmware_opts_common}
+  "-DXILINX"
+  "-DMIST_ROOT=\"/MIST\""
+  "-DCHECK_REAL_ROOT"
+  "-DCOREEXT=\"BIT\""
+  "-DCOREEXTOTHER=\"ZXT\""
+  "-Diprintf=printf"
+  "-DNO_FILE_INDEX"
+  "-DNO_LOGO"
+  "-DNO_HELP_TEXTS"
+  "-DHARDFILES=1"
+  "-DNO_CUSTOM_HELPTEXT"
 )
 
 # mist USB library
@@ -254,6 +329,26 @@ target_compile_options(mistfirmwarezx1 PUBLIC
   "-DCOREEXTOTHER=\"ZX1\""
   )
 
+# mist library
+add_library(mistfirmwarezx1ram STATIC ${mistfirmwareram_src})
+target_compile_options(mistfirmwarezx1ram PUBLIC
+  ${mistfirmware_opts_common}
+  # TODO check if needed
+  "-DNO_FILE_INDEX"
+  "-DXILINX"
+  "-DZXUNO"
+  "-DMIST_ROOT=\"/MIST\""
+  "-DCHECK_REAL_ROOT"
+  "-DCOREEXT=\"BIT\""
+  "-DCOREEXTOTHER=\"ZX1\""
+  "-Diprintf=printf"
+  "-DNO_FILE_INDEX"
+  "-DNO_LOGO"
+  "-DNO_HELP_TEXTS"
+  "-DHARDFILES=1"
+  "-DNO_CUSTOM_HELPTEXT"
+  )
+
   # mist library
 add_library(mistfirmwareusbzx1 STATIC ${mistfirmware_src} ${mistfirmwareusb_src})
 target_compile_options(mistfirmwareusbzx1 PUBLIC
@@ -280,6 +375,11 @@ set(common_opts
 set(altera_opts
   "-DALTERA_FPGA"
   "-DQMTECH"
+)
+set(neptuno1_opts
+  "-DALTERA_FPGA"
+  "-DQMTECH"
+  "-DALTERA_DONT_CHECK_DONE"
 )
 set(xilinx_opts
   "-DXILINX"
@@ -338,7 +438,8 @@ set(mb2_opts
 
 ####################################################################################
 # Main build RAM test build for functionality Xilinx ZXTres
-set(testarch xilinx)
+#set(testarch xilinx)
+set(testarch ram)
 # set(archdefs "-DXILINX")
 # set(archdefs   "-DALTERA_FPGA" "-DQMTECH")
 
@@ -348,6 +449,7 @@ add_executable(mistram
   ${driver_src}
   ${main_src}
   ${picosynth_src}
+  tosram.c
   )
 
 target_link_libraries(mistram
@@ -356,7 +458,7 @@ target_link_libraries(mistram
   hardware_spi
   hardware_pio
   hardware_rtc 
-  pico_multicore 
+  pico_multicore
   ${picosynth_lib})
 add_compile_options(-O2)
 target_include_directories(mistram PUBLIC ../picosynth)
@@ -377,13 +479,16 @@ pico_set_binary_type(mistram no_flash)
 
 target_compile_options(mistram PUBLIC
   ${common_opts}
-  ${xilinx_opts}
+  #  ${xilinx_opts}
   # ${altera_opts}
-  ${ram_opts}
-  # ${neptuno_opts}
-  ${zxtres_opts}
-  ${picosynth_opts}
+  ${neptuno1_opts}
+  # ${ram_opts}
+  ${neptuno_opts}
+  # ${zxtres_opts}
+  # ${picosynth_opts}
   ${mb1_opts}
+  "-DNO_JAMMA"
+  "-DHARDFILES=1"
 )
 
 
@@ -432,6 +537,51 @@ target_compile_options(mistram PUBLIC
 #   "-DUSBFAKE"
 #   "-DUSB"
 # )
+
+####################################################################################
+# FLASH build - release binary for Xilinx ZXTres board -with single CPU middleboard.
+add_executable(mist
+  ${driver_src}
+  ${main_src}
+  ${picosynth_src}
+  )
+
+target_link_libraries(mist 
+  pico_stdlib 
+  mistfirmware
+  hardware_spi 
+  hardware_pio 
+  hardware_flash 
+  hardware_rtc 
+  pico_multicore 
+  ${picosynth_lib}
+  hardware_i2c)
+
+target_include_directories(mist PUBLIC ../picosynth)
+add_compile_options(-O2)
+pico_generate_pio_header(mist ../drivers/fpga.pio)
+pico_generate_pio_header(mist ../drivers/spi.pio)
+pico_generate_pio_header(mist ../drivers/jamma.pio)
+pico_generate_pio_header(mist ../drivers/jammaj.pio)
+pico_generate_pio_header(mist ../drivers/jammadb9.pio)
+pico_generate_pio_header(mist ../drivers/audio_not_i2s.pio)
+pico_generate_pio_header(mist ../drivers/audio_i2s.pio)
+pico_generate_pio_header(mist ../drivers/ps2.pio)
+pico_generate_pio_header(mist ../drivers/ps2tx.pio)
+pico_enable_stdio_usb(mist 1)
+pico_enable_stdio_uart(mist 0)
+pico_add_extra_outputs(mist)
+example_auto_set_url(mist)
+
+target_compile_options(mist PUBLIC
+  ${common_opts}
+  ${altera_opts}
+  # ${flash_opts}
+  ${neptuno_opts}
+  ${picosynth_opts}
+  ${mb1_opts}
+  "-Diprintf=printf"
+  )
 
 ####################################################################################
 # FLASH build - release binary for Xilinx ZXTres board -with single CPU middleboard.
@@ -586,7 +736,7 @@ add_executable(mistmb2xilinxram
 
 target_link_libraries(mistmb2xilinxram 
   pico_stdlib 
-  mistfirmwarexilinx 
+  mistfirmwarexilinxram
   hardware_spi 
   hardware_pio 
   hardware_rtc 
@@ -722,7 +872,7 @@ add_executable(mistzx1ram
 
 target_link_libraries(mistzx1ram 
   pico_stdlib 
-  mistfirmwarezx1 
+  mistfirmwarezx1ram 
   hardware_spi 
   hardware_pio 
   hardware_rtc 

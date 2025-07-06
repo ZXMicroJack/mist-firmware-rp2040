@@ -310,9 +310,9 @@ int fpga_configure(void *user_data, uint8_t (*next_block)(void *, uint8_t *), ui
 #endif
 
 #ifdef ALTERA_FPGA
-  debug(("fpga_configure: crc %08X %d\n", crc, gpio_get(GPIO_FPGA_CONF_DONE)));
+  debug(("fpga_configure: crc %08X %d\n", 0, gpio_get(GPIO_FPGA_CONF_DONE)));
 #else
-  debug(("fpga_configure: crc %08X %d\n", crc, gpio_get(GPIO_FPGA_INITB)));
+  debug(("fpga_configure: crc %08X %d\n", 0, gpio_get(GPIO_FPGA_INITB)));
 #endif
 
 #if defined (ALTERA_FPGA) && !defined (ALTERA_DONT_CHECK_DONE)

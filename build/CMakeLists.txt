@@ -29,54 +29,41 @@ include(example_auto_set_url.cmake)
 # Build project
 include_directories(. ../mist-firmware ../mist-firmware/usb .. ../contrib/tusb_xinput)
 
-set(driver_src
-  ../drivers/fpga.c
+set(driver_common_src
   ../drivers/pio_spi.c
-  ../drivers/ps2.c
-  #  ../drivers/ps2detect.c
   ../drivers/sdcard.c
   ../drivers/bitfile.c
+  ../drivers/gpioirq.c
   ../drivers/midi.c
   ../drivers/debug.c
   ../drivers/fifo.c
-  # ../drivers/kbd.c
-  ../drivers/jamma.c
-  ../drivers/gpioirq.c
   ../drivers/crc16.c
 )
 
-set(driver_mb2_src
+set(driver_src
+  ${driver_common_src}
+  ../drivers/jamma.c
+  ../drivers/ps2.c
   ../drivers/fpga.c
-  ../drivers/pio_spi.c
-  ../drivers/sdcard.c
-  ../drivers/bitfile.c
+)
+
+set(driver_mb2_src
+  ${driver_common_src}
+  ../drivers/fpga.c
   ../drivers/ipc.c
   ../drivers/cookie.c
-  ../drivers/midi.c
-  ../drivers/gpioirq.c
-  ../drivers/debug.c
-  ../drivers/fifo.c
-  ../drivers/crc16.c
   usboffshore.c
 )
 
 set(driver_zx1_src
+  ${driver_common_src}
 ../drivers/jtag.c
-../drivers/pio_spi.c
 ../drivers/ps2.c
-../drivers/sdcard.c
-../drivers/ps2detect.c
 ../drivers/bitfile.c
-../drivers/midi.c
-../drivers/gpioirq.c
-../drivers/debug.c
-../drivers/fifo.c
-../drivers/kbd.c
-../drivers/crc16.c
 ../drivers/bitstore.c
 )
 
-set(main_src
+set(main_common_src
   glue.c
   spi.c
   usbdev.c
@@ -86,23 +73,18 @@ set(main_src
   mmc.c
   rtc.c
   keyboard.c
-  fpgaconfig.c
-  mbconfig.c
   platformmenu.c
 )
 
+set(main_src
+  ${main_common_src}
+  fpgaconfig.c
+  mbconfig.c
+)
+
 set(mainzx1_src
-  glue.c
-  spi.c
-  usbdev.c
-  hardware.c
-  mist.c
-  mistmain.c
-  rtc.c
-  mmc.c
-  keyboard.c
+  ${main_common_src}
   fpgaconfigzx1.c
-  platformmenu.c
 )
 
 set(usb_src
@@ -116,7 +98,7 @@ set(usb_src
   ds3usb.c
 )
 
-set(mistfirmware_src
+set(mistfirmwarecommon_src
   ../mist-firmware/arc_file.c
   ../mist-firmware/archie.c
   ../mist-firmware/boot.c
@@ -141,7 +123,6 @@ set(mistfirmware_src
   ../mist-firmware/settings.c
   ../mist-firmware/state.c
   ../mist-firmware/swap.c
-  ../mist-firmware/tos.c
   ../mist-firmware/user_io.c
   ../mist-firmware/utils.c
   ../mist-firmware/xmodem.c
@@ -155,43 +136,14 @@ set(mistfirmware_src
   osdx.c
 )
 
+set(mistfirmware_src
+  ${mistfirmwarecommon_src}
+  ../mist-firmware/tos.c
+)
+
 set(mistfirmwareram_src
-  ../mist-firmware/arc_file.c
-  ../mist-firmware/archie.c
-  ../mist-firmware/boot.c
-  ../mist-firmware/cdc_control.c
-  ../mist-firmware/config.c
-  ../mist-firmware/cue_parser.c
-  ../mist-firmware/data_io.c
-  ../mist-firmware/fat_compat.c
-  ../mist-firmware/fdd.c
-  ../mist-firmware/font.c
-  ../mist-firmware/fpga.c
-  ../mist-firmware/hdd.c
-  ../mist-firmware/idxfile.c
-  ../mist-firmware/ikbd.c
-  ../mist-firmware/ini_parser.c
-  ../mist-firmware/menu-8bit.c
-  ../mist-firmware/menu.c
-  ../mist-firmware/menu-minimig.c
-  ../mist-firmware/mist_cfg.c
-  ../mist-firmware/neocd.c
-  ../mist-firmware/pcecd.c
-  ../mist-firmware/settings.c
-  ../mist-firmware/state.c
-  ../mist-firmware/swap.c
+  ${mistfirmwarecommon_src}
   tosram.c
-  ../mist-firmware/user_io.c
-  ../mist-firmware/utils.c
-  ../mist-firmware/xmodem.c
-  ../mist-firmware/FatFs/diskio.c
-  ../mist-firmware/FatFs/ff.c
-  ../mist-firmware/FatFs/ffsystem.c
-  ../mist-firmware/FatFs/ffunicode.c
-  ../mist-firmware/usb/joymapping.c
-  ../mist-firmware/zx_col.c
-  ../mist-firmware/snes.c
-  osdx.c
 )
 
 set(mistfirmwareusb_src
@@ -199,9 +151,7 @@ set(mistfirmwareusb_src
   ../mist-firmware/usb/hid.c
   ../mist-firmware/usb/joystick.c
   ../mist-firmware/usb/timer.c
-  #../mist-firmware/usb/xboxusb.c
   ../mist-firmware/usb/usbdebug.c
-  #../mist-firmware/usb/pl2303.c
   )
 
 set(picosynth_src
@@ -236,57 +186,75 @@ set(mistfirmware_opts_common
 set(mistfirmware_opts_usb
   "-DUSB_STORAGE"
   "-DEXCL_XBOX_JPAD"
+  "-Diprintf=usbprintf"
+)
+
+set(mistfirmware_opts_nousb
+  "-Diprintf=printf"
+)
+
+set(mistfirmware_opts_neptuno
+  "-DMIST_ROOT=\"/\""
+  "-DCOREEXT=\"RBF\""
+  "-DCOREEXTOTHER=\"NP1\""
+)
+
+set(mistfirmware_opts_xilinx
+  "-DXILINX"
+  "-DMIST_ROOT=\"/MIST\""
+  "-DCHECK_REAL_ROOT"
+  "-DCOREEXT=\"BIT\""
+  "-DCOREEXTOTHER=\"ZXT\""
+)
+
+set(mistfirmware_opts_zx1
+  "-DNO_FILE_INDEX"
+  "-DXILINX"
+  "-DZXUNO"
+  "-DMIST_ROOT=\"/MIST\""
+  "-DCHECK_REAL_ROOT"
+  "-DCOREEXT=\"BIT\""
+  "-DCOREEXTOTHER=\"ZX1\""
+)
+
+set(mistfirmware_opts_ram
+  "-DNO_FILE_INDEX"
+  "-DNO_LOGO"
+  "-DNO_HELP_TEXTS"
+  "-DHARDFILES=1"
+  "-Diprintf=printf"
+  "-DNO_CUSTOM_HELPTEXT"
 )
 
 # mist library
 add_library(mistfirmwareram STATIC ${mistfirmwareram_src})
 target_compile_options(mistfirmwareram PUBLIC
   ${mistfirmware_opts_common}
-  "-DMIST_ROOT=\"/\""
-  "-DCOREEXT=\"RBF\""
-  "-DCOREEXTOTHER=\"NP1\""
-  "-Diprintf=printf"
-  "-DNO_FILE_INDEX"
-  "-DNO_LOGO"
-  "-DNO_HELP_TEXTS"
-  "-DHARDFILES=1"
-  "-DNO_CUSTOM_HELPTEXT"
+  ${mistfirmware_opts_neptuno}
+  ${mistfirmware_opts_ram}
+  ${mistfirmware_opts_nousb}
 )
 
 add_library(mistfirmware STATIC ${mistfirmware_src})
 target_compile_options(mistfirmware PUBLIC
   ${mistfirmware_opts_common}
-  "-DMIST_ROOT=\"/\""
-  "-DCOREEXT=\"RBF\""
-  "-DCOREEXTOTHER=\"NP1\""
-  "-Diprintf=printf"
+  ${mistfirmware_opts_neptuno}
+  ${mistfirmware_opts_nousb}
 )
 # mist library xilinx
 add_library(mistfirmwarexilinx STATIC ${mistfirmware_src})
 target_compile_options(mistfirmwarexilinx PUBLIC
   ${mistfirmware_opts_common}
-  "-DXILINX"
-  "-DMIST_ROOT=\"/MIST\""
-  "-DCHECK_REAL_ROOT"
-  "-DCOREEXT=\"BIT\""
-  "-DCOREEXTOTHER=\"ZXT\""
+  ${mistfirmware_opts_xilinx}
 )
 
 # mist library xilinx
 add_library(mistfirmwarexilinxram STATIC ${mistfirmwareram_src})
 target_compile_options(mistfirmwarexilinxram PUBLIC
   ${mistfirmware_opts_common}
-  "-DXILINX"
-  "-DMIST_ROOT=\"/MIST\""
-  "-DCHECK_REAL_ROOT"
-  "-DCOREEXT=\"BIT\""
-  "-DCOREEXTOTHER=\"ZXT\""
-  "-Diprintf=printf"
-  "-DNO_FILE_INDEX"
-  "-DNO_LOGO"
-  "-DNO_HELP_TEXTS"
-  "-DHARDFILES=1"
-  "-DNO_CUSTOM_HELPTEXT"
+  ${mistfirmware_opts_xilinx}
+  ${mistfirmware_opts_nousb}
+  ${mistfirmware_opts_ram}
 )
 
 # mist USB library
@@ -294,13 +262,7 @@ add_library(mistfirmwareusbxilinx STATIC ${mistfirmware_src} ${mistfirmwareusb_s
 target_compile_options(mistfirmwareusbxilinx PUBLIC
   ${mistfirmware_opts_common}
   ${mistfirmware_opts_usb}
-  # TODO check if needed
-  "-DXILINX"
-  "-DMIST_ROOT=\"/MIST\""
-  "-DCHECK_REAL_ROOT"
-  "-DCOREEXT=\"BIT\""
-  "-DCOREEXTOTHER=\"ZXT\""
-  "-Diprintf=usbprintf"
+  ${mistfirmware_opts_xilinx}
 )
 
 # mist USB library
@@ -308,62 +270,32 @@ add_library(mistfirmwareusb STATIC ${mistfirmware_src} ${mistfirmwareusb_src})
 target_compile_options(mistfirmwareusb PUBLIC
   ${mistfirmware_opts_common}
   ${mistfirmware_opts_usb}
-  "-DMIST_ROOT=\"/\""
-  "-DCOREEXT=\"RBF\""
-  "-DCOREEXTOTHER=\"NP1\""
-  "-Diprintf=usbprintf"
-  )
+  ${mistfirmware_opts_neptuno}
+)
 
 # mist library
 add_library(mistfirmwarezx1 STATIC ${mistfirmware_src})
 target_compile_options(mistfirmwarezx1 PUBLIC
   ${mistfirmware_opts_common}
-  # TODO check if needed
-  "-DNO_FILE_INDEX"
-  "-DXILINX"
-  "-DZXUNO"
-
-  "-DMIST_ROOT=\"/MIST\""
-  "-DCHECK_REAL_ROOT"
-  "-DCOREEXT=\"BIT\""
-  "-DCOREEXTOTHER=\"ZX1\""
-  )
+  ${mistfirmware_opts_zx1}
+)
 
 # mist library
 add_library(mistfirmwarezx1ram STATIC ${mistfirmwareram_src})
 target_compile_options(mistfirmwarezx1ram PUBLIC
   ${mistfirmware_opts_common}
-  # TODO check if needed
-  "-DNO_FILE_INDEX"
-  "-DXILINX"
-  "-DZXUNO"
-  "-DMIST_ROOT=\"/MIST\""
-  "-DCHECK_REAL_ROOT"
-  "-DCOREEXT=\"BIT\""
-  "-DCOREEXTOTHER=\"ZX1\""
-  "-Diprintf=printf"
-  "-DNO_FILE_INDEX"
-  "-DNO_LOGO"
-  "-DNO_HELP_TEXTS"
-  "-DHARDFILES=1"
-  "-DNO_CUSTOM_HELPTEXT"
-  )
+  ${mistfirmware_opts_zx1}
+  ${mistfirmware_opts_nousb}
+  ${mistfirmware_opts_ram}
+)
 
   # mist library
 add_library(mistfirmwareusbzx1 STATIC ${mistfirmware_src} ${mistfirmwareusb_src})
 target_compile_options(mistfirmwareusbzx1 PUBLIC
   ${mistfirmware_opts_common}
   ${mistfirmware_opts_usb}
-  # TODO check if needed
-  "-DNO_FILE_INDEX"
-  "-DXILINX"
-  "-DZXUNO"
-  "-DMIST_ROOT=\"/MIST\""
-  "-DCHECK_REAL_ROOT"
-  "-DCOREEXT=\"BIT\""
-  "-DCOREEXTOTHER=\"ZX1\""
-  "-Diprintf=usbprintf"
-  )
+  ${mistfirmware_opts_zx1}
+)
 
 ####################################################################################
 # Main build generic options
@@ -1069,13 +1001,12 @@ target_compile_options(mistmb2 PUBLIC
 # RAM build - test picosynth
 add_executable(miditest
   ${driver_mb2_src}
-  miditest.c
   ${picosynth_src}
+  miditest.c
   )
 
 target_link_libraries(miditest 
   pico_stdlib 
-  mistfirmware
   hardware_spi 
   hardware_pio 
   hardware_rtc 

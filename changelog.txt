@@ -99,4 +99,6 @@ v14 (v2.15)
 - Added MEGA 6 button.
 - Fixed direct mode for Amiga.
 
-
+v15 (v2.16)
+-----------
+- Resynced code with mist-firmware upstream.

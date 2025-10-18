@@ -102,3 +102,9 @@ v14 (v2.15)
 v15 (v2.16)
 -----------
 - Resynced code with mist-firmware upstream.
+
+v16 (v2.17)
+-----------
+- Fixed JAMMA remapping in mist.ini (see wiki)
+  https://github.com/ZXMicroJack/mist-firmware-rp2040/wiki/Joystick---Jamma-remapping
+

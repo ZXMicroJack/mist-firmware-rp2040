@@ -5,6 +5,7 @@
 #include <sys/time.h>
 
 #include "usb/usb.h"
+#include "drivers/jamma.h"
 
 
 //TODO MJ where shall debug go?
@@ -75,7 +76,7 @@ uint8_t *get_mac() {
 
 //TODO MJ USB storage
 void storage_control_poll() {
-  usleep(10);
+  usleep(50000);
   usb_deferred_poll();
 }
 
@@ -200,3 +201,17 @@ int picosynth_GetStatus() {
 	return 0;
 }
 
+uint16_t usb_cdc_write(const char *pData, uint16_t length) { return 0; }
+
+uint8_t  usb_cdc_is_configured(void) { return 0; }
+
+uint16_t usb_cdc_read(char *pData, uint16_t length) { return 0; }
+
+JAMMA_MODE mode = MODE_DB9;
+void jamma_SetMode(JAMMA_MODE _mode) {}
+
+JAMMA_MODE jamma_GetMode(void) {
+  return mode;
+}
+
+uint8_t usbdebug = 0;

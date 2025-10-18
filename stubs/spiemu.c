@@ -244,14 +244,14 @@ void EnableOsd()
 {
 	osd = 1;
 	cmd_pos = 0;
-	printf("EnableOsd();\n");
+	// printf("EnableOsd();\n");
 }
 
 void DisableOsd()
 {
 	osd = 0;
 	react_osd_end();
-	printf("DisableOsd();\n");
+	// printf("DisableOsd();\n");
     spi_wait4xfer_end();
 }
 

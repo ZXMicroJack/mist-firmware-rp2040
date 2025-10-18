@@ -275,7 +275,7 @@ char GetDB9(char index, unsigned char *joy_map) {
   uint32_t d = jamma_GetData(index);
   static uint16_t lastdb9[2];
   if (lastdb9[index] != d) {
-    uint16_t joy_map2 = virtual_joystick_mapping(0x00db, index, d);
+    uint16_t joy_map2 = virtual_joystick_mapping(0x00db, index+1, d);
     uint8_t idx = (index ^ mist_cfg.joystick_db9_swap) & 1;
     idx = mist_cfg.joystick_db9_fixed_index ? user_io_joystick_renumber(idx) : joystick_count() + idx;
 

@@ -23,7 +23,6 @@ unsigned long zxColours[] = {
   0x00ff00, 0x00ffff, 0xffff00, 0xffffff
 };
 
-
 Uint32 colourLut[16];
 
 void (*pupdateScreen)() = (void (*)())NULL;
@@ -271,7 +270,7 @@ void processKey(uint16_t scancode, int pressed) {
 
     if (d) {
       if (!pressed) {
-        // debug(("release {%03X}\n", d));
+        printf("release {%03X}\n", d);
         for (int i=0; i<6; i++) {
           if (kbdkeys[i] == (d & 0xff)) {
             kbdkeys[i] = 0;
@@ -279,7 +278,7 @@ void processKey(uint16_t scancode, int pressed) {
           }
         }
       } else {
-        // debug(("pressed {%03X}\n", d));
+        printf("pressed {%03X}\n", d);
         for (int i=0; i<6; i++) {
           if (kbdkeys[i] == (d & 0xff)) break;
           if (kbdkeys[i] == 0) {
